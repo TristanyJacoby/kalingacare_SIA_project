@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KalingaCare | Register</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+  </head>
+
+  <body>
+    <header>
+      <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+          <a class="navbar-brand logo" href="index.html">KalingaCare</a>
+
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mx-auto">
+              <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+              <li class="nav-item"><a class="nav-link" href="products.html">Products</a></li>
+              <li class="nav-item"><a class="nav-link" href="index.html#services">Services</a></li>
+              <li class="nav-item"><a class="nav-link" href="index.html#contact">Contact</a></li>
+              <li class="nav-item"><a class="nav-link" href="index.html#about">About</a></li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-4">
+              <a href="login.html" class="login-btn">Login</a>
+              <a href="register.html" class="signup-btn active">Get Started</a>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <div class="stage signup-active" id="stage">
+      <div class="panel panel-brand">
+        <div class="content-wrapper">
+          <h1 id="brandTitle">Join KalingaCare!</h1>
+          <p id="brandText">Create an account and start sending care that truly gets there.</p>
+        </div>
+      </div>
+
+      <div class="panel panel-form">
+        <div id="loginSection" class="form-container hidden">
+          <div class="form-box">
+            <h2>Sign In</h2>
+            <div class="auth-error" id="loginError"></div>
+            <form id="loginForm">
+              <div class="form-field">
+                <i class="bi bi-envelope"></i>
+                <input type="email" id="loginEmail" class="field-input" placeholder="Email Address" required />
+              </div>
+              <div class="form-field">
+                <i class="bi bi-lock"></i>
+                <input type="password" id="loginPassword" class="field-input" placeholder="Password" required />
+              </div>
+              <button type="submit" class="btn-auth">Sign In</button>
+            </form>
+            <div class="form-links">
+              <p>Don't have an account? <a onclick="toggleMode()">Create Account</a></p>
+            </div>
+          </div>
+        </div>
+
+        <div id="signupSection" class="form-container">
+          <div class="form-box">
+            <h2>Create Account</h2>
+            <div class="auth-error" id="signupError"></div>
+            <form id="signupForm">
+              <div class="form-field">
+                <i class="bi bi-person"></i>
+                <input type="text" id="signupName" class="field-input" placeholder="Full Name" required />
+              </div>
+              <div class="form-field">
+                <i class="bi bi-envelope"></i>
+                <input type="email" id="signupEmail" class="field-input" placeholder="Email Address" required />
+              </div>
+              <div class="form-field">
+                <i class="bi bi-lock"></i>
+                <input type="password" id="signupPassword" class="field-input" placeholder="Password" minlength="6" required />
+              </div>
+              <button type="submit" class="btn-auth">Sign Up</button>
+            </form>
+            <div class="form-links">
+              <p>Already a member? <a onclick="toggleMode()">Sign In</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="js/auth.js"></script>
+  </body>
+</html>
