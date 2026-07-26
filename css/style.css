@@ -1,0 +1,206 @@
+/* ===========================
+   KalingaCare — Global Styles
+   Shared across every page: reset, design tokens, navbar, footer.
+   Page-specific rules belong in home.css / shop.css / auth.css / admin.css instead.
+=========================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+}
+
+:root {
+  --primary: #67c8f7;
+  --primary-rgb: 103, 200, 247;
+  --primary-light: #beebff;
+
+  --pink: #f8b4d9;
+  --pink-rgb: 248, 180, 217;
+  --pink-light: #ffe5f2;
+
+  --dark: #1e293b;
+  --gray: #64748b;
+  --white: #ffffff;
+  --line: #dce8f0;
+
+  --gradient: linear-gradient(135deg, #7dd3fc 0%, #a5f3fc 45%, #f8b4d9 100%);
+
+  --radius-pill: 999px;
+  --shadow-soft: 0 8px 24px rgba(50, 116, 153, 0.08);
+  --shadow-hover: 0 18px 35px rgba(50, 116, 153, 0.15);
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  min-height: 100vh;
+  color: var(--dark);
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(125, 211, 252, 0.22), transparent 35%),
+    radial-gradient(circle at 85% 80%, rgba(248, 180, 217, 0.2), transparent 35%),
+    linear-gradient(180deg, #ffffff, #fbfeff);
+}
+
+a {
+  color: inherit;
+}
+
+main {
+  flex: 1;
+}
+
+/* ============ NAVBAR (shared) ============ */
+header {
+  flex-shrink: 0;
+}
+
+.navbar {
+  padding: 14px 0;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 16px rgba(30, 41, 59, 0.06) !important;
+}
+
+.logo,
+.navbar-brand {
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--primary) !important;
+  text-decoration: none;
+}
+
+.navbar-brand i {
+  display: none;
+}
+
+.nav-link {
+  color: var(--dark) !important;
+  font-weight: 500;
+  margin: 0 12px;
+  position: relative;
+  transition: 0.3s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--primary) !important;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 0;
+  height: 2px;
+  background: var(--gradient);
+  transition: 0.3s;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  width: 100%;
+}
+
+.navbar-toggler {
+  border: none;
+}
+.navbar-toggler:focus {
+  box-shadow: none;
+}
+
+.login-btn {
+  text-decoration: none;
+  font-weight: 500;
+  color: var(--dark);
+  padding: 10px 15px;
+  transition: 0.3s;
+}
+.login-btn:hover,
+.login-btn.active {
+  color: var(--primary);
+}
+
+.signup-btn.active {
+  box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.35);
+}
+
+/* Pill CTA button — used for "Get Started", "Add to Cart", filters, etc. */
+.signup-btn,
+.btn-success {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  border: 0 !important;
+  padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 34px);
+  border-radius: var(--radius-pill);
+  background: var(--gradient) !important;
+  color: #fff !important;
+  font-weight: 600;
+  transition: 0.3s ease;
+}
+.signup-btn:hover,
+.btn-success:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(var(--primary-rgb), 0.35);
+}
+
+.btn {
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-outline-success {
+  border: 1.5px solid var(--primary) !important;
+  color: var(--primary) !important;
+  background: transparent !important;
+}
+.btn-outline-success:hover {
+  background: var(--primary-light) !important;
+}
+
+.navbar .badge,
+.badge.bg-danger {
+  background: var(--pink) !important;
+  color: #12283a !important;
+}
+
+@media (max-width: 991px) {
+  .navbar-nav {
+    text-align: center;
+    margin: 20px 0;
+  }
+  .d-flex {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+}
+
+/* ============ FOOTER (shared) ============ */
+footer {
+  margin-top: 3rem;
+  padding: 2.5rem 0 1.5rem;
+  background: var(--gradient);
+  color: #12283a;
+}
+footer a {
+  text-decoration: none;
+  color: #12283a;
+}
+footer a:hover {
+  color: #fff;
+}
+footer h4,
+footer h5 {
+  margin-bottom: 0.8rem;
+}
