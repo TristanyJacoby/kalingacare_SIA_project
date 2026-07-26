@@ -52,6 +52,14 @@ a {
   color: inherit;
 }
 
+/* Smooth fade-out before internal page navigation (see firebase.js) */
+body {
+  transition: opacity 0.28s ease;
+}
+body.page-leaving {
+  opacity: 0;
+}
+
 main {
   flex: 1;
 }
@@ -185,6 +193,21 @@ header {
     gap: 15px;
   }
 }
+
+/* Role badges — shared by profile.html and the admin pages */
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.role-badge.role-user { background: #e6f4ea; color: #1e7e34; }
+.role-badge.role-staff { background: var(--primary-light); color: #0b5e83; }
+.role-badge.role-admin { background: var(--pink-light); color: #8d4c7b; }
+.role-badge.role-superadmin { background: #fff2cc; color: #916f00; }
 
 /* ============ FOOTER (shared) ============ */
 footer {
