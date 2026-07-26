@@ -44,11 +44,18 @@
           </ul>
 
           <div class="d-flex align-items-center gap-3">
-            <a href="login.html" class="login-btn">Login</a>
-            <button class="btn btn-success position-relative" type="button">
-              <i class="bi bi-cart3"></i> Cart
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
-            </button>
+            <div id="navAuthLinks" class="d-flex align-items-center gap-3">
+              <a href="login.html" class="login-btn">Login</a>
+              <a href="register.html" class="signup-btn">Get Started</a>
+            </div>
+            <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
+              <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
+              <a href="profile.html" class="login-btn" title="My Profile"><i class="bi bi-person-circle fs-5"></i></a>
+              <a href="cart.html" class="btn btn-success position-relative">
+                <i class="bi bi-cart3"></i> Cart
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="navCartCount">0</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -87,128 +94,17 @@
     <!-- PRODUCTS -->
     <section class="py-5">
       <div class="container">
-        <div class="row g-4">
-
-          <!-- MOBILITY -->
-          <div class="col-lg-4 col-md-6 product-item" data-category="mobility" data-id="p1" data-name="Lightweight Folding Aluminum Walker" data-price="2950" data-img="assets/images/products/product1.jpg">
-            <div class="card product-card h-100">
-              <img src="assets/images/products/product1.jpg" class="card-img-top" alt="Walker" />
-              <div class="card-body">
-                <span class="badge bg-success mb-2">Mobility</span>
-                <h5>Lightweight Folding Aluminum Walker</h5>
-                <p class="text-muted">Lightweight walking aid designed for senior mobility and daily support.</p>
-                <h4 class="text-success">&#8369;2,950</h4>
-                <button class="btn btn-success w-100"><i class="bi bi-cart-plus"></i> Add to Cart</button>
-              </div>
-            </div>
+        <div class="row g-4" id="productsGrid">
+          <div class="col-12 text-center text-muted py-5" id="productsLoading">
+            <div class="spinner-border text-success mb-3" role="status"></div>
+            <p>Loading products...</p>
           </div>
+        </div>
 
-          <div class="col-lg-4 col-md-6 product-item" data-category="mobility" data-id="p2" data-name="Medical Shower Bench" data-price="2350" data-img="assets/images/products/product2.webp">
-            <div class="card product-card h-100">
-              <img src="assets/images/products/product2.webp" class="card-img-top" alt="Shower Bench" />
-              <div class="card-body">
-                <span class="badge bg-success mb-2">Mobility</span>
-                <h5>Medical Shower Bench</h5>
-                <p class="text-muted">Comfortable shower bench with backrest for safer bathing.</p>
-                <h4 class="text-success">&#8369;2,350</h4>
-                <button class="btn btn-success w-100"><i class="bi bi-cart-plus"></i> Add to Cart</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-4 col-md-6 product-item" data-category="mobility" data-id="p3" data-name="Anti-Bedsore Ripple Mattress" data-price="4800" data-img="assets/images/products/product3.png">
-            <div class="card product-card h-100">
-              <img src="assets/images/products/product3.png" class="card-img-top" alt="Mattress" />
-              <div class="card-body">
-                <span class="badge bg-success mb-2">Mobility</span>
-                <h5>Anti-Bedsore Ripple Mattress</h5>
-                <p class="text-muted">Pressure-relief mattress designed for elderly comfort.</p>
-                <h4 class="text-success">&#8369;4,800</h4>
-                <button class="btn btn-success w-100"><i class="bi bi-cart-plus"></i> Add to Cart</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- WELLNESS -->
-          <div class="col-lg-4 col-md-6 product-item" data-category="wellness" data-id="p4" data-name="Overnight Adult Diapers" data-price="780" data-img="assets/images/products/product4.jpg">
-            <div class="card product-card h-100">
-              <img src="assets/images/products/product4.jpg" class="card-img-top" alt="Adult Diaper" />
-              <div class="card-body">
-                <span class="badge bg-primary mb-2">Wellness</span>
-                <h5>Overnight Adult Diapers</h5>
-                <p class="text-muted">Ultra-absorbent diapers for all-night protection and comfort.</p>
-                <h4 class="text-success">&#8369;780</h4>
-                <button class="btn btn-success w-100"><i class="bi bi-cart-plus"></i> Add to Cart</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-4 col-md-6 product-item" data-category="wellness" data-id="p5" data-name="Ensure Gold Nutritional Milk" data-price="1250" data-img="assets/images/products/product5.avif">
-            <div class="card product-card h-100">
-              <img src="assets/images/products/product5.avif" class="card-img-top" alt="Ensure Gold" />
-              <div class="card-body">
-                <span class="badge bg-primary mb-2">Wellness</span>
-                <h5>Ensure Gold Nutritional Milk</h5>
-                <p class="text-muted">Nutritional supplement specially formulated for seniors.</p>
-                <h4 class="text-success">&#8369;1,250</h4>
-                <button class="btn btn-success w-100"><i class="bi bi-cart-plus"></i> Add to Cart</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-4 col-md-6 product-item" data-category="wellness" data-id="p6" data-name="Orthopedic Cervical Pillow" data-price="980" data-img="assets/images/products/product6.jpg">
-            <div class="card product-card h-100">
-              <img src="assets/images/products/product6.jpg" class="card-img-top" alt="Orthopedic Pillow" />
-              <div class="card-body">
-                <span class="badge bg-primary mb-2">Wellness</span>
-                <h5>Orthopedic Cervical Pillow</h5>
-                <p class="text-muted">Provides proper neck and spine support while sleeping.</p>
-                <h4 class="text-success">&#8369;980</h4>
-                <button class="btn btn-success w-100"><i class="bi bi-cart-plus"></i> Add to Cart</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- DIGITAL HEALTH -->
-          <div class="col-lg-4 col-md-6 product-item" data-category="digital" data-id="p7" data-name="Automatic Blood Pressure Monitor" data-price="1650" data-img="assets/images/products/product7.jpg">
-            <div class="card product-card h-100">
-              <img src="assets/images/products/product7.jpg" class="card-img-top" alt="Blood Pressure Monitor" />
-              <div class="card-body">
-                <span class="badge bg-warning text-dark mb-2">Digital Health</span>
-                <h5>Automatic Blood Pressure Monitor</h5>
-                <p class="text-muted">Accurately monitor blood pressure at home with one-touch operation.</p>
-                <h4 class="text-success">&#8369;1,650</h4>
-                <button class="btn btn-success w-100"><i class="bi bi-cart-plus"></i> Add to Cart</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-4 col-md-6 product-item" data-category="digital" data-id="p8" data-name="Fingertip Pulse Oximeter" data-price="950" data-img="assets/images/products/product8.avif">
-            <div class="card product-card h-100">
-              <img src="assets/images/products/product8.avif" class="card-img-top" alt="Pulse Oximeter" />
-              <div class="card-body">
-                <span class="badge bg-warning text-dark mb-2">Digital Health</span>
-                <h5>Fingertip Pulse Oximeter</h5>
-                <p class="text-muted">Instantly measures oxygen saturation and pulse rate.</p>
-                <h4 class="text-success">&#8369;950</h4>
-                <button class="btn btn-success w-100"><i class="bi bi-cart-plus"></i> Add to Cart</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-4 col-md-6 product-item" data-category="digital" data-id="p9" data-name="Emergency First Aid Kit" data-price="1250" data-img="assets/images/products/product9.webp">
-            <div class="card product-card h-100">
-              <img src="assets/images/products/product9.webp" class="card-img-top" alt="First Aid Kit" />
-              <div class="card-body">
-                <span class="badge bg-warning text-dark mb-2">Digital Health</span>
-                <h5>Emergency First Aid Kit</h5>
-                <p class="text-muted">Complete emergency medical kit for home and travel use.</p>
-                <h4 class="text-success">&#8369;1,250</h4>
-                <button class="btn btn-success w-100"><i class="bi bi-cart-plus"></i> Add to Cart</button>
-              </div>
-            </div>
-          </div>
-
+        <div class="empty-state d-none" id="productsEmpty">
+          <i class="bi bi-box-seam"></i>
+          <h3>No products yet</h3>
+          <p>The catalog hasn't been stocked yet — check back soon.</p>
         </div>
       </div>
     </section>
@@ -248,6 +144,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="js/firebase.js"></script>
-  <script src="js/products.js"></script>
+  <script type="module" src="js/site.js"></script>
+  <script type="module" src="js/products.js"></script>
 </body>
 </html>

@@ -102,7 +102,13 @@ signupForm.addEventListener("submit", async (e) => {
   const fullName = document.getElementById("signupName").value.trim();
   const email = document.getElementById("signupEmail").value.trim();
   const password = document.getElementById("signupPassword").value;
+  const confirmPassword = document.getElementById("signupConfirmPassword").value;
   const submitBtn = signupForm.querySelector(".btn-auth");
+
+  if (password !== confirmPassword) {
+    showError(signupError, "Passwords don't match.");
+    return;
+  }
 
   submitBtn.disabled = true;
   submitBtn.textContent = "Creating account...";
@@ -112,11 +118,14 @@ signupForm.addEventListener("submit", async (e) => {
     await updateProfile(cred.user, { displayName: fullName });
 
     // Mirror the account into Firestore so admin/products/orders pages can
-    // reference user profiles later.
+    // reference user profiles later. Every new signup starts as a plain
+    // "user" — the other three tiers (staff, admin, superadmin) are granted
+    // manually by a Super Admin from the admin dashboard's User Management
+    // table, never self-assigned at signup.
     await setDoc(doc(db, "users", cred.user.uid), {
       fullName,
       email,
-      role: "customer",
+      role: "user",
       createdAt: serverTimestamp(),
     });
 
@@ -128,6 +137,25 @@ signupForm.addEventListener("submit", async (e) => {
     submitBtn.textContent = "Sign Up";
   }
 });
+
+/* ===== Slide-then-navigate between login.html and register.html =====
+   The in-form "Create Account" / "Sign In" links just call toggleMode()
+   directly since they stay on the same page. But the navbar's Login /
+   Get Started buttons are real links to a *different* file. To make that
+   feel like one continuous slide instead of a hard page cut, we play the
+   slide animation first, then navigate — and since the destination page
+   already opens in that same slid-over state, it reads as seamless. */
+const switchLink = document.getElementById("navSwitchAuth");
+if (switchLink) {
+  switchLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    const destination = switchLink.getAttribute("href");
+    toggleMode();
+    setTimeout(() => {
+      window.location.href = destination;
+    }, 900); // matches --slide-speed in auth.css
+  });
+}
 
 function friendlyAuthError(code) {
   switch (code) {
