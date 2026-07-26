@@ -37,9 +37,19 @@
               <li class="nav-item"><a class="nav-link" href="index.html#about">About</a></li>
             </ul>
 
-            <div class="d-flex align-items-center gap-4">
-              <a href="login.html" class="login-btn">Login</a>
-              <a href="register.html" class="signup-btn active">Get Started</a>
+            <div class="d-flex align-items-center gap-3">
+              <div id="navAuthLinks" class="d-flex align-items-center gap-3">
+                <a href="login.html" id="navSwitchAuth" class="login-btn no-transition">Login</a>
+                <a href="register.html" class="signup-btn active no-transition">Get Started</a>
+              </div>
+              <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
+                <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
+                <a href="profile.html" class="login-btn" title="My Profile"><i class="bi bi-person-circle fs-5"></i></a>
+                <a href="cart.html" class="btn btn-success position-relative">
+                  <i class="bi bi-cart3"></i> Cart
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="navCartCount">0</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -67,6 +77,9 @@
               <div class="form-field">
                 <i class="bi bi-lock"></i>
                 <input type="password" id="loginPassword" class="field-input" placeholder="Password" required />
+                <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Show password">
+                  <i class="bi bi-eye"></i>
+                </button>
               </div>
               <button type="submit" class="btn-auth">Sign In</button>
             </form>
@@ -92,6 +105,16 @@
               <div class="form-field">
                 <i class="bi bi-lock"></i>
                 <input type="password" id="signupPassword" class="field-input" placeholder="Password" minlength="6" required />
+                <button type="button" class="toggle-password" data-target="signupPassword" aria-label="Show password">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+              <div class="form-field">
+                <i class="bi bi-lock-fill"></i>
+                <input type="password" id="signupConfirmPassword" class="field-input" placeholder="Confirm Password" minlength="6" required />
+                <button type="button" class="toggle-password" data-target="signupConfirmPassword" aria-label="Show password">
+                  <i class="bi bi-eye"></i>
+                </button>
               </div>
               <button type="submit" class="btn-auth">Sign Up</button>
             </form>
@@ -104,6 +127,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="js/site.js"></script>
     <script type="module" src="js/auth.js"></script>
   </body>
 </html>
