@@ -1,0 +1,108 @@
+/* ===========================
+   KalingaCare — Shop / Products Page Styles
+   Product catalog only. Shared tokens/navbar/footer live in style.css.
+=========================== */
+
+.shop-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 4.5rem 0 3.5rem;
+  color: var(--dark);
+  background: linear-gradient(110deg, #eefaff 0%, #fff 46%, #fffaff 100%);
+  text-align: center;
+}
+.shop-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 50% 0 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 0 52%, rgba(123, 215, 245, 0.25), transparent 67%);
+}
+.shop-hero h1 {
+  font-size: clamp(2rem, 4.4vw, 3.4rem);
+  font-weight: 700;
+  color: var(--dark);
+}
+.shop-hero h1 span {
+  color: var(--primary);
+}
+.shop-hero .lead {
+  color: var(--primary);
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+.shop-hero p:not(.lead) {
+  max-width: 570px;
+  margin: 0.75rem auto 0;
+  color: var(--gray);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.input-group {
+  max-width: 620px;
+  margin: 2rem auto 0;
+  overflow: hidden;
+  border: 1.5px solid var(--primary-light);
+  border-radius: var(--radius-pill);
+  background: #fff;
+}
+.form-control {
+  padding: 0.9rem 1.25rem;
+  border: 0;
+}
+.form-control:focus {
+  box-shadow: none;
+}
+.input-group .btn {
+  border-radius: 0;
+  padding: 0 1.4rem;
+}
+
+.category-btn {
+  min-width: 130px;
+  padding: 0.7rem 1.1rem;
+}
+
+.product-card {
+  border: 1px solid #e4eef4;
+  border-radius: 20px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.product-card:hover {
+  transform: translateY(-7px);
+  box-shadow: var(--shadow-hover);
+}
+.product-card img {
+  height: 240px;
+  object-fit: cover;
+}
+.product-card h4,
+.product-card .text-success {
+  color: var(--primary) !important;
+}
+
+.badge.bg-success {
+  background: var(--primary) !important;
+  color: #0b3550 !important;
+}
+.badge.bg-primary {
+  background: var(--primary-light) !important;
+  color: #0b3550 !important;
+}
+.badge.bg-warning {
+  background: var(--pink-light) !important;
+  color: #8d4c7b !important;
+}
+
+@media (max-width: 992px) {
+  .nav-link {
+    margin-left: 0.35rem;
+  }
+}
+@media (max-width: 768px) {
+  .shop-hero {
+    padding: 3rem 1rem;
+  }
+}
