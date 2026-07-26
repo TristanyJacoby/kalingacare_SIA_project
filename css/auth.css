@@ -104,6 +104,19 @@ body {
   font-size: 14px;
 }
 
+.toggle-password {
+  background: none;
+  border: none;
+  color: var(--gray);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+.toggle-password:hover {
+  color: var(--primary);
+}
+
 .btn-auth {
   width: 100%;
   padding: 14px;

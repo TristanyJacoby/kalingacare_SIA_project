@@ -1,20 +1,21 @@
 // js/firebase.js
-// KalingaCare — Firebase initialization
+// KalingaCare — Firebase initialization ONLY.
 //
 // This project has no build step (Bootstrap etc. are loaded via CDN <script> tags,
 // not npm), so we can't use bare specifiers like "firebase/app" — the browser has
 // no idea what that means. Instead we import straight from Firebase's own CDN,
 // the same way the rest of the site loads its dependencies.
 //
-// Every other page script (auth.js, products.js, cart.js, checkout.js, admin.js)
-// should import what it needs from this file, e.g.:
+// Every other page script (auth.js, products.js, cart.js, checkout.js, admin.js,
+// profile.js, site.js) should import what it needs from this file, e.g.:
 //   import { db, auth } from "./firebase.js";
+//
+// Shared, non-Firebase site behavior (navbar auth-gating, page transitions,
+// cart storage helpers) used to live in this file — it's been moved to
+// js/site.js so this file stays exactly what its name says: Firebase setup.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import {
-  getAnalytics,
-  isSupported as analyticsIsSupported,
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+import { getAnalytics, isSupported as analyticsIsSupported } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
