@@ -23,14 +23,17 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+
+    <!-- Shared site styles, then page-specific -->
+    <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/home.css" />
   </head>
 
   <body>
     <header>
-      <nav class="navbar navbar-expand-lg">
+      <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container">
-          <a class="navbar-brand logo" href="#"> KalingaCare </a>
+          <a class="navbar-brand logo" href="index.html"> KalingaCare </a>
 
           <button
             class="navbar-toggler"
@@ -44,67 +47,207 @@
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mx-auto">
               <li class="nav-item">
-                <a class="nav-link" href="#">Home</a>
+                <a class="nav-link active" href="index.html">Home</a>
               </li>
 
               <li class="nav-item">
-                <a class="nav-link" href="#">About</a>
+                <a class="nav-link" href="products.html">Products</a>
               </li>
 
               <li class="nav-item">
-                <a class="nav-link" href="#">Services</a>
+                <a class="nav-link" href="#services">Services</a>
               </li>
 
               <li class="nav-item">
-                <a class="nav-link" href="#">Products</a>
+                <a class="nav-link" href="#contact">Contact</a>
               </li>
 
               <li class="nav-item">
-                <a class="nav-link" href="#">Contact</a>
+                <a class="nav-link" href="#about">About</a>
               </li>
             </ul>
 
             <div class="d-flex align-items-center gap-4">
-              <a href="#" class="login-btn">Login</a>
+              <a href="login.html" class="login-btn">Login</a>
 
-              <a href="#" class="signup-btn"> Get Started </a>
+              <a href="register.html" class="signup-btn"> Get Started </a>
             </div>
           </div>
         </div>
       </nav>
     </header>
 
-    <section class="hero">
-      <div class="hero-content">
-        <h1>
-          Care Beyond Borders,
-          <span>Because Every Family Matters.</span>
-        </h1>
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <h1>
+            Care Beyond Borders,
+            <span>Because Every Family Matters.</span>
+          </h1>
 
-        <p>
-          KalingaCare empowers OFWs to provide trusted healthcare products and
-          wellness essentials for their loved ones in the Philippines—delivered
-          with care, convenience, and peace of mind.
-        </p>
+          <p>
+            KalingaCare empowers OFWs to provide trusted healthcare products and
+            wellness essentials for their loved ones in the Philippines—delivered
+            with care, convenience, and peace of mind.
+          </p>
 
-        <div class="hero-buttons">
-          <a href="#" class="hero-btn-primary">Shop Now</a>
+          <div class="hero-buttons">
+            <a href="products.html" class="hero-btn-primary">Shop Now</a>
 
-          <a href="#" class="hero-btn-secondary">Learn More</a>
-        </div>
+            <a href="#about" class="hero-btn-secondary">Learn More</a>
+          </div>
 
-        <div class="hero-rating">
-          <div>
-            <h3>500+ Families Served</h3>
-            <p>Trusted by OFWs nationwide</p>
+          <div class="hero-rating">
+            <div>
+              <h3>500+ Families Served</h3>
+              <p>Trusted by OFWs nationwide</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="hero-image">
-        <img src="assets/images/landingpage2.png" alt="Healthcare" />
+        <div class="hero-image">
+          <img src="assets/images/hero2.2.png" alt="Healthcare" />
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section class="about-section" id="about">
+        <div class="section-container">
+          <div class="about-text">
+            <span class="section-tag">About KalingaCare</span>
+            <h2>Caregiving Doesn't Need a Plane Ticket</h2>
+            <p>
+              Millions of OFWs send money home for their parents' medical needs,
+              but it doesn't always reach its purpose. KalingaCare lets you buy
+              healthcare products directly for your loved ones — a
+              "remittance-in-kind" that goes straight to what matters, not
+              through anyone else's hands.
+            </p>
+            <ul class="about-list">
+              <li><i class="ri-checkbox-circle-fill"></i> Curated senior wellness &amp; medical products</li>
+              <li><i class="ri-checkbox-circle-fill"></i> Delivered directly to your family in the Philippines</li>
+              <li><i class="ri-checkbox-circle-fill"></i> Pay in your local currency, priced fairly in PHP</li>
+            </ul>
+          </div>
+          <div class="about-stats">
+            <div class="stat-card">
+              <h3>500+</h3>
+              <p>Families Served</p>
+            </div>
+            <div class="stat-card">
+              <h3>9+</h3>
+              <p>Trusted Products</p>
+            </div>
+            <div class="stat-card">
+              <h3>100%</h3>
+              <p>Delivered in PH</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SERVICES / HOW IT WORKS -->
+      <section class="services-section" id="services">
+        <div class="section-container">
+          <span class="section-tag center">How It Works</span>
+          <h2 class="center">Care in Three Simple Steps</h2>
+
+          <div class="steps-grid">
+            <div class="step-card">
+              <div class="step-icon"><i class="ri-search-line"></i></div>
+              <h4>1. Browse</h4>
+              <p>Explore mobility aids, wellness essentials, and digital health devices made for seniors.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-icon"><i class="ri-secure-payment-line"></i></div>
+              <h4>2. Order &amp; Pay</h4>
+              <p>Check out securely from wherever you are — pay in your currency, priced fairly in PHP.</p>
+            </div>
+            <div class="step-card">
+              <div class="step-icon"><i class="ri-truck-line"></i></div>
+              <h4>3. We Deliver</h4>
+              <p>Your order goes straight to your family's doorstep, anywhere in the Philippines.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FEATURED PRODUCTS -->
+      <section class="featured-section">
+        <div class="section-container">
+          <span class="section-tag center">Featured Products</span>
+          <h2 class="center">Trusted Essentials, Ready to Ship</h2>
+
+          <div class="featured-grid">
+            <div class="mini-product-card">
+              <img src="assets/images/products/product1.jpg" alt="Walker" />
+              <span class="badge-mini badge-mobility">Mobility</span>
+              <h5>Lightweight Folding Aluminum Walker</h5>
+              <p>&#8369;2,950</p>
+            </div>
+            <div class="mini-product-card">
+              <img src="assets/images/products/product5.avif" alt="Ensure Gold" />
+              <span class="badge-mini badge-wellness">Wellness</span>
+              <h5>Ensure Gold Nutritional Milk</h5>
+              <p>&#8369;1,250</p>
+            </div>
+            <div class="mini-product-card">
+              <img src="assets/images/products/product7.jpg" alt="Blood Pressure Monitor" />
+              <span class="badge-mini badge-digital">Digital Health</span>
+              <h5>Automatic Blood Pressure Monitor</h5>
+              <p>&#8369;1,650</p>
+            </div>
+          </div>
+
+          <div class="center" style="margin-top: 32px">
+            <a href="products.html" class="hero-btn-primary">View All Products</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA BANNER -->
+      <section class="cta-banner">
+        <div class="section-container center">
+          <h2>Ready to Care for Them, From Anywhere?</h2>
+          <p>Join 500+ OFW families who trust KalingaCare with what matters most.</p>
+          <a href="register.html" class="hero-btn-primary">Get Started Today</a>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer id="contact">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4">
+            <h4 class="fw-bold">KalingaCare</h4>
+            <p>Care Beyond Borders</p>
+            <p>Helping Overseas Filipino Workers care for their loved ones through trusted healthcare products.</p>
+          </div>
+          <div class="col-md-4">
+            <h5>Quick Links</h5>
+            <ul class="list-unstyled">
+              <li><a href="index.html">Home</a></li>
+              <li><a href="products.html">Products</a></li>
+              <li><a href="#about">About</a></li>
+              <li><a href="#contact">Contact</a></li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h5>Contact Us</h5>
+            <p>support@kalingacare.com</p>
+            <p>(+63) 912-345-6789</p>
+            <p>Manila, Philippines</p>
+          </div>
+        </div>
+        <hr class="border-light" />
+        <div class="text-center">
+          <p class="mb-0">&copy; 2026 KalingaCare. All Rights Reserved.</p>
+        </div>
       </div>
-    </section>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="js/firebase.js"></script>
   </body>
 </html>
