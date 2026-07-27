@@ -7,9 +7,12 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   doc,
+  getDoc,
   setDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -19,6 +22,19 @@ const loginSection = document.getElementById("loginSection");
 const signupSection = document.getElementById("signupSection");
 const brandTitle = document.getElementById("brandTitle");
 const brandText = document.getElementById("brandText");
+
+// Sends the user back to wherever they came from after logging in — e.g.
+// products.js redirects here with ?redirect=products.html when a guest
+// tries to add to cart. Only allows a plain same-site .html path (no
+// "http://", no "//"), which guards against turning this into an open
+// redirect to an external site via a crafted URL.
+function getRedirectDestination() {
+  const redirect = new URLSearchParams(window.location.search).get("redirect");
+  if (redirect && /^[a-zA-Z0-9_-]+\.html$/.test(redirect)) {
+    return redirect;
+  }
+  return "index.html";
+}
 
 const COPY = {
   login: {
@@ -82,7 +98,7 @@ loginForm.addEventListener("submit", async (e) => {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    window.location.href = "index.html";
+    window.location.href = getRedirectDestination();
   } catch (err) {
     showError(loginError, friendlyAuthError(err.code));
   } finally {
@@ -129,7 +145,7 @@ signupForm.addEventListener("submit", async (e) => {
       createdAt: serverTimestamp(),
     });
 
-    window.location.href = "index.html";
+    window.location.href = getRedirectDestination();
   } catch (err) {
     showError(signupError, friendlyAuthError(err.code));
   } finally {
@@ -149,13 +165,61 @@ const switchLink = document.getElementById("navSwitchAuth");
 if (switchLink) {
   switchLink.addEventListener("click", (e) => {
     e.preventDefault();
-    const destination = switchLink.getAttribute("href");
+    // Preserve ?redirect=... across the switch, so someone who arrived at
+    // login.html?redirect=products.html and clicks over to "Create Account"
+    // still gets sent back to Products after signing up, not the homepage.
+    const destination = switchLink.getAttribute("href") + window.location.search;
     toggleMode();
     setTimeout(() => {
       window.location.href = destination;
     }, 900); // matches --slide-speed in auth.css
   });
 }
+
+/* ===== Google Sign-In =====
+   One handler for both buttons (login panel and signup panel) since the
+   flow is identical either way: Google's popup handles the actual
+   authentication, and we only need to create a Firestore profile doc if
+   this is the first time this account has signed in (new users skip the
+   normal createUserWithEmailAndPassword path entirely). */
+async function handleGoogleSignIn(button) {
+  const originalText = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = '<i class="bi bi-google"></i> Connecting...';
+
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    const userDocRef = doc(db, "users", user.uid);
+    const existing = await getDoc(userDocRef);
+
+    if (!existing.exists()) {
+      // First time this Google account has signed in — create the same
+      // Firestore profile the email/password signup flow creates.
+      await setDoc(userDocRef, {
+        fullName: user.displayName || "",
+        email: user.email || "",
+        role: "user",
+        createdAt: serverTimestamp(),
+      });
+    }
+
+    window.location.href = getRedirectDestination();
+  } catch (err) {
+    // auth/popup-closed-by-user just means they backed out — no error needed.
+    if (err.code !== "auth/popup-closed-by-user") {
+      const errorEl = document.getElementById("loginError") || document.getElementById("signupError");
+      if (errorEl) showError(errorEl, "Couldn't sign in with Google. Please try again.");
+    }
+    button.disabled = false;
+    button.innerHTML = originalText;
+  }
+}
+
+document.getElementById("googleSignInBtn")?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
+document.getElementById("googleSignUpBtn")?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
 
 function friendlyAuthError(code) {
   switch (code) {

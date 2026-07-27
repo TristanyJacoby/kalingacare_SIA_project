@@ -1,15 +1,11 @@
 // js/profile.js
-// KalingaCare — Profile page: account info, avatar, password, address, order history.
+// KalingaCare — Profile page: read-only account info, avatar upload,
+// read-only address display, order history. Editing name/email/address/
+// password/preferences all happens on settings.html instead — see
+// js/settings.js.
 
 import { auth, db } from "./firebase.js";
-import {
-  onAuthStateChanged,
-  updateProfile,
-  updatePassword,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  signOut,
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   doc,
   getDoc,
@@ -17,9 +13,9 @@ import {
   collection,
   query,
   where,
-  orderBy,
   getDocs,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { loadGoogleMaps, GOOGLE_MAPS_API_KEY, HQ_LOCATION, DEMO_MAP_ID } from "./site.js";
 
 const authGate = document.getElementById("authGate");
 const profileContent = document.getElementById("profileContent");
@@ -68,6 +64,30 @@ function renderAvatar(name, photoBase64) {
   }
 }
 
+function renderAddress(savedAddress) {
+  const el = document.getElementById("addressDisplay");
+  if (!savedAddress || !savedAddress.address) {
+    el.innerHTML = `
+      <p class="text-muted mb-0" style="font-size:0.88rem;">
+        No saved address yet. <a href="settings.html">Add one now</a> so checkout can fill it in automatically.
+      </p>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="info-field">
+      <span class="info-label">Recipient</span>
+      <span class="info-value">${savedAddress.recipient || "—"}</span>
+    </div>
+    <div class="info-field">
+      <span class="info-label">Address</span>
+      <span class="info-value">${savedAddress.address}</span>
+    </div>
+    <div class="info-field">
+      <span class="info-label">Contact Number</span>
+      <span class="info-value">${savedAddress.phone || "—"}</span>
+    </div>`;
+}
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     authGate.style.display = "block";
@@ -81,10 +101,12 @@ onAuthStateChanged(auth, async (user) => {
   const userSnap = await getDoc(doc(db, "users", user.uid));
   const userData = userSnap.exists() ? userSnap.data() : {};
   const role = userData.role || "user";
+  const fullName = user.displayName || userData.fullName || "";
 
-  document.getElementById("profileName").value = user.displayName || userData.fullName || "";
-  document.getElementById("profileEmail").value = user.email || "";
-  renderAvatar(user.displayName || userData.fullName, userData.photoBase64);
+  document.getElementById("displayName").textContent = fullName || "—";
+  document.getElementById("displayEmail").textContent = user.email || "—";
+  renderAvatar(fullName, userData.photoBase64);
+  renderAddress(userData.savedAddress);
 
   const badge = document.getElementById("roleBadge");
   badge.textContent = ROLE_LABELS[role] || "User";
@@ -96,13 +118,6 @@ onAuthStateChanged(auth, async (user) => {
       "Member since " + date.toLocaleDateString("en-PH", { year: "numeric", month: "long" });
   }
 
-  // Pre-fill saved delivery address, if any.
-  if (userData.savedAddress) {
-    document.getElementById("addrRecipient").value = userData.savedAddress.recipient || "";
-    document.getElementById("addrAddress").value = userData.savedAddress.address || "";
-    document.getElementById("addrPhone").value = userData.savedAddress.phone || "";
-  }
-
   loadOrderHistory(user.uid);
 });
 
@@ -110,51 +125,179 @@ async function loadOrderHistory(uid) {
   const list = document.getElementById("orderHistoryList");
   const noOrders = document.getElementById("noOrders");
 
-  const q = query(collection(db, "orders"), where("userId", "==", uid), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
+  try {
+    // Filtering by userId only (no orderBy) deliberately avoids needing a
+    // Firestore composite index — sorting happens client-side instead.
+    // Previously this used where()+orderBy() together, which silently
+    // failed without an index and made orders never show up here at all.
+    const q = query(collection(db, "orders"), where("userId", "==", uid));
+    const snap = await getDocs(q);
 
-  if (snap.empty) {
-    noOrders.classList.remove("d-none");
+    if (snap.empty) {
+      noOrders.classList.remove("d-none");
+      return;
+    }
+
+    const orders = snap.docs
+      .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+
+    const CANCELLABLE = ["pending", "processing"];
+
+    list.innerHTML = orders
+      .map((order) => {
+        const date = order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString("en-PH") : "";
+        const statusClass = (order.status || "Pending").toLowerCase();
+        const canCancel = CANCELLABLE.includes(statusClass);
+        return `
+          <div class="cart-item" style="align-items:flex-start; flex-direction:column;">
+            <div class="cart-item-info w-100">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <h5 class="mb-0">Order #${order.id.slice(0, 8).toUpperCase()}</h5>
+                <span class="status-badge status-${statusClass}">${order.status || "Pending"}</span>
+              </div>
+              <p class="text-muted mb-1" style="font-size:0.85rem;">${date} &middot; ${order.items.length} item${order.items.length > 1 ? "s" : ""}</p>
+              <p class="cart-item-price mb-0">${peso(order.total)}</p>
+              <div class="d-flex gap-3 mt-2">
+                <button type="button" class="remove-item track-order-btn" data-id="${order.id}" style="color: var(--primary);">
+                  <i class="bi bi-truck"></i> Track Order
+                </button>
+                ${canCancel ? `<button type="button" class="remove-item cancel-order-btn" data-id="${order.id}"><i class="bi bi-x-circle"></i> Cancel Order</button>` : ""}
+              </div>
+              <div class="tracking-panel d-none" id="tracking-${order.id}"></div>
+            </div>
+          </div>`;
+      })
+      .join("");
+
+    window.__ordersById = Object.fromEntries(orders.map((o) => [o.id, o]));
+  } catch (err) {
+    list.innerHTML = `<p class="text-muted">Couldn't load order history right now. Please try again later.</p>`;
+  }
+}
+
+const STATUS_STEPS = ["Pending", "Processing", "Shipped", "Delivered"];
+
+function renderTrackerStepper(status) {
+  if (status === "Cancelled") {
+    return `<div class="tracker-cancelled"><i class="bi bi-x-circle"></i> This order was cancelled.</div>`;
+  }
+  const currentIndex = STATUS_STEPS.indexOf(status);
+  return `
+    <div class="tracker-steps">
+      ${STATUS_STEPS.map((step, i) => {
+        const state = i < currentIndex ? "done" : i === currentIndex ? "done current" : "";
+        const icon = i === 0 ? "bi-receipt" : i === 1 ? "bi-box-seam" : i === 2 ? "bi-truck" : "bi-house-check";
+        return `
+          <div class="tracker-step ${state}">
+            <div class="tracker-dot"><i class="bi ${icon}"></i></div>
+            <div class="tracker-label">${step}</div>
+          </div>`;
+      }).join("")}
+    </div>`;
+}
+
+async function renderTrackingMap(containerId, destLat, destLng) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === "YOUR_GOOGLE_MAPS_API_KEY") {
+    el.innerHTML = `<div class="map-placeholder">Map needs a Google Maps API key (see js/site.js).</div>`;
+    return;
+  }
+  if (destLat == null || destLng == null) {
+    el.innerHTML = `<div class="map-placeholder">No saved location for this order (placed before the address picker was added, or address wasn't pinned on a map).</div>`;
     return;
   }
 
-  list.innerHTML = snap.docs
-    .map((docSnap) => {
-      const order = docSnap.data();
-      const date = order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString("en-PH") : "";
-      const statusClass = (order.status || "Pending").toLowerCase();
-      return `
-        <div class="cart-item" style="align-items:flex-start;">
-          <div class="cart-item-info">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <h5 class="mb-0">Order #${docSnap.id.slice(0, 8).toUpperCase()}</h5>
-              <span class="role-badge role-${statusClass === "pending" ? "user" : "staff"}">${order.status || "Pending"}</span>
-            </div>
-            <p class="text-muted mb-1" style="font-size:0.85rem;">${date} &middot; ${order.items.length} item${order.items.length > 1 ? "s" : ""}</p>
-            <p class="cart-item-price mb-0">${peso(order.total)}</p>
-          </div>
-        </div>`;
-    })
-    .join("");
+  let googleMaps, AdvancedMarkerElement, PinElement;
+  try {
+    googleMaps = await loadGoogleMaps();
+    ({ AdvancedMarkerElement, PinElement } = await googleMaps.importLibrary("marker"));
+  } catch (err) {
+    console.error("KalingaCare Maps error:", err);
+    el.innerHTML = `<div class="map-placeholder">Couldn't load the map right now.</div>`;
+    return;
+  }
+
+  const origin = { lat: HQ_LOCATION.lat, lng: HQ_LOCATION.lng };
+  const destination = { lat: destLat, lng: destLng };
+
+  const bounds = new googleMaps.LatLngBounds();
+  bounds.extend(origin);
+  bounds.extend(destination);
+
+  const map = new googleMaps.Map(el, {
+    mapId: DEMO_MAP_ID, // required for AdvancedMarkerElement to render at all
+    streetViewControl: false,
+    mapTypeControl: false,
+  });
+  map.fitBounds(bounds, 40);
+
+  // Blue pin for HQ, so it's visually distinct from the (default red)
+  // destination pin — AdvancedMarkerElement customizes color via a
+  // PinElement passed as `content`, unlike the old icon-URL approach.
+  const hqPin = new PinElement({ background: "#4285F4", borderColor: "#1a5fb4", glyphColor: "#ffffff" });
+  new AdvancedMarkerElement({
+    position: origin,
+    map,
+    title: HQ_LOCATION.name,
+    content: hqPin.element,
+  });
+  new AdvancedMarkerElement({
+    position: destination,
+    map,
+    title: "Delivery destination",
+  });
+
+  new googleMaps.Polyline({
+    path: [origin, destination],
+    geodesic: true,
+    strokeColor: "#67c8f7",
+    strokeOpacity: 0.8,
+    strokeWeight: 3,
+    map,
+  });
 }
 
-/* ===== Save name ===== */
-document.getElementById("profileForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errorEl = document.getElementById("profileError");
-  const successEl = document.getElementById("profileSuccess");
-  errorEl.classList.remove("show");
-  successEl.classList.remove("show");
+// Event delegation, since order cards are re-rendered on every load/cancel.
+document.getElementById("orderHistoryList").addEventListener("click", async (e) => {
+  const trackBtn = e.target.closest(".track-order-btn");
+  if (trackBtn) {
+    const orderId = trackBtn.dataset.id;
+    const panel = document.getElementById(`tracking-${orderId}`);
+    const order = window.__ordersById?.[orderId];
 
-  const fullName = document.getElementById("profileName").value.trim();
+    if (panel.classList.contains("d-none")) {
+      panel.classList.remove("d-none");
+      trackBtn.innerHTML = '<i class="bi bi-chevron-up"></i> Hide Tracking';
+      if (!panel.dataset.loaded) {
+        panel.dataset.loaded = "true";
+        panel.innerHTML = renderTrackerStepper(order?.status || "Pending") + `<div class="tracking-map mt-3" id="trackmap-${orderId}"></div>`;
+        renderTrackingMap(`trackmap-${orderId}`, order?.shippingInfo?.lat, order?.shippingInfo?.lng);
+      }
+    } else {
+      panel.classList.add("d-none");
+      trackBtn.innerHTML = '<i class="bi bi-truck"></i> Track Order';
+    }
+    return;
+  }
+
+  const btn = e.target.closest(".cancel-order-btn");
+  if (!btn) return;
+
+  if (!confirm("Cancel this order? This can't be undone.")) return;
+
+  btn.disabled = true;
+  btn.textContent = "Cancelling...";
 
   try {
-    await updateProfile(auth.currentUser, { displayName: fullName });
-    await updateDoc(doc(db, "users", auth.currentUser.uid), { fullName });
-    renderAvatar(fullName, currentPhotoBase64);
-    showMsg(successEl, "Profile updated.", false);
+    await updateDoc(doc(db, "orders", btn.dataset.id), { status: "Cancelled" });
+    loadOrderHistory(auth.currentUser.uid);
   } catch (err) {
-    showMsg(errorEl, "Couldn't save changes. Please try again.");
+    alert("Couldn't cancel this order. Please try again.");
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-x-circle"></i> Cancel Order';
   }
 });
 
@@ -204,7 +347,6 @@ document.getElementById("avatarUpload").addEventListener("change", async (e) => 
   if (!file) return;
 
   const errorEl = document.getElementById("profileError");
-  const successEl = document.getElementById("profileSuccess");
   errorEl.classList.remove("show");
 
   if (!file.type.startsWith("image/")) {
@@ -220,76 +362,8 @@ document.getElementById("avatarUpload").addEventListener("change", async (e) => 
     const dataUrl = await resizeImageToDataUrl(file);
     await updateDoc(doc(db, "users", auth.currentUser.uid), { photoBase64: dataUrl });
     renderAvatar(auth.currentUser.displayName, dataUrl);
-    showMsg(successEl, "Photo updated.", false);
   } catch (err) {
     showMsg(errorEl, err.message || "Couldn't update photo.");
-  }
-});
-
-/* ===== Change password =====
-   Firebase requires a "recent" login for sensitive account changes, so we
-   re-authenticate with the current password first before updatePassword()
-   is allowed to succeed. */
-document.getElementById("passwordForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errorEl = document.getElementById("passwordError");
-  const successEl = document.getElementById("passwordSuccess");
-  errorEl.classList.remove("show");
-  successEl.classList.remove("show");
-
-  const currentPassword = document.getElementById("currentPassword").value;
-  const newPassword = document.getElementById("newPassword").value;
-  const confirmNewPassword = document.getElementById("confirmNewPassword").value;
-  const form = e.target;
-  const submitBtn = form.querySelector(".btn-auth");
-
-  if (newPassword !== confirmNewPassword) {
-    showMsg(errorEl, "New passwords don't match.");
-    return;
-  }
-
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Updating...";
-
-  try {
-    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
-    await reauthenticateWithCredential(auth.currentUser, credential);
-    await updatePassword(auth.currentUser, newPassword);
-    form.reset();
-    showMsg(successEl, "Password updated.", false);
-  } catch (err) {
-    if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
-      showMsg(errorEl, "Current password is incorrect.");
-    } else if (err.code === "auth/weak-password") {
-      showMsg(errorEl, "New password should be at least 6 characters.");
-    } else {
-      showMsg(errorEl, "Couldn't update password. Please try again.");
-    }
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Update Password";
-  }
-});
-
-/* ===== Delivery address ===== */
-document.getElementById("addressForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errorEl = document.getElementById("addressError");
-  const successEl = document.getElementById("addressSuccess");
-  errorEl.classList.remove("show");
-  successEl.classList.remove("show");
-
-  const savedAddress = {
-    recipient: document.getElementById("addrRecipient").value.trim(),
-    address: document.getElementById("addrAddress").value.trim(),
-    phone: document.getElementById("addrPhone").value.trim(),
-  };
-
-  try {
-    await updateDoc(doc(db, "users", auth.currentUser.uid), { savedAddress });
-    showMsg(successEl, "Address saved.", false);
-  } catch (err) {
-    showMsg(errorEl, "Couldn't save address. Please try again.");
   }
 });
 

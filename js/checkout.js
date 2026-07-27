@@ -46,6 +46,7 @@ function renderSummary(cart) {
 }
 
 let currentUser = null;
+let savedAddressCoords = { lat: null, lng: null };
 
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
@@ -75,6 +76,7 @@ onAuthStateChanged(auth, (user) => {
       document.getElementById("ckRecipient").value = savedAddress.recipient || "";
       document.getElementById("ckAddress").value = savedAddress.address || "";
       document.getElementById("ckPhone").value = savedAddress.phone || "";
+      savedAddressCoords = { lat: savedAddress.lat ?? null, lng: savedAddress.lng ?? null };
     }
   });
 });
@@ -109,6 +111,8 @@ document.getElementById("checkoutForm").addEventListener("submit", async (e) => 
         address: document.getElementById("ckAddress").value.trim(),
         phone: document.getElementById("ckPhone").value.trim(),
         paymentMethod: document.getElementById("ckPayment").value,
+        lat: savedAddressCoords.lat,
+        lng: savedAddressCoords.lng,
       },
       createdAt: serverTimestamp(),
     });

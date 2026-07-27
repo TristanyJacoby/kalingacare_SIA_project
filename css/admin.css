@@ -209,19 +209,6 @@ body.admin-body {
 .icon-btn:hover { color: var(--primary); }
 .icon-btn.danger:hover { color: #c0392b; }
 
-.status-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 30px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-.status-pending { background: #fff2cc; color: #916f00; }
-.status-processing { background: var(--primary-light); color: #0b5e83; }
-.status-shipped { background: #d9f3fd; color: #218bc2; }
-.status-delivered { background: #e6f4ea; color: #1e7e34; }
-.status-cancelled { background: #fde8e6; color: #c0392b; }
-
 .admin-form input,
 .admin-form select,
 .admin-form textarea {
