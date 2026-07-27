@@ -15,8 +15,32 @@
 // someone's logged in — that's the only real overlap with Firebase.
 
 import { auth, db } from "./firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+  doc,
+  getDoc,
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+/* ===== Toast notifications =====
+   Small, auto-dismissing message that appears at the bottom of the screen —
+   used e.g. by products.js before redirecting a guest to log in, so the
+   redirect doesn't feel like a silent, unexplained jump. */
+export function showToast(message, duration = 1800) {
+  const toast = document.createElement("div");
+  toast.className = "site-toast";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add("show"));
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
 
 /* ===== Cart storage (shared by products.js / cart.js / checkout.js) ===== */
 
@@ -57,10 +81,23 @@ onAuthStateChanged(auth, async (user) => {
   const authLinks = document.getElementById("navAuthLinks");
   const cartWrap = document.getElementById("navCartWrap");
   const adminLink = document.getElementById("navAdminLink");
+  const ctaBtn = document.getElementById("ctaGetStartedBtn");
 
   if (authLinks) authLinks.classList.toggle("d-none", !!user);
   if (cartWrap) cartWrap.classList.toggle("d-none", !user);
   updateNavCartBadge();
+
+  // The home page's "Get Started Today" CTA shouldn't send an already
+  // logged-in user back to the registration form.
+  if (ctaBtn) {
+    if (user) {
+      ctaBtn.href = "products.html";
+      ctaBtn.textContent = "Shop Now";
+    } else {
+      ctaBtn.href = "register.html";
+      ctaBtn.textContent = "Get Started Today";
+    }
+  }
 
   if (adminLink) {
     if (!user) {
@@ -69,12 +106,119 @@ onAuthStateChanged(auth, async (user) => {
     }
     const snap = await getDoc(doc(db, "users", user.uid));
     const role = snap.exists() ? snap.data().role : "user";
-    adminLink.classList.toggle("d-none", !["staff", "admin", "superadmin"].includes(role));
+    adminLink.classList.toggle(
+      "d-none",
+      !["staff", "admin", "superadmin"].includes(role),
+    );
   }
 });
 
 window.addEventListener("storage", (e) => {
   if (e.key === CART_KEY) updateNavCartBadge();
+});
+
+/* ===== Google Maps =====
+   IMPORTANT: replace this with your own key from Google Cloud Console
+   (enable "Maps JavaScript API" and "Geocoding API", then restrict the key
+   to your domain under Application restrictions -> HTTP referrers). This
+   project's Firebase key is safe to leave public because Firestore rules
+   are what actually protect your data — a Google Maps key works
+   differently and should be restricted, since anyone using it consumes
+   your quota. Get one at: https://console.cloud.google.com/google/maps-apis */
+export const GOOGLE_MAPS_API_KEY = "AIzaSyBBqPEJgekBOairKL01wi9ics8UilatFec";
+
+// KalingaCare HQ — TIP Quezon City (938 Aurora Blvd, Cubao). Approximate
+// coordinates for the campus; worth double-checking against Google Maps
+// once you have your API key and nudging this if it's off.
+export const HQ_LOCATION = {
+  name: "KalingaCare HQ — TIP Quezon City",
+  address: "938 Aurora Blvd, Cubao, Quezon City, Metro Manila, Philippines",
+  lat: 14.6198,
+  lng: 121.0535,
+};
+
+// DEMO_MAP_ID is Google's own sanctioned placeholder Map ID for testing/
+// coursework — used directly in their official docs examples. AdvancedMarkerElement
+// (see below) requires SOME Map ID to render at all; this avoids an extra
+// Cloud Console setup step (Map Management) that isn't necessary for this
+// project. Swappable for a real one later if you ever want it.
+export const DEMO_MAP_ID = "DEMO_MAP_ID";
+
+let googleMapsPromise = null;
+
+// This is Google's own official bootstrap loader snippet (documented at
+// developers.google.com/maps/documentation/javascript/load-maps-js-api),
+// just wrapped in a function instead of pasted as an inline <script> tag.
+// It's what actually DEFINES google.maps.importLibrary — a plain
+// <script src="https://maps.googleapis.com/maps/api/js?..."> tag (what
+// this function used to do) loads the API fine but never defines
+// importLibrary at all, which is why calling it threw "not a function."
+function installGoogleMapsBootstrap() {
+  if (window.google?.maps?.importLibrary) return;
+  ((g) => {
+    let h, a, k, b;
+    const p = "The Google Maps JavaScript API",
+      c = "google",
+      l = "importLibrary",
+      q = "__ib__",
+      m = document;
+    b = window;
+    b = b[c] || (b[c] = {});
+    const d = b.maps || (b.maps = {}),
+      r = new Set(),
+      e = new URLSearchParams(),
+      u = () =>
+        h ||
+        (h = new Promise(async (f, n) => {
+          await (a = m.createElement("script"));
+          e.set("libraries", [...r] + "");
+          for (k in g)
+            e.set(
+              k.replace(/[A-Z]/g, (t) => "_" + t[0].toLowerCase()),
+              g[k],
+            );
+          e.set("callback", c + ".maps." + q);
+          a.src = `https://maps.${c}apis.com/maps/api/js?` + e;
+          d[q] = f;
+          a.onerror = () => (h = n(Error(p + " could not load.")));
+          a.nonce = m.querySelector("script[nonce]")?.nonce || "";
+          m.head.append(a);
+        }));
+    d[l]
+      ? console.warn(p + " only loads once. Ignoring:", g)
+      : (d[l] = (f, ...n) => r.add(f) && u().then(() => d[l](f, ...n)));
+  })({
+    key: GOOGLE_MAPS_API_KEY,
+    v: "weekly",
+  });
+}
+
+export async function loadGoogleMaps() {
+  if (googleMapsPromise) return googleMapsPromise;
+
+  googleMapsPromise = (async () => {
+    installGoogleMapsBootstrap();
+    // Requesting the "maps" library is what actually triggers the script
+    // to load (see u() above) and populates google.maps.Map, LatLngBounds,
+    // Polyline, etc. Callers that need marker/places/geocoding still
+    // import those specifically themselves.
+    await google.maps.importLibrary("maps");
+    return google.maps;
+  })();
+
+  return googleMapsPromise;
+}
+
+/* ===== Log Out (nav dropdown) =====
+   One handler here instead of duplicating signOut logic into every page,
+   since the Account/Settings/Log Out dropdown is now in the shared navbar
+   markup on every customer-facing page. */
+document.addEventListener("click", async (e) => {
+  const logoutLink = e.target.closest("#navLogoutLink");
+  if (!logoutLink) return;
+  e.preventDefault();
+  await signOut(auth);
+  window.location.href = "index.html";
 });
 
 /* ===== Password show/hide toggle =====

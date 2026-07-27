@@ -148,7 +148,6 @@ async function initDashboard() {
 function initProducts(role) {
   const tbody = document.querySelector("#adminProductsTable tbody");
   const form = document.getElementById("productForm");
-  const seedBtn = document.getElementById("seedProductsBtn");
   const editingIdField = document.getElementById("productEditingId");
   const formTitle = document.getElementById("productFormTitle");
   const cancelEditBtn = document.getElementById("cancelEditBtn");
@@ -157,7 +156,7 @@ function initProducts(role) {
 
   onSnapshot(query(productsRef, orderBy("name")), (snap) => {
     if (snap.empty) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No products yet — use "Seed Sample Products" to get started.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No products yet — add one using the form.</td></tr>`;
       return;
     }
     tbody.innerHTML = snap.docs
@@ -241,86 +240,6 @@ function initProducts(role) {
       editingIdField.value = "";
       formTitle.textContent = "Add Product";
       cancelEditBtn.classList.add("d-none");
-    });
-  }
-
-  if (seedBtn) {
-    seedBtn.addEventListener("click", async () => {
-      const sample = [
-        // ===== Category 1: Mobility & Home Safety =====
-        // Walking Aids
-        { name: "Folding Walker", category: "mobility", subcategory: "Walking Aids", price: 2950, stock: 20, img: "assets/images/products/product1.jpg" },
-        { name: "Quad Cane", category: "mobility", subcategory: "Walking Aids", price: 1450, stock: 25, img: "assets/images/products/product2.jpg" },
-        { name: "4-Wheel Rollator", category: "mobility", subcategory: "Walking Aids", price: 5200, stock: 12, img: "assets/images/products/product3.jpg" },
-        { name: "Manual Wheelchair", category: "mobility", subcategory: "Walking Aids", price: 6500, stock: 8, img: "assets/images/products/product4.jpg" },
-        { name: "Underarm Crutches", category: "mobility", subcategory: "Walking Aids", price: 1200, stock: 22, img: "assets/images/products/product5.jpg" },
-        // Bathroom Safety
-        { name: "Suction Grab Bar", category: "mobility", subcategory: "Bathroom Safety", price: 850, stock: 30, img: "assets/images/products/product6.jpg" },
-        { name: "Shower Bench", category: "mobility", subcategory: "Bathroom Safety", price: 2350, stock: 15, img: "assets/images/products/product7.jpg" },
-        { name: "Elevated Toilet Seat", category: "mobility", subcategory: "Bathroom Safety", price: 1650, stock: 18, img: "assets/images/products/product8.jpg" },
-        { name: "Anti-Skid Bath Mat", category: "mobility", subcategory: "Bathroom Safety", price: 650, stock: 35, img: "assets/images/products/product9.jpg" },
-        { name: "Bedside Commode Chair", category: "mobility", subcategory: "Bathroom Safety", price: 3200, stock: 10, img: "assets/images/products/product10.jpg" },
-        // Bedroom Comfort & Safety
-        { name: "Ripple Mattress", category: "mobility", subcategory: "Bedroom Comfort & Safety", price: 4800, stock: 10, img: "assets/images/products/product11.jpg" },
-        { name: "Bed Assist Rail", category: "mobility", subcategory: "Bedroom Comfort & Safety", price: 1850, stock: 18, img: "assets/images/products/product12.jpg" },
-        { name: "Donut Seat Cushion", category: "mobility", subcategory: "Bedroom Comfort & Safety", price: 950, stock: 25, img: "assets/images/products/product13.jpg" },
-        { name: "Overbed Table", category: "mobility", subcategory: "Bedroom Comfort & Safety", price: 3600, stock: 9, img: "assets/images/products/product14.jpg" },
-        { name: "LED Night Lights", category: "mobility", subcategory: "Bedroom Comfort & Safety", price: 780, stock: 40, img: "assets/images/products/product15.jpg" },
-
-        // ===== Category 2: Wellness & Daily Medical Care =====
-        // Daily Hygiene & Incontinence
-        { name: "Adult Diapers", category: "wellness", subcategory: "Daily Hygiene & Incontinence", price: 780, stock: 50, img: "assets/images/products/product16.jpg" },
-        { name: "Disposable Underpads", category: "wellness", subcategory: "Daily Hygiene & Incontinence", price: 650, stock: 40, img: "assets/images/products/product17.jpg" },
-        { name: "Adult Wet Wipes", category: "wellness", subcategory: "Daily Hygiene & Incontinence", price: 420, stock: 60, img: "assets/images/products/product18.jpg" },
-        { name: "Waterless Body Wash", category: "wellness", subcategory: "Daily Hygiene & Incontinence", price: 580, stock: 35, img: "assets/images/products/product19.jpg" },
-        { name: "Skin Barrier Cream", category: "wellness", subcategory: "Daily Hygiene & Incontinence", price: 380, stock: 45, img: "assets/images/products/product20.jpg" },
-        // Specialized Nutrition & Supplementation
-        { name: "Ensure Gold Milk", category: "wellness", subcategory: "Specialized Nutrition & Supplementation", price: 1250, stock: 40, img: "assets/images/products/product21.jpg" },
-        { name: "Glucerna Milk", category: "wellness", subcategory: "Specialized Nutrition & Supplementation", price: 1450, stock: 30, img: "assets/images/products/product22.jpg" },
-        { name: "Food Thickener Powder", category: "wellness", subcategory: "Specialized Nutrition & Supplementation", price: 850, stock: 25, img: "assets/images/products/product23.jpg" },
-        { name: "Smart Pill Organizer", category: "wellness", subcategory: "Specialized Nutrition & Supplementation", price: 780, stock: 28, img: "assets/images/products/product24.jpg" },
-        { name: "Pill Crusher & Cutter", category: "wellness", subcategory: "Specialized Nutrition & Supplementation", price: 450, stock: 32, img: "assets/images/products/product25.jpg" },
-        // Support & Apparel
-        { name: "Compression Socks", category: "wellness", subcategory: "Support & Apparel", price: 550, stock: 35, img: "assets/images/products/product26.jpg" },
-        { name: "Adaptive Dressing Gown", category: "wellness", subcategory: "Support & Apparel", price: 890, stock: 20, img: "assets/images/products/product27.jpg" },
-        { name: "Cervical Pillow", category: "wellness", subcategory: "Support & Apparel", price: 980, stock: 25, img: "assets/images/products/product28.jpg" },
-        { name: "Magnetic Knee Brace", category: "wellness", subcategory: "Support & Apparel", price: 750, stock: 22, img: "assets/images/products/product29.jpg" },
-        { name: "Arm Sling", category: "wellness", subcategory: "Support & Apparel", price: 620, stock: 24, img: "assets/images/products/product30.jpg" },
-
-        // ===== Category 3: Digital Health & Monitoring =====
-        // Vital Signs Trackers
-        { name: "Blood Pressure Monitor", category: "digital", subcategory: "Vital Signs Trackers", price: 1650, stock: 18, img: "assets/images/products/product31.jpg" },
-        { name: "Pulse Oximeter", category: "digital", subcategory: "Vital Signs Trackers", price: 950, stock: 22, img: "assets/images/products/product32.jpg" },
-        { name: "Infrared Thermometer", category: "digital", subcategory: "Vital Signs Trackers", price: 890, stock: 28, img: "assets/images/products/product33.jpg" },
-        { name: "Glucometer Kit", category: "digital", subcategory: "Vital Signs Trackers", price: 1450, stock: 20, img: "assets/images/products/product34.jpg" },
-        { name: "Smart Watch", category: "digital", subcategory: "Vital Signs Trackers", price: 2800, stock: 12, img: "assets/images/products/product35.jpg" },
-        // Physical Therapy & Rehab
-        { name: "Pedal Exerciser", category: "digital", subcategory: "Physical Therapy & Rehab", price: 1850, stock: 15, img: "assets/images/products/product36.jpg" },
-        { name: "Resistance Bands Set", category: "digital", subcategory: "Physical Therapy & Rehab", price: 650, stock: 30, img: "assets/images/products/product37.jpg" },
-        { name: "Hand Grip Strengthener", category: "digital", subcategory: "Physical Therapy & Rehab", price: 480, stock: 35, img: "assets/images/products/product38.jpg" },
-        { name: "Hot & Cold Gel Pack", category: "digital", subcategory: "Physical Therapy & Rehab", price: 550, stock: 30, img: "assets/images/products/product39.jpg" },
-        { name: "TENS Machine", category: "digital", subcategory: "Physical Therapy & Rehab", price: 2200, stock: 10, img: "assets/images/products/product40.jpg" },
-        // Emergency Assistance
-        { name: "Caregiver Pager System", category: "digital", subcategory: "Emergency Assistance", price: 2450, stock: 14, img: "assets/images/products/product41.jpg" },
-        { name: "Emergency Siren Alarm", category: "digital", subcategory: "Emergency Assistance", price: 650, stock: 28, img: "assets/images/products/product42.jpg" },
-        { name: "Oxygen Concentrator", category: "digital", subcategory: "Emergency Assistance", price: 8500, stock: 5, img: "assets/images/products/product43.jpg" },
-        { name: "Medical Alert Bracelet", category: "digital", subcategory: "Emergency Assistance", price: 1200, stock: 20, img: "assets/images/products/product44.jpg" },
-        { name: "First Aid Kit", category: "digital", subcategory: "Emergency Assistance", price: 1250, stock: 30, img: "assets/images/products/product45.jpg" },
-      ];
-
-      const existing = await getDocs(productsRef);
-      const existingNames = new Set(existing.docs.map((d) => d.data().name));
-      const toAdd = sample.filter((p) => !existingNames.has(p.name));
-
-      if (toAdd.length === 0) {
-        alert("All 45 catalog products are already in Firestore — nothing to add.");
-        return;
-      }
-
-      for (const p of toAdd) {
-        await addDoc(productsRef, { ...p, createdAt: serverTimestamp() });
-      }
-      alert(`Added ${toAdd.length} product(s).`);
     });
   }
 }

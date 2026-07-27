@@ -19,6 +19,7 @@ html {
   --primary: #67c8f7;
   --primary-rgb: 103, 200, 247;
   --primary-light: #beebff;
+  --primary-dark: #3fa8e0;
 
   --pink: #f8b4d9;
   --pink-rgb: 248, 180, 217;
@@ -34,6 +35,59 @@ html {
   --radius-pill: 999px;
   --shadow-soft: 0 8px 24px rgba(50, 116, 153, 0.08);
   --shadow-hover: 0 18px 35px rgba(50, 116, 153, 0.15);
+
+  /* Theme-aware surfaces. --dark/--gray/--line are text/border colors that
+     flip in dark mode; --footer-bg is intentionally SEPARATE from --dark
+     (rather than reusing it) so the footer can stay a deliberate dark navy
+     in both themes without being pulled along when --dark flips to a light
+     text color for dark mode. */
+  --surface: #ffffff;
+  --input-bg: #fafeff;
+  --navbar-bg: rgba(255, 255, 255, 0.92);
+  --footer-bg: #1e293b;
+}
+
+[data-theme="dark"] {
+  --dark: #e2e8f0;
+  --gray: #94a3b8;
+  --line: #2a3441;
+  --surface: #1e293b;
+  --input-bg: #16223a;
+  --navbar-bg: rgba(15, 23, 42, 0.92);
+  --footer-bg: #0b1220;
+
+  /* Bootstrap 5.3 cards/headings/inputs use their OWN color system
+     (--bs-card-color, --bs-heading-color, etc.) — completely separate from
+     our custom --dark/--surface variables above. Without this, Bootstrap
+     keeps rendering near-black text on our now-dark card backgrounds,
+     which is why product names etc. were nearly invisible. */
+  --bs-body-color: var(--dark);
+  --bs-heading-color: var(--dark);
+  --bs-card-color: var(--dark);
+  --bs-card-bg: var(--surface);
+  --bs-card-cap-bg: var(--surface);
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(103, 200, 247, 0.12), transparent 35%),
+    radial-gradient(circle at 85% 80%, rgba(248, 180, 217, 0.1), transparent 35%),
+    linear-gradient(180deg, #0f172a, #111827);
+  background-attachment: fixed;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  color: var(--dark);
+  background-color: var(--input-bg);
+}
+[data-theme="dark"] .form-control::placeholder,
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--gray);
+  opacity: 1;
 }
 
 body {
@@ -46,6 +100,16 @@ body {
     radial-gradient(circle at 15% 20%, rgba(125, 211, 252, 0.22), transparent 35%),
     radial-gradient(circle at 85% 80%, rgba(248, 180, 217, 0.2), transparent 35%),
     linear-gradient(180deg, #ffffff, #fbfeff);
+  background-attachment: fixed;
+}
+
+/* background-attachment: fixed is unreliable on iOS Safari (janky repaint
+   on scroll), so touch devices fall back to the normal scrolling background
+   instead — the seam is far less noticeable on a small screen anyway. */
+@media (hover: none) and (pointer: coarse) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 a {
@@ -71,7 +135,7 @@ header {
 
 .navbar {
   padding: 14px 0;
-  background: rgba(255, 255, 255, 0.92) !important;
+  background: var(--navbar-bg) !important;
   backdrop-filter: blur(6px);
   box-shadow: 0 2px 16px rgba(30, 41, 59, 0.06) !important;
 }
@@ -82,6 +146,16 @@ header {
   font-weight: 700;
   color: var(--primary) !important;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.navbar-logo-img {
+  height: 32px;
+  width: 32px;
+  object-fit: contain;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
 .navbar-brand i {
@@ -140,7 +214,10 @@ header {
   box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.35);
 }
 
-/* Pill CTA button — used for "Get Started", "Add to Cart", filters, etc. */
+/* Pill CTA button — used for "Get Started", "Add to Cart", filters, etc.
+   Solid color on purpose: the rainbow gradient is reserved for the hero
+   button and CTA banner only, so it reads as a deliberate accent instead
+   of the default look of every button on the site. */
 .signup-btn,
 .btn-success {
   display: inline-flex;
@@ -150,15 +227,16 @@ header {
   border: 0 !important;
   padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 34px);
   border-radius: var(--radius-pill);
-  background: var(--gradient) !important;
+  background: var(--primary) !important;
   color: #fff !important;
   font-weight: 600;
   transition: 0.3s ease;
 }
 .signup-btn:hover,
 .btn-success:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(var(--primary-rgb), 0.35);
+  background: var(--primary-dark) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.3);
 }
 
 .btn {
@@ -174,6 +252,44 @@ header {
 }
 .btn-outline-success:hover {
   background: var(--primary-light) !important;
+}
+
+.account-menu-btn {
+  background: none;
+  border: none;
+  padding: 10px 8px;
+  color: var(--dark);
+  line-height: 1;
+  transition: 0.2s;
+}
+.account-menu-btn:hover,
+.account-menu-btn:focus {
+  color: var(--primary);
+}
+.account-menu-btn::after {
+  display: none; /* hide Bootstrap's default caret — icon-only trigger */
+}
+
+.dropdown-menu {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(30, 41, 59, 0.12);
+  padding: 6px;
+}
+.dropdown-item {
+  color: var(--dark);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background: var(--input-bg);
+  color: var(--primary);
+}
+.dropdown-divider {
+  border-color: var(--line);
 }
 
 .navbar .badge,
@@ -194,6 +310,130 @@ header {
   }
 }
 
+/* Toast notifications (see site.js showToast) */
+.site-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--footer-bg);
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.site-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Toggle switch — used on settings.html (Dark Mode, Notifications) */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  flex-shrink: 0;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch .slider {
+  position: absolute;
+  inset: 0;
+  background: var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: 0.25s;
+}
+.switch .slider::before {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.25s;
+}
+.switch input:checked + .slider {
+  background: var(--primary);
+}
+.switch input:checked + .slider::before {
+  transform: translateX(20px);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.settings-row:last-child {
+  border-bottom: none;
+}
+.settings-row h6 {
+  margin: 0 0 2px;
+  color: var(--dark);
+  font-size: 0.95rem;
+}
+.settings-row p {
+  margin: 0;
+  color: var(--gray);
+  font-size: 0.8rem;
+}
+
+/* Read-only display fields — profile.html shows info this way; editing
+   happens on settings.html instead. */
+.info-field {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.info-field:last-of-type {
+  border-bottom: none;
+}
+.info-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--gray);
+  margin-bottom: 2px;
+}
+.info-value {
+  display: block;
+  color: var(--dark);
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+/* Order status badges — shared by admin/orders.html and profile.html */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.status-pending { background: #fff2cc; color: #916f00; }
+.status-processing { background: var(--primary-light); color: #0b5e83; }
+.status-shipped { background: #d9f3fd; color: #218bc2; }
+.status-delivered { background: #e6f4ea; color: #1e7e34; }
+.status-cancelled { background: #fde8e6; color: #c0392b; }
+
 /* Role badges — shared by profile.html and the admin pages */
 .role-badge {
   display: inline-block;
@@ -209,21 +449,25 @@ header {
 .role-badge.role-admin { background: var(--pink-light); color: #8d4c7b; }
 .role-badge.role-superadmin { background: #fff2cc; color: #916f00; }
 
-/* ============ FOOTER (shared) ============ */
+/* ============ FOOTER (shared) ============
+   Solid dark, not gradient — the CTA banner right above it is already the
+   page's one "loud" gradient moment; stacking a second one here just made
+   it feel like more of the same instead of a deliberate close to the page. */
 footer {
   margin-top: 3rem;
   padding: 2.5rem 0 1.5rem;
-  background: var(--gradient);
-  color: #12283a;
+  background: var(--footer-bg);
+  color: #cbd5e1;
 }
 footer a {
   text-decoration: none;
-  color: #12283a;
+  color: #cbd5e1;
 }
 footer a:hover {
-  color: #fff;
+  color: var(--primary-light);
 }
 footer h4,
 footer h5 {
   margin-bottom: 0.8rem;
+  color: #fff;
 }
