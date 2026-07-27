@@ -4,12 +4,16 @@
 // Previously this page rendered 9 hardcoded product cards straight in the
 // HTML. It now fetches live from the Firestore "products" collection (the
 // same collection admin/products.html manages), so adding/editing/deleting
-// a product in the admin panel actually shows up here. If the collection is
-// empty, use the "Seed Sample Products" button on admin/products.html.
+// a product in the admin panel actually shows up here.
 
-import { db } from "./firebase.js";
-import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { loadCart, saveCart } from "./site.js";
+import { auth, db } from "./firebase.js";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { loadCart, saveCart, showToast } from "./site.js";
 
 const grid = document.getElementById("productsGrid");
 const loadingEl = document.getElementById("productsLoading");
@@ -17,8 +21,16 @@ const emptyEl = document.getElementById("productsEmpty");
 const searchInput = document.getElementById("searchInput");
 const categoryButtons = document.querySelectorAll(".category-btn");
 
-const CATEGORY_LABELS = { mobility: "Mobility", wellness: "Wellness", digital: "Digital Health" };
-const CATEGORY_BADGE_CLASS = { mobility: "bg-success", wellness: "bg-primary", digital: "bg-warning text-dark" };
+const CATEGORY_LABELS = {
+  mobility: "Mobility",
+  wellness: "Wellness",
+  digital: "Digital Health",
+};
+const CATEGORY_BADGE_CLASS = {
+  mobility: "bg-success",
+  wellness: "bg-primary",
+  digital: "bg-warning text-dark",
+};
 
 let allProducts = [];
 
@@ -27,7 +39,9 @@ function peso(amount) {
 }
 
 function renderProducts() {
-  const activeFilter = document.querySelector(".category-btn.btn-success")?.dataset.filter || "all";
+  const activeFilter =
+    document.querySelector(".category-btn.btn-success")?.dataset.filter ||
+    "all";
   const keyword = (searchInput.value || "").toLowerCase();
 
   const visible = allProducts.filter((p) => {
@@ -96,6 +110,18 @@ grid.addEventListener("click", (e) => {
   const button = e.target.closest(".add-to-cart-btn");
   if (!button) return;
 
+  // Guests get sent to log in first, rather than silently building a cart
+  // that isn't tied to any account. A brief toast explains why instead of
+  // an unexplained jump, and ?redirect=products.html sends them back here
+  // (rather than the homepage) once they're logged in.
+  if (!auth.currentUser) {
+    showToast("Please log in to add items to your cart.");
+    setTimeout(() => {
+      window.location.href = "login.html?redirect=products.html";
+    }, 1200);
+    return;
+  }
+
   const product = allProducts.find((p) => p.id === button.dataset.id);
   if (!product) return;
 
@@ -104,7 +130,13 @@ grid.addEventListener("click", (e) => {
   if (existing) {
     existing.qty += 1;
   } else {
-    cart.push({ id: product.id, name: product.name, price: product.price, img: product.img, qty: 1 });
+    cart.push({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      img: product.img,
+      qty: 1,
+    });
   }
   saveCart(cart);
 

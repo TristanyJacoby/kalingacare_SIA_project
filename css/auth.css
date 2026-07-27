@@ -46,7 +46,7 @@ body {
 .panel-form {
   right: 0;
   z-index: 4;
-  background: #fff;
+  background: var(--surface);
 }
 
 /* Slide logic */
@@ -87,7 +87,7 @@ body {
   border: 1.5px solid var(--line);
   border-radius: 10px;
   padding: 12px 16px;
-  background: #fafeff;
+  background: var(--input-bg);
   margin-bottom: 16px;
 }
 .form-field i {
@@ -122,7 +122,7 @@ body {
   padding: 14px;
   border: none;
   border-radius: 10px;
-  background: var(--gradient);
+  background: var(--primary);
   color: #fff;
   font-family: "Poppins", sans-serif;
   font-weight: 600;
@@ -131,13 +131,62 @@ body {
   transition: 0.3s ease;
 }
 .btn-auth:hover {
+  background: var(--primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(var(--primary-rgb), 0.35);
+  box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.3);
 }
 .btn-auth:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--gray);
+  font-size: 0.78rem;
+  margin: 18px 0;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--line);
+}
+.auth-divider span {
+  padding: 0 12px;
+}
+
+.btn-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--dark);
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+.btn-google i {
+  color: #ea4335;
+  font-size: 1.1rem;
+}
+.btn-google:hover {
+  border-color: var(--primary);
+  background: var(--input-bg);
+}
+.btn-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .form-links {
