@@ -1,9 +1,19 @@
 <!doctype html>
 <html lang="en">
-  <head>
+    <head>
+    <!-- Applied before anything else paints, so a saved dark-mode
+         preference doesn't flash as light mode for a split second. -->
+    <script>
+      (function () {
+        if (localStorage.getItem("kalingacare_theme") === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>KalingaCare | Login</title>
+    <link rel="icon" type="image/png" href="assets/images/logo.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,7 +32,7 @@
     <header>
       <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container">
-          <a class="navbar-brand logo" href="index.html">KalingaCare</a>
+          <a class="navbar-brand logo" href="index.html"><img src="assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
 
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
@@ -44,7 +54,17 @@
               </div>
               <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
                 <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
-                <a href="profile.html" class="login-btn" title="My Profile"><i class="bi bi-person-circle fs-5"></i></a>
+                <div class="dropdown">
+                  <button class="account-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="My Account">
+                    <i class="bi bi-person-circle fs-5"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="profile.html"><i class="bi bi-person me-2"></i>Account</a></li>
+                    <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li><a class="dropdown-item" href="#" id="navLogoutLink"><i class="bi bi-box-arrow-right me-2"></i>Log Out</a></li>
+                  </ul>
+                </div>
                 <a href="cart.html" class="btn btn-success position-relative">
                   <i class="bi bi-cart3"></i> Cart
                   <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="navCartCount">0</span>
@@ -83,6 +103,10 @@
               </div>
               <button type="submit" class="btn-auth">Sign In</button>
             </form>
+            <div class="auth-divider"><span>or</span></div>
+            <button type="button" class="btn-google" id="googleSignInBtn">
+              <i class="bi bi-google"></i> Continue with Google
+            </button>
             <div class="form-links">
               <p>Don't have an account? <a onclick="toggleMode()">Create Account</a></p>
             </div>
@@ -118,6 +142,10 @@
               </div>
               <button type="submit" class="btn-auth">Sign Up</button>
             </form>
+            <div class="auth-divider"><span>or</span></div>
+            <button type="button" class="btn-google" id="googleSignUpBtn">
+              <i class="bi bi-google"></i> Continue with Google
+            </button>
             <div class="form-links">
               <p>Already a member? <a onclick="toggleMode()">Sign In</a></p>
             </div>
