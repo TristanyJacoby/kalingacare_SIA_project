@@ -13,6 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const authGate = document.getElementById("authGate");
+const staffGate = document.getElementById("staffGate");
 const emptyGate = document.getElementById("emptyGate");
 const successGate = document.getElementById("successGate");
 const checkoutContent = document.getElementById("checkoutContent");
@@ -23,6 +24,7 @@ function peso(amount) {
 
 function hideAllGates() {
   authGate.style.display = "none";
+  staffGate.style.display = "none";
   emptyGate.style.display = "none";
   successGate.style.display = "none";
   checkoutContent.style.display = "none";
@@ -41,19 +43,33 @@ function renderSummary(cart) {
     .join("");
   document.getElementById("ckSubtotal").textContent = peso(subtotal);
   document.getElementById("ckShipping").textContent = peso(SHIPPING_FEE);
-  document.getElementById("ckTotal").textContent = peso(subtotal + SHIPPING_FEE);
+  document.getElementById("ckTotal").textContent = peso(
+    subtotal + SHIPPING_FEE,
+  );
   return subtotal;
 }
 
 let currentUser = null;
 let savedAddressCoords = { lat: null, lng: null };
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   hideAllGates();
 
   if (!user) {
     authGate.style.display = "block";
+    return;
+  }
+
+  // Internal accounts (staff/admin/superadmin) don't place real orders —
+  // keeps sales data accurate to actual customers. Checked here, not just
+  // on the Add to Cart button, so a cart built before a role change (or
+  // direct navigation to this page) is still blocked at the actual
+  // order-creating step.
+  const roleSnap = await getDoc(doc(db, "users", user.uid));
+  const role = roleSnap.exists() ? roleSnap.data().role || "user" : "user";
+  if (["staff", "admin", "superadmin"].includes(role)) {
+    staffGate.style.display = "block";
     return;
   }
 
@@ -73,59 +89,66 @@ onAuthStateChanged(auth, (user) => {
   getDoc(doc(db, "users", user.uid)).then((snap) => {
     const savedAddress = snap.exists() ? snap.data().savedAddress : null;
     if (savedAddress) {
-      document.getElementById("ckRecipient").value = savedAddress.recipient || "";
+      document.getElementById("ckRecipient").value =
+        savedAddress.recipient || "";
       document.getElementById("ckAddress").value = savedAddress.address || "";
       document.getElementById("ckPhone").value = savedAddress.phone || "";
-      savedAddressCoords = { lat: savedAddress.lat ?? null, lng: savedAddress.lng ?? null };
+      savedAddressCoords = {
+        lat: savedAddress.lat ?? null,
+        lng: savedAddress.lng ?? null,
+      };
     }
   });
 });
 
-document.getElementById("checkoutForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!currentUser) return;
+document
+  .getElementById("checkoutForm")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
 
-  const cart = loadCart();
-  if (cart.length === 0) return;
+    const cart = loadCart();
+    if (cart.length === 0) return;
 
-  const submitBtn = document.getElementById("placeOrderBtn");
-  const errorBox = document.getElementById("checkoutError");
-  errorBox.classList.remove("show");
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Placing order...";
+    const submitBtn = document.getElementById("placeOrderBtn");
+    const errorBox = document.getElementById("checkoutError");
+    errorBox.classList.remove("show");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Placing order...";
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-  try {
-    await addDoc(collection(db, "orders"), {
-      userId: currentUser.uid,
-      items: cart,
-      subtotal,
-      shippingFee: SHIPPING_FEE,
-      total: subtotal + SHIPPING_FEE,
-      status: "Pending",
-      shippingInfo: {
-        fullName: document.getElementById("ckName").value.trim(),
-        email: document.getElementById("ckEmail").value.trim(),
-        recipient: document.getElementById("ckRecipient").value.trim(),
-        address: document.getElementById("ckAddress").value.trim(),
-        phone: document.getElementById("ckPhone").value.trim(),
-        paymentMethod: document.getElementById("ckPayment").value,
-        lat: savedAddressCoords.lat,
-        lng: savedAddressCoords.lng,
-      },
-      createdAt: serverTimestamp(),
-    });
+    try {
+      await addDoc(collection(db, "orders"), {
+        userId: currentUser.uid,
+        items: cart,
+        subtotal,
+        shippingFee: SHIPPING_FEE,
+        total: subtotal + SHIPPING_FEE,
+        status: "Pending",
+        shippingInfo: {
+          fullName: document.getElementById("ckName").value.trim(),
+          email: document.getElementById("ckEmail").value.trim(),
+          recipient: document.getElementById("ckRecipient").value.trim(),
+          address: document.getElementById("ckAddress").value.trim(),
+          phone: document.getElementById("ckPhone").value.trim(),
+          paymentMethod: document.getElementById("ckPayment").value,
+          lat: savedAddressCoords.lat,
+          lng: savedAddressCoords.lng,
+        },
+        createdAt: serverTimestamp(),
+      });
 
-    clearCart();
+      clearCart();
 
-    hideAllGates();
-    successGate.style.display = "block";
-  } catch (err) {
-    errorBox.textContent = "Something went wrong placing your order. Please try again.";
-    errorBox.classList.add("show");
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Place Order";
-  }
-});
+      hideAllGates();
+      successGate.style.display = "block";
+    } catch (err) {
+      errorBox.textContent =
+        "Something went wrong placing your order. Please try again.";
+      errorBox.classList.add("show");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Place Order";
+    }
+  });

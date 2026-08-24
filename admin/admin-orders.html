@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KalingaCare | Admin Orders</title>
+    <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+  </head>
+
+  <body class="admin-body">
+    <!-- Shown if the logged-in user's role is below "staff" -->
+    <div
+      class="container access-denied"
+      id="accessDenied"
+      style="display: none"
+    >
+      <i class="bi bi-shield-lock"></i>
+      <h3>You don't have access to this page</h3>
+      <p class="text-muted">This area is restricted to KalingaCare staff.</p>
+      <a
+        href="../index.html"
+        class="hero-btn-primary"
+        style="text-decoration: none; display: inline-flex"
+        >Back to Home</a
+      >
+    </div>
+
+    <div class="admin-shell" id="adminShell" style="display: none">
+      <aside class="admin-sidebar">
+        <a href="../index.html" class="logo"
+          ><img
+            src="../assets/images/logo.png"
+            alt=""
+            class="navbar-logo-img"
+          />
+          KalingaCare</a
+        >
+
+        <ul class="admin-nav">
+          <li>
+            <a href="admin-dashboard.html"
+              ><i class="bi bi-speedometer2"></i> Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="admin-products.html"
+              ><i class="bi bi-box-seam"></i> Products</a
+            >
+          </li>
+          <li>
+            <a href="admin-orders.html" class="active"
+              ><i class="bi bi-receipt"></i> Orders</a
+            >
+          </li>
+          <li>
+            <a href="admin-users.html"><i class="bi bi-people"></i> Users</a>
+          </li>
+          <li>
+            <a href="admin-settings.html"
+              ><i class="bi bi-gear"></i> Settings</a
+            >
+          </li>
+          <li>
+            <a href="../index.html"
+              ><i class="bi bi-arrow-left"></i> Back to Store</a
+            >
+          </li>
+        </ul>
+      </aside>
+
+      <main class="admin-main">
+        <div class="admin-header-bar">
+          <div class="admin-header-greeting" id="headerGreeting">
+            Welcome back!
+          </div>
+
+          <div class="admin-header-actions">
+            <div class="notif-bell-wrap">
+              <button type="button" class="icon-btn-round" id="notifBellBtn">
+                <i class="bi bi-bell"></i>
+                <span class="notif-dot d-none" id="notifDot"></span>
+              </button>
+              <div class="notif-dropdown d-none" id="notifDropdown">
+                <div class="notif-dropdown-header">Pending Orders</div>
+                <div id="notifList"><p class="notif-empty">Loading...</p></div>
+                <a href="admin-orders.html" class="notif-view-all"
+                  >View all orders</a
+                >
+              </div>
+            </div>
+
+            <div class="header-user-wrap">
+              <button type="button" class="header-user-btn" id="headerUserBtn">
+                <div class="avatar" id="headerAvatar">?</div>
+                <div class="header-user-info">
+                  <div class="name" id="headerName">—</div>
+                  <span class="role-badge" id="headerRole">—</span>
+                </div>
+                <i class="bi bi-chevron-down"></i>
+              </button>
+              <div class="header-user-dropdown d-none" id="headerUserDropdown">
+                <button type="button" id="headerLogoutBtn">
+                  <i class="bi bi-box-arrow-right"></i> Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-topbar">
+          <h1>Orders</h1>
+        </div>
+
+        <div class="orders-toolbar">
+          <div class="admin-search orders-search">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              id="orderSearch"
+              placeholder="Search order, customer, or email..."
+            />
+          </div>
+
+          <div class="toolbar-dropdown">
+            <button
+              type="button"
+              class="toolbar-dropdown-btn"
+              id="statusFilterBtn"
+            >
+              Status: <strong id="statusFilterLabel">All</strong>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="toolbar-dropdown-menu d-none" id="statusFilterMenu">
+              <button type="button" class="tdm-item active" data-value="all">
+                All
+              </button>
+              <button type="button" class="tdm-item" data-value="Pending">
+                Pending
+              </button>
+              <button type="button" class="tdm-item" data-value="Processing">
+                Processing
+              </button>
+              <button type="button" class="tdm-item" data-value="Shipped">
+                Shipped
+              </button>
+              <button type="button" class="tdm-item" data-value="Delivered">
+                Delivered
+              </button>
+              <button type="button" class="tdm-item" data-value="Cancelled">
+                Cancelled
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar-dropdown">
+            <button
+              type="button"
+              class="toolbar-dropdown-btn"
+              id="paymentFilterBtn"
+            >
+              Payment: <strong id="paymentFilterLabel">All</strong>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="toolbar-dropdown-menu d-none" id="paymentFilterMenu">
+              <button type="button" class="tdm-item active" data-value="all">
+                All
+              </button>
+              <button type="button" class="tdm-item" data-value="cod">
+                Cash on Delivery
+              </button>
+              <button type="button" class="tdm-item" data-value="card">
+                Credit / Debit Card
+              </button>
+              <button type="button" class="tdm-item" data-value="paypal">
+                PayPal
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar-dropdown">
+            <button type="button" class="toolbar-dropdown-btn" id="sortByBtn">
+              Sort by: <strong id="sortByLabel">Newest</strong>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="toolbar-dropdown-menu d-none" id="sortByMenu">
+              <button
+                type="button"
+                class="tdm-item active"
+                data-value="date-desc"
+              >
+                Newest
+              </button>
+              <button type="button" class="tdm-item" data-value="date-asc">
+                Oldest
+              </button>
+              <button type="button" class="tdm-item" data-value="total-desc">
+                Total: High to Low
+              </button>
+              <button type="button" class="tdm-item" data-value="total-asc">
+                Total: Low to High
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bulk-action-bar d-none" id="bulkActionBar">
+          <span id="bulkSelectedCount">0 selected</span>
+          <button type="button" class="bulk-cancel-btn" id="bulkCancelBtn">
+            <i class="bi bi-x-circle"></i> Cancel Selected
+          </button>
+        </div>
+
+        <div class="admin-panel">
+          <table class="admin-table orders-table" id="adminOrdersTable">
+            <thead>
+              <tr>
+                <th style="width: 36px">
+                  <input type="checkbox" id="selectAllOrders" />
+                </th>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Payment</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="9" class="text-center text-muted py-4">
+                  Loading...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+
+    <!-- Order detail slide-over -->
+    <div class="order-panel-backdrop d-none" id="orderPanelBackdrop"></div>
+    <aside class="order-detail-panel" id="orderDetailPanel">
+      <div class="order-detail-header">
+        <h5>Order <span id="odOrderId">—</span></h5>
+        <button type="button" class="icon-btn" id="odCloseBtn">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="order-detail-body">
+        <span class="status-badge" id="odStatusBadge">—</span>
+        <p class="od-meta" id="odPlacedDate">—</p>
+
+        <div class="od-customer">
+          <div class="avatar" id="odCustomerAvatar">?</div>
+          <div>
+            <div class="od-customer-name" id="odCustomerName">—</div>
+            <div class="od-customer-email" id="odCustomerEmail">—</div>
+          </div>
+        </div>
+
+        <div class="od-section-label">Order Items</div>
+        <div id="odItemsList"></div>
+
+        <div class="od-total-row">
+          <span>Total</span>
+          <strong id="odTotal">—</strong>
+        </div>
+
+        <div id="odStatusUpdateWrap">
+          <div class="od-section-label">Update Status</div>
+          <select id="odStatusSelect" class="status-select"></select>
+        </div>
+        <p class="od-meta d-none" id="odTerminalNote">
+          This order is cancelled and can't be changed further.
+        </p>
+
+        <button
+          type="button"
+          class="stock-modal-btn-secondary w-100 mt-3"
+          id="odCancelOrderBtn"
+        >
+          Cancel Order
+        </button>
+      </div>
+    </aside>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="../js/firebase.js"></script>
+    <script type="module" src="../js/admin.js"></script>
+  </body>
+</html>

@@ -42,6 +42,43 @@ export function showToast(message, duration = 1800) {
   }, duration);
 }
 
+/* ===== Image resize + base64 encode =====
+   No Firebase Storage on purpose: since Feb 2026, Cloud Storage for Firebase
+   requires the paid Blaze plan just to create a bucket, even to stay within
+   the free tier. Instead images are resized down client-side and stored as
+   a base64 string directly on the Firestore doc — free, no billing account
+   needed. Trade-off: capped to a modest size (not CDN-served like real image
+   hosting), fine for avatars and product thumbnails, not for large photos.
+   Originally lived only in profile.js (avatar upload); shared here so the
+   admin product-image drop-zone reuses the same tested resize logic. */
+export function resizeImageToDataUrl(file, maxSize = 300, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxSize) {
+          height = Math.round(height * (maxSize / width));
+          width = maxSize;
+        } else if (height > maxSize) {
+          width = Math.round(width * (maxSize / height));
+          height = maxSize;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => reject(new Error("Couldn't read that image."));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Couldn't read that file."));
+    reader.readAsDataURL(file);
+  });
+}
+
 /* ===== Cart storage (shared by products.js / cart.js / checkout.js) ===== */
 
 export const CART_KEY = "kalingacare_cart";

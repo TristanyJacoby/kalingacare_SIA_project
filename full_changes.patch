@@ -1,0 +1,4098 @@
+diff --git a/admin/admin-dashboard.html b/admin/admin-dashboard.html
+new file mode 100644
+index 0000000..6c1b6d9
+--- /dev/null
++++ b/admin/admin-dashboard.html
+@@ -0,0 +1,154 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>KalingaCare | Admin Dashboard</title>
++  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
++
++  <link rel="preconnect" href="https://fonts.googleapis.com" />
++  <link
++    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
++    rel="stylesheet"
++  />
++  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
++  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
++  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
++
++  <link rel="stylesheet" href="../css/style.css" />
++  <link rel="stylesheet" href="../css/admin.css" />
++</head>
++
++<body class="admin-body">
++  <!-- Shown if the logged-in user's role is below "staff" -->
++  <div class="container access-denied" id="accessDenied" style="display:none;">
++    <i class="bi bi-shield-lock"></i>
++    <h3>You don't have access to this page</h3>
++    <p class="text-muted">This area is restricted to KalingaCare staff.</p>
++    <a href="../index.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Home</a>
++  </div>
++
++  <div class="admin-shell" id="adminShell" style="display:none;">
++    <aside class="admin-sidebar">
++      <a href="../index.html" class="logo"><img src="../assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
++
++      <ul class="admin-nav">
++        <li><a href="admin-dashboard.html" class="active"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
++        <li><a href="admin-products.html"><i class="bi bi-box-seam"></i> Products</a></li>
++        <li><a href="admin-orders.html"><i class="bi bi-receipt"></i> Orders</a></li>
++        <li><a href="admin-users.html"><i class="bi bi-people"></i> Users</a></li>
++        <li><a href="admin-settings.html"><i class="bi bi-gear"></i> Settings</a></li>
++        <li><a href="../index.html"><i class="bi bi-arrow-left"></i> Back to Store</a></li>
++      </ul>
++    </aside>
++
++    <main class="admin-main">
++      <div class="admin-header-bar">
++        <div class="admin-header-greeting" id="headerGreeting">Welcome back!</div>
++
++        <div class="admin-header-actions">
++          <div class="notif-bell-wrap">
++            <button type="button" class="icon-btn-round" id="notifBellBtn">
++              <i class="bi bi-bell"></i>
++              <span class="notif-dot d-none" id="notifDot"></span>
++            </button>
++            <div class="notif-dropdown d-none" id="notifDropdown">
++              <div class="notif-dropdown-header">Pending Orders</div>
++              <div id="notifList"><p class="notif-empty">Loading...</p></div>
++              <a href="admin-orders.html" class="notif-view-all">View all orders</a>
++            </div>
++          </div>
++
++          <div class="header-user-wrap">
++            <button type="button" class="header-user-btn" id="headerUserBtn">
++              <div class="avatar" id="headerAvatar">?</div>
++              <div class="header-user-info">
++                <div class="name" id="headerName">—</div>
++                <span class="role-badge" id="headerRole">—</span>
++              </div>
++              <i class="bi bi-chevron-down"></i>
++            </button>
++            <div class="header-user-dropdown d-none" id="headerUserDropdown">
++              <button type="button" id="headerLogoutBtn"><i class="bi bi-box-arrow-right"></i> Log Out</button>
++            </div>
++          </div>
++        </div>
++      </div>
++
++      <div class="admin-topbar">
++        <h1>Dashboard</h1>
++      </div>
++
++      <div class="kpi-grid">
++        <div class="kpi-card">
++          <div class="kpi-card-top">
++            <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
++            <span class="kpi-change" id="kpiOrdersChange">—</span>
++          </div>
++          <h3 id="kpiOrders">0</h3>
++          <p>Total Orders</p>
++        </div>
++        <div class="kpi-card">
++          <div class="kpi-card-top">
++            <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
++            <span class="kpi-change" id="kpiRevenueChange">—</span>
++          </div>
++          <h3 id="kpiRevenue">&#8369;0</h3>
++          <p>Total Revenue</p>
++        </div>
++        <div class="kpi-card">
++          <div class="kpi-card-top">
++            <div class="kpi-icon"><i class="bi bi-people"></i></div>
++            <span class="kpi-change" id="kpiUsersChange">—</span>
++          </div>
++          <h3 id="kpiUsers">0</h3>
++          <p>Registered Users</p>
++        </div>
++        <div class="kpi-card">
++          <div class="kpi-card-top">
++            <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
++          </div>
++          <h3 id="kpiPending">0</h3>
++          <p>Pending Orders</p>
++        </div>
++      </div>
++
++      <div class="dash-grid">
++        <div class="admin-panel dash-chart-panel">
++          <div class="dash-panel-header"><h4>Orders per Month</h4></div>
++          <canvas id="ordersMonthChart" height="210"></canvas>
++        </div>
++
++        <div class="admin-panel dash-chart-panel">
++          <div class="dash-panel-header"><h4>Orders by Day of Week</h4></div>
++          <canvas id="ordersDowChart" height="210"></canvas>
++        </div>
++
++        <div class="admin-panel dash-chart-panel-small">
++          <div class="dash-panel-header"><h4>Top Categories</h4></div>
++          <canvas id="categoryDonutChart" height="180"></canvas>
++          <div id="categoryLegend" class="category-legend"></div>
++        </div>
++      </div>
++
++      <div class="admin-panel">
++        <h4>Top Selling Products</h4>
++        <table class="admin-table" id="topProductsTable">
++          <thead>
++            <tr><th>Product</th><th>Category</th><th>Units Sold</th><th>Revenue</th></tr>
++          </thead>
++          <tbody>
++            <tr><td colspan="4" class="text-center text-muted py-4">Loading...</td></tr>
++          </tbody>
++        </table>
++      </div>
++
++      <!-- User Management moved to its own page — see users.html -->
++    </main>
++  </div>
++
++  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
++  <script type="module" src="../js/firebase.js"></script>
++  <script type="module" src="../js/admin.js"></script>
++</body>
++</html>
+diff --git a/admin/admin-orders.html b/admin/admin-orders.html
+new file mode 100644
+index 0000000..c59b041
+--- /dev/null
++++ b/admin/admin-orders.html
+@@ -0,0 +1,188 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>KalingaCare | Admin Orders</title>
++  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
++
++  <link rel="preconnect" href="https://fonts.googleapis.com" />
++  <link
++    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
++    rel="stylesheet"
++  />
++  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
++  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
++
++  <link rel="stylesheet" href="../css/style.css" />
++  <link rel="stylesheet" href="../css/admin.css" />
++</head>
++
++<body class="admin-body">
++  <!-- Shown if the logged-in user's role is below "staff" -->
++  <div class="container access-denied" id="accessDenied" style="display:none;">
++    <i class="bi bi-shield-lock"></i>
++    <h3>You don't have access to this page</h3>
++    <p class="text-muted">This area is restricted to KalingaCare staff.</p>
++    <a href="../index.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Home</a>
++  </div>
++
++  <div class="admin-shell" id="adminShell" style="display:none;">
++    <aside class="admin-sidebar">
++      <a href="../index.html" class="logo"><img src="../assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
++
++      <ul class="admin-nav">
++        <li><a href="admin-dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
++        <li><a href="admin-products.html"><i class="bi bi-box-seam"></i> Products</a></li>
++        <li><a href="admin-orders.html" class="active"><i class="bi bi-receipt"></i> Orders</a></li>
++        <li><a href="admin-users.html"><i class="bi bi-people"></i> Users</a></li>
++        <li><a href="admin-settings.html"><i class="bi bi-gear"></i> Settings</a></li>
++        <li><a href="../index.html"><i class="bi bi-arrow-left"></i> Back to Store</a></li>
++      </ul>
++    </aside>
++
++    <main class="admin-main">
++      <div class="admin-header-bar">
++        <div class="admin-header-greeting" id="headerGreeting">Welcome back!</div>
++
++        <div class="admin-header-actions">
++          <div class="notif-bell-wrap">
++            <button type="button" class="icon-btn-round" id="notifBellBtn">
++              <i class="bi bi-bell"></i>
++              <span class="notif-dot d-none" id="notifDot"></span>
++            </button>
++            <div class="notif-dropdown d-none" id="notifDropdown">
++              <div class="notif-dropdown-header">Pending Orders</div>
++              <div id="notifList"><p class="notif-empty">Loading...</p></div>
++              <a href="admin-orders.html" class="notif-view-all">View all orders</a>
++            </div>
++          </div>
++
++          <div class="header-user-wrap">
++            <button type="button" class="header-user-btn" id="headerUserBtn">
++              <div class="avatar" id="headerAvatar">?</div>
++              <div class="header-user-info">
++                <div class="name" id="headerName">—</div>
++                <span class="role-badge" id="headerRole">—</span>
++              </div>
++              <i class="bi bi-chevron-down"></i>
++            </button>
++            <div class="header-user-dropdown d-none" id="headerUserDropdown">
++              <button type="button" id="headerLogoutBtn"><i class="bi bi-box-arrow-right"></i> Log Out</button>
++            </div>
++          </div>
++        </div>
++      </div>
++
++      <div class="admin-topbar">
++        <h1>Orders</h1>
++      </div>
++
++      <div class="orders-toolbar">
++        <div class="admin-search orders-search">
++          <i class="bi bi-search"></i>
++          <input type="text" id="orderSearch" placeholder="Search order, customer, or email..." />
++        </div>
++
++        <div class="toolbar-dropdown">
++          <button type="button" class="toolbar-dropdown-btn" id="statusFilterBtn">
++            Status: <strong id="statusFilterLabel">All</strong> <i class="bi bi-chevron-down"></i>
++          </button>
++          <div class="toolbar-dropdown-menu d-none" id="statusFilterMenu">
++            <button type="button" class="tdm-item active" data-value="all">All</button>
++            <button type="button" class="tdm-item" data-value="Pending">Pending</button>
++            <button type="button" class="tdm-item" data-value="Processing">Processing</button>
++            <button type="button" class="tdm-item" data-value="Shipped">Shipped</button>
++            <button type="button" class="tdm-item" data-value="Delivered">Delivered</button>
++            <button type="button" class="tdm-item" data-value="Cancelled">Cancelled</button>
++          </div>
++        </div>
++
++        <div class="toolbar-dropdown">
++          <button type="button" class="toolbar-dropdown-btn" id="paymentFilterBtn">
++            Payment: <strong id="paymentFilterLabel">All</strong> <i class="bi bi-chevron-down"></i>
++          </button>
++          <div class="toolbar-dropdown-menu d-none" id="paymentFilterMenu">
++            <button type="button" class="tdm-item active" data-value="all">All</button>
++            <button type="button" class="tdm-item" data-value="cod">Cash on Delivery</button>
++            <button type="button" class="tdm-item" data-value="card">Credit / Debit Card</button>
++            <button type="button" class="tdm-item" data-value="paypal">PayPal</button>
++          </div>
++        </div>
++
++        <div class="toolbar-dropdown">
++          <button type="button" class="toolbar-dropdown-btn" id="sortByBtn">
++            Sort by: <strong id="sortByLabel">Newest</strong> <i class="bi bi-chevron-down"></i>
++          </button>
++          <div class="toolbar-dropdown-menu d-none" id="sortByMenu">
++            <button type="button" class="tdm-item active" data-value="date-desc">Newest</button>
++            <button type="button" class="tdm-item" data-value="date-asc">Oldest</button>
++            <button type="button" class="tdm-item" data-value="total-desc">Total: High to Low</button>
++            <button type="button" class="tdm-item" data-value="total-asc">Total: Low to High</button>
++          </div>
++        </div>
++      </div>
++
++      <div class="bulk-action-bar d-none" id="bulkActionBar">
++        <span id="bulkSelectedCount">0 selected</span>
++        <button type="button" class="bulk-cancel-btn" id="bulkCancelBtn"><i class="bi bi-x-circle"></i> Cancel Selected</button>
++      </div>
++
++      <div class="admin-panel">
++        <table class="admin-table orders-table" id="adminOrdersTable">
++          <thead>
++            <tr>
++              <th style="width:36px;"><input type="checkbox" id="selectAllOrders" /></th>
++              <th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Date</th><th>Status</th><th></th>
++            </tr>
++          </thead>
++          <tbody>
++            <tr><td colspan="9" class="text-center text-muted py-4">Loading...</td></tr>
++          </tbody>
++        </table>
++      </div>
++    </main>
++  </div>
++
++  <!-- Order detail slide-over -->
++  <div class="order-panel-backdrop d-none" id="orderPanelBackdrop"></div>
++  <aside class="order-detail-panel" id="orderDetailPanel">
++    <div class="order-detail-header">
++      <h5>Order <span id="odOrderId">—</span></h5>
++      <button type="button" class="icon-btn" id="odCloseBtn"><i class="bi bi-x-lg"></i></button>
++    </div>
++    <div class="order-detail-body">
++      <span class="status-badge" id="odStatusBadge">—</span>
++      <p class="od-meta" id="odPlacedDate">—</p>
++
++      <div class="od-customer">
++        <div class="avatar" id="odCustomerAvatar">?</div>
++        <div>
++          <div class="od-customer-name" id="odCustomerName">—</div>
++          <div class="od-customer-email" id="odCustomerEmail">—</div>
++        </div>
++      </div>
++
++      <div class="od-section-label">Order Items</div>
++      <div id="odItemsList"></div>
++
++      <div class="od-total-row">
++        <span>Total</span>
++        <strong id="odTotal">—</strong>
++      </div>
++
++      <div id="odStatusUpdateWrap">
++        <div class="od-section-label">Update Status</div>
++        <select id="odStatusSelect" class="status-select"></select>
++      </div>
++      <p class="od-meta d-none" id="odTerminalNote">This order is cancelled and can't be changed further.</p>
++
++      <button type="button" class="stock-modal-btn-secondary w-100 mt-3" id="odCancelOrderBtn">Cancel Order</button>
++    </div>
++  </aside>
++
++  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
++  <script type="module" src="../js/firebase.js"></script>
++  <script type="module" src="../js/admin.js"></script>
++</body>
++</html>
+diff --git a/admin/admin-products.html b/admin/admin-products.html
+new file mode 100644
+index 0000000..0e3ea8e
+--- /dev/null
++++ b/admin/admin-products.html
+@@ -0,0 +1,259 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>KalingaCare | Admin Products</title>
++  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
++
++  <link rel="preconnect" href="https://fonts.googleapis.com" />
++  <link
++    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
++    rel="stylesheet"
++  />
++  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
++  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
++
++  <link rel="stylesheet" href="../css/style.css" />
++  <link rel="stylesheet" href="../css/admin.css" />
++</head>
++
++<body class="admin-body">
++  <!-- Shown if the logged-in user's role is below "staff" -->
++  <div class="container access-denied" id="accessDenied" style="display:none;">
++    <i class="bi bi-shield-lock"></i>
++    <h3>You don't have access to this page</h3>
++    <p class="text-muted">This area is restricted to KalingaCare staff.</p>
++    <a href="../index.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Home</a>
++  </div>
++
++  <div class="admin-shell" id="adminShell" style="display:none;">
++    <aside class="admin-sidebar">
++      <a href="../index.html" class="logo"><img src="../assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
++
++      <ul class="admin-nav">
++        <li><a href="admin-dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
++        <li><a href="admin-products.html" class="active"><i class="bi bi-box-seam"></i> Products</a></li>
++        <li><a href="admin-orders.html"><i class="bi bi-receipt"></i> Orders</a></li>
++        <li><a href="admin-users.html"><i class="bi bi-people"></i> Users</a></li>
++        <li><a href="admin-settings.html"><i class="bi bi-gear"></i> Settings</a></li>
++        <li><a href="../index.html"><i class="bi bi-arrow-left"></i> Back to Store</a></li>
++      </ul>
++    </aside>
++
++    <main class="admin-main">
++      <div class="admin-header-bar">
++        <div class="admin-header-greeting" id="headerGreeting">Welcome back!</div>
++
++        <div class="admin-header-actions">
++          <div class="notif-bell-wrap">
++            <button type="button" class="icon-btn-round" id="notifBellBtn">
++              <i class="bi bi-bell"></i>
++              <span class="notif-dot d-none" id="notifDot"></span>
++            </button>
++            <div class="notif-dropdown d-none" id="notifDropdown">
++              <div class="notif-dropdown-header">Pending Orders</div>
++              <div id="notifList"><p class="notif-empty">Loading...</p></div>
++              <a href="admin-orders.html" class="notif-view-all">View all orders</a>
++            </div>
++          </div>
++
++          <div class="header-user-wrap">
++            <button type="button" class="header-user-btn" id="headerUserBtn">
++              <div class="avatar" id="headerAvatar">?</div>
++              <div class="header-user-info">
++                <div class="name" id="headerName">—</div>
++                <span class="role-badge" id="headerRole">—</span>
++              </div>
++              <i class="bi bi-chevron-down"></i>
++            </button>
++            <div class="header-user-dropdown d-none" id="headerUserDropdown">
++              <button type="button" id="headerLogoutBtn"><i class="bi bi-box-arrow-right"></i> Log Out</button>
++            </div>
++          </div>
++        </div>
++      </div>
++
++      <div class="admin-topbar">
++        <h1>Products</h1>
++      </div>
++
++      <div class="kpi-grid kpi-grid-3">
++        <div class="kpi-card">
++          <div class="kpi-card-top">
++            <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
++            <span class="kpi-change" id="prodKpiOrdersChange">—</span>
++          </div>
++          <h3 id="prodKpiOrders">0</h3>
++          <p>Total Orders</p>
++        </div>
++        <div class="kpi-card">
++          <div class="kpi-card-top">
++            <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
++            <span class="kpi-change" id="prodKpiRevenueChange">—</span>
++          </div>
++          <h3 id="prodKpiRevenue">&#8369;0</h3>
++          <p>Monthly Revenue</p>
++        </div>
++        <div class="kpi-card">
++          <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
++          <h3 id="prodKpiOutOfStock">0</h3>
++          <p>Out of Stock</p>
++        </div>
++      </div>
++
++      <div class="admin-topbar-tools products-toolbar">
++        <div class="admin-search">
++          <i class="bi bi-search"></i>
++          <input type="text" id="productSearch" placeholder="Search products..." />
++        </div>
++
++        <div class="toolbar-dropdown date-filter-wrap">
++          <button type="button" class="toolbar-dropdown-btn" id="dateFilterBtn">
++            <i class="bi bi-calendar3"></i> <span id="selectDateLabel">Select Date</span>
++          </button>
++          <input type="date" id="stockDateInput" class="visually-hidden-date-input" />
++          <button type="button" class="date-filter-clear d-none" id="dateFilterClear" title="Clear date filter"><i class="bi bi-x"></i></button>
++        </div>
++
++        <div class="toolbar-dropdown">
++          <button type="button" class="filters-btn" id="productFiltersBtn"><i class="bi bi-sliders"></i> Filters</button>
++
++          <div class="filters-panel d-none" id="productFiltersPanel">
++            <div class="filters-panel-header">
++              <h6>Filters</h6>
++              <button type="button" class="filters-panel-reset" id="productFiltersReset">Reset</button>
++            </div>
++
++            <div class="filter-group">
++              <div class="filter-group-label">Stock Status</div>
++              <label class="filter-checkbox-row"><input type="checkbox" class="pf-stock" value="instock" checked /> In Stock</label>
++              <label class="filter-checkbox-row"><input type="checkbox" class="pf-stock" value="low" checked /> Low Stock</label>
++              <label class="filter-checkbox-row"><input type="checkbox" class="pf-stock" value="out" checked /> Out of Stock</label>
++            </div>
++
++            <div class="filter-group">
++              <div class="filter-group-label">Category</div>
++              <label class="filter-checkbox-row"><input type="checkbox" class="pf-category" value="mobility" checked /> Mobility</label>
++              <label class="filter-checkbox-row"><input type="checkbox" class="pf-category" value="wellness" checked /> Wellness</label>
++              <label class="filter-checkbox-row"><input type="checkbox" class="pf-category" value="digital" checked /> Digital Health</label>
++            </div>
++
++            <div class="filters-panel-footer">
++              <button type="button" class="filters-cancel-btn" id="productFiltersCancel">Cancel</button>
++              <button type="button" class="filters-apply-btn" id="productFiltersApply">Apply Filter</button>
++            </div>
++          </div>
++        </div>
++
++        <button type="button" class="add-product-btn product-edit-only d-none" id="addProductBtn"><i class="bi bi-plus-lg"></i> Add Product</button>
++      </div>
++
++      <div class="admin-panel" style="margin-top:24px;">
++        <h4>All Products</h4>
++        <table class="admin-table" id="adminProductsTable">
++          <thead>
++            <tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Last Updated</th><th></th></tr>
++          </thead>
++          <tbody>
++            <tr><td colspan="8" class="text-center text-muted py-4">Loading...</td></tr>
++          </tbody>
++        </table>
++      </div>
++    </main>
++  </div>
++
++  <!-- Add / Edit Product modal — was previously a permanent card between the
++       toolbar and the table; moved into a modal so the table gets the full
++       width, matching the reference layout. -->
++  <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productFormTitle" aria-hidden="true">
++    <div class="modal-dialog modal-dialog-centered">
++      <div class="modal-content">
++        <div class="modal-header">
++          <h5 class="modal-title" id="productFormTitle">Add Product</h5>
++          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
++        </div>
++        <div class="modal-body">
++          <form class="admin-form" id="productForm">
++            <input type="hidden" id="productEditingId" />
++            <input type="text" id="pName" placeholder="Product name" required />
++            <select id="pCategory" required>
++              <option value="mobility">Mobility</option>
++              <option value="wellness">Wellness</option>
++              <option value="digital">Digital Health</option>
++            </select>
++            <input type="text" id="pSubcategory" placeholder="Subcategory (e.g. Walking Aids)" />
++            <input type="number" id="pPrice" placeholder="Price (PHP)" min="0" required />
++            <input type="number" id="pStock" placeholder="Stock quantity" min="0" />
++            <div class="stock-inline-adjust d-none" id="stockInlineAdjustWrap">
++              <p class="stock-input-disabled-hint mb-0" style="margin-top:0;">Stock is locked while editing.</p>
++              <button type="button" class="stock-inline-adjust-btn" id="stockInlineAdjustBtn"><i class="bi bi-plus-slash-minus"></i> Adjust Stock</button>
++            </div>
++
++            <input type="hidden" id="pImg" />
++            <input type="hidden" id="pImgBase64" />
++            <div class="image-drop-preview d-none" id="imagePreviewWrap">
++              <img id="imagePreview" src="" alt="Product preview" />
++              <button type="button" class="remove-image-btn" id="removeImageBtn" title="Remove image"><i class="bi bi-x"></i></button>
++            </div>
++            <div class="image-drop-zone" id="imageDropZone">
++              <i class="bi bi-cloud-arrow-up"></i>
++              <p>Drag &amp; drop a photo, or click to browse</p>
++              <p class="drop-hint-small">JPG or PNG, resized automatically</p>
++            </div>
++            <input type="file" id="imageFileInput" accept="image/*" class="d-none" />
++
++            <button type="submit" class="btn-success w-100">Save Product</button>
++          </form>
++        </div>
++      </div>
++    </div>
++  </div>
++
++  <!-- Stock Adjustment Modal — two-step: edit quantity, then confirm the change.
++       Added per instructor feedback: stock edits previously committed instantly
++       with no warning, which could let a drastic/accidental change through
++       unnoticed. This forces an explicit "are you sure" before anything writes
++       to Firestore. -->
++  <div class="modal fade" id="stockModal" tabindex="-1" aria-labelledby="stockModalTitle" aria-hidden="true">
++    <div class="modal-dialog modal-dialog-centered">
++      <div class="modal-content">
++        <div class="modal-header">
++          <h5 class="modal-title" id="stockModalTitle">Adjust Stock</h5>
++          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
++        </div>
++
++        <!-- Step 1: enter the new quantity -->
++        <div class="modal-body" id="stockStepEdit">
++          <p class="stock-modal-product" id="stockProductName">—</p>
++          <p class="stock-modal-current">Current stock: <strong id="stockCurrentQty">—</strong></p>
++          <label for="stockNewQty" class="stock-modal-label">New quantity</label>
++          <input type="number" id="stockNewQty" class="stock-modal-input" min="0" step="1" required />
++        </div>
++
++        <!-- Step 2: confirm the change before it's written -->
++        <div class="modal-body d-none" id="stockStepConfirm">
++          <p class="stock-modal-product">Change stock for <strong id="confirmProductName">—</strong>?</p>
++          <div class="stock-confirm-diff">
++            <span id="confirmOldQty">—</span>
++            <i class="bi bi-arrow-right"></i>
++            <span id="confirmNewQty">—</span>
++          </div>
++          <p class="stock-confirm-warning d-none" id="confirmWarning"></p>
++        </div>
++
++        <div class="modal-footer">
++          <button type="button" class="stock-modal-btn-secondary" data-bs-dismiss="modal">Cancel</button>
++          <button type="button" class="stock-modal-btn-secondary d-none" id="stockBackBtn">Go Back</button>
++          <button type="button" class="btn-success" id="stockContinueBtn">Continue</button>
++          <button type="button" class="btn-success d-none" id="stockConfirmBtn">Confirm Change</button>
++        </div>
++      </div>
++    </div>
++  </div>
++
++  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
++  <script type="module" src="../js/firebase.js"></script>
++  <script type="module" src="../js/admin.js"></script>
++</body>
++</html>
+diff --git a/admin/admin-settings.html b/admin/admin-settings.html
+new file mode 100644
+index 0000000..81c39ac
+--- /dev/null
++++ b/admin/admin-settings.html
+@@ -0,0 +1,122 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>KalingaCare | Admin Settings</title>
++  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
++
++  <link rel="preconnect" href="https://fonts.googleapis.com" />
++  <link
++    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
++    rel="stylesheet"
++  />
++  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
++  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
++
++  <link rel="stylesheet" href="../css/style.css" />
++  <link rel="stylesheet" href="../css/admin.css" />
++</head>
++
++<body class="admin-body">
++  <!-- Shown if the logged-in user's role is below "staff" -->
++  <div class="container access-denied" id="accessDenied" style="display:none;">
++    <i class="bi bi-shield-lock"></i>
++    <h3>You don't have access to this page</h3>
++    <p class="text-muted">This area is restricted to KalingaCare staff.</p>
++    <a href="../index.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Home</a>
++  </div>
++
++  <div class="admin-shell" id="adminShell" style="display:none;">
++    <aside class="admin-sidebar">
++      <a href="../index.html" class="logo"><img src="../assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
++
++      <ul class="admin-nav">
++        <li><a href="admin-dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
++        <li><a href="admin-products.html"><i class="bi bi-box-seam"></i> Products</a></li>
++        <li><a href="admin-orders.html"><i class="bi bi-receipt"></i> Orders</a></li>
++        <li><a href="admin-users.html"><i class="bi bi-people"></i> Users</a></li>
++        <li><a href="admin-settings.html" class="active"><i class="bi bi-gear"></i> Settings</a></li>
++        <li><a href="../index.html"><i class="bi bi-arrow-left"></i> Back to Store</a></li>
++      </ul>
++    </aside>
++
++    <main class="admin-main">
++      <div class="admin-header-bar">
++        <div class="admin-header-greeting" id="headerGreeting">Welcome back!</div>
++
++        <div class="admin-header-actions">
++          <div class="notif-bell-wrap">
++            <button type="button" class="icon-btn-round" id="notifBellBtn">
++              <i class="bi bi-bell"></i>
++              <span class="notif-dot d-none" id="notifDot"></span>
++            </button>
++            <div class="notif-dropdown d-none" id="notifDropdown">
++              <div class="notif-dropdown-header">Pending Orders</div>
++              <div id="notifList"><p class="notif-empty">Loading...</p></div>
++              <a href="admin-orders.html" class="notif-view-all">View all orders</a>
++            </div>
++          </div>
++
++          <div class="header-user-wrap">
++            <button type="button" class="header-user-btn" id="headerUserBtn">
++              <div class="avatar" id="headerAvatar">?</div>
++              <div class="header-user-info">
++                <div class="name" id="headerName">—</div>
++                <span class="role-badge" id="headerRole">—</span>
++              </div>
++              <i class="bi bi-chevron-down"></i>
++            </button>
++            <div class="header-user-dropdown d-none" id="headerUserDropdown">
++              <button type="button" id="headerLogoutBtn"><i class="bi bi-box-arrow-right"></i> Log Out</button>
++            </div>
++          </div>
++        </div>
++      </div>
++
++      <div class="admin-topbar">
++        <h1>Settings</h1>
++      </div>
++
++      <div class="admin-panel" style="max-width:480px;">
++        <h4>Your Account</h4>
++        <p class="text-muted" style="margin-top:-10px; font-size:0.85rem;">
++          This is your own admin profile — name and photo, visible in the header and to other staff.
++        </p>
++
++        <div class="text-center mb-3">
++          <div style="position:relative; width:80px; margin:0 auto 12px;">
++            <div id="avatarInitials" style="width:80px;height:80px;border-radius:50%;background:var(--gradient);color:#fff;font-size:1.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;">
++              <img id="avatarImg" src="" alt="" class="d-none" style="width:100%;height:100%;object-fit:cover;" />
++              <span id="avatarInitialsText">?</span>
++            </div>
++            <button type="button" id="avatarEditBtn" title="Change photo"
++              style="position:absolute; bottom:0; right:0; width:28px; height:28px; border-radius:50%; background:var(--surface); border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer;">
++              <i class="bi bi-camera-fill" style="font-size:0.8rem; color:var(--primary);"></i>
++            </button>
++            <input type="file" id="avatarUpload" accept="image/*" class="d-none" />
++          </div>
++          <span class="role-badge" id="settingsRoleBadge">—</span>
++        </div>
++
++        <div class="auth-error" id="settingsError"></div>
++        <div class="settings-success d-none" id="settingsSuccess">Saved.</div>
++
++        <form class="admin-form" id="adminNameForm">
++          <label class="stock-modal-label" for="settingsFullName">Full Name</label>
++          <input type="text" id="settingsFullName" required />
++          <button type="submit" class="btn-success w-100">Save Name</button>
++        </form>
++
++        <p class="text-muted mt-3 mb-0" style="font-size:0.8rem;">
++          Email: <span id="settingsEmail">—</span> (can't be changed here)
++        </p>
++      </div>
++    </main>
++  </div>
++
++  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
++  <script type="module" src="../js/firebase.js"></script>
++  <script type="module" src="../js/admin.js"></script>
++</body>
++</html>
+diff --git a/admin/admin-users.html b/admin/admin-users.html
+new file mode 100644
+index 0000000..381a1e6
+--- /dev/null
++++ b/admin/admin-users.html
+@@ -0,0 +1,131 @@
++<!doctype html>
++<html lang="en">
++<head>
++  <meta charset="UTF-8" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>KalingaCare | Admin Users</title>
++  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
++
++  <link rel="preconnect" href="https://fonts.googleapis.com" />
++  <link
++    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
++    rel="stylesheet"
++  />
++  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
++  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
++
++  <link rel="stylesheet" href="../css/style.css" />
++  <link rel="stylesheet" href="../css/admin.css" />
++</head>
++
++<body class="admin-body">
++  <!-- Shown if the logged-in user's role is below "staff" -->
++  <div class="container access-denied" id="accessDenied" style="display:none;">
++    <i class="bi bi-shield-lock"></i>
++    <h3>You don't have access to this page</h3>
++    <p class="text-muted">This area is restricted to KalingaCare staff.</p>
++    <a href="../index.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Home</a>
++  </div>
++
++  <div class="admin-shell" id="adminShell" style="display:none;">
++    <aside class="admin-sidebar">
++      <a href="../index.html" class="logo"><img src="../assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
++
++      <ul class="admin-nav">
++        <li><a href="admin-dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
++        <li><a href="admin-products.html"><i class="bi bi-box-seam"></i> Products</a></li>
++        <li><a href="admin-orders.html"><i class="bi bi-receipt"></i> Orders</a></li>
++        <li><a href="admin-users.html" class="active"><i class="bi bi-people"></i> Users</a></li>
++        <li><a href="admin-settings.html"><i class="bi bi-gear"></i> Settings</a></li>
++        <li><a href="../index.html"><i class="bi bi-arrow-left"></i> Back to Store</a></li>
++      </ul>
++    </aside>
++
++    <main class="admin-main">
++      <div class="admin-header-bar">
++        <div class="admin-header-greeting" id="headerGreeting">Welcome back!</div>
++
++        <div class="admin-header-actions">
++          <div class="notif-bell-wrap">
++            <button type="button" class="icon-btn-round" id="notifBellBtn">
++              <i class="bi bi-bell"></i>
++              <span class="notif-dot d-none" id="notifDot"></span>
++            </button>
++            <div class="notif-dropdown d-none" id="notifDropdown">
++              <div class="notif-dropdown-header">Pending Orders</div>
++              <div id="notifList"><p class="notif-empty">Loading...</p></div>
++              <a href="admin-orders.html" class="notif-view-all">View all orders</a>
++            </div>
++          </div>
++
++          <div class="header-user-wrap">
++            <button type="button" class="header-user-btn" id="headerUserBtn">
++              <div class="avatar" id="headerAvatar">?</div>
++              <div class="header-user-info">
++                <div class="name" id="headerName">—</div>
++                <span class="role-badge" id="headerRole">—</span>
++              </div>
++              <i class="bi bi-chevron-down"></i>
++            </button>
++            <div class="header-user-dropdown d-none" id="headerUserDropdown">
++              <button type="button" id="headerLogoutBtn"><i class="bi bi-box-arrow-right"></i> Log Out</button>
++            </div>
++          </div>
++        </div>
++      </div>
++
++      <div class="admin-topbar">
++        <h1>Users</h1>
++      </div>
++
++      <!-- Shown for staff/admin (not superadmin) — user role management is superadmin-only -->
++      <div class="admin-panel d-none" id="usersRestrictedNotice">
++        <p class="text-muted mb-0" style="padding: 12px 0;">
++          <i class="bi bi-shield-lock"></i> User management is restricted to Super Admins.
++        </p>
++      </div>
++
++      <div id="usersContent" class="d-none">
++        <div class="admin-search" style="max-width:340px; margin-bottom:24px;">
++          <i class="bi bi-search"></i>
++          <input type="text" id="userMgmtSearch" placeholder="Search name or email..." />
++        </div>
++
++        <div class="admin-panel">
++          <h4><i class="bi bi-person-badge"></i> Staff &amp; Admins</h4>
++          <p class="text-muted" style="margin-top:-10px; font-size:0.85rem;">
++            Superadmin, Admin, and Staff accounts. Change a role and it applies immediately.
++          </p>
++          <table class="admin-table">
++            <thead>
++              <tr><th>Name</th><th>Email</th><th>Role</th></tr>
++            </thead>
++            <tbody id="staffMgmtBody">
++              <tr><td colspan="3" class="text-center text-muted py-4">Loading...</td></tr>
++            </tbody>
++          </table>
++        </div>
++
++        <div class="admin-panel">
++          <h4><i class="bi bi-people"></i> Customers</h4>
++          <p class="text-muted" style="margin-top:-10px; font-size:0.85rem;">
++            Regular storefront accounts.
++          </p>
++          <table class="admin-table">
++            <thead>
++              <tr><th>Name</th><th>Email</th><th>Role</th></tr>
++            </thead>
++            <tbody id="customerMgmtBody">
++              <tr><td colspan="3" class="text-center text-muted py-4">Loading...</td></tr>
++            </tbody>
++          </table>
++        </div>
++      </div>
++    </main>
++  </div>
++
++  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
++  <script type="module" src="../js/firebase.js"></script>
++  <script type="module" src="../js/admin.js"></script>
++</body>
++</html>
+diff --git a/admin/dashboard.html b/admin/dashboard.html
+deleted file mode 100644
+index 25c3b17..0000000
+--- a/admin/dashboard.html
++++ /dev/null
+@@ -1,103 +0,0 @@
+-<!doctype html>
+-<html lang="en">
+-<head>
+-  <meta charset="UTF-8" />
+-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-  <title>KalingaCare | Admin Dashboard</title>
+-  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+-
+-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+-  <link
+-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+-    rel="stylesheet"
+-  />
+-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+-
+-  <link rel="stylesheet" href="../css/style.css" />
+-  <link rel="stylesheet" href="../css/admin.css" />
+-</head>
+-
+-<body class="admin-body">
+-  <!-- Shown if the logged-in user's role is below "staff" -->
+-  <div class="container access-denied" id="accessDenied" style="display:none;">
+-    <i class="bi bi-shield-lock"></i>
+-    <h3>You don't have access to this page</h3>
+-    <p class="text-muted">This area is restricted to KalingaCare staff.</p>
+-    <a href="../index.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Home</a>
+-  </div>
+-
+-  <div class="admin-shell" id="adminShell" style="display:none;">
+-    <aside class="admin-sidebar">
+-      <a href="../index.html" class="logo"><img src="../assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
+-
+-      <ul class="admin-nav">
+-        <li><a href="dashboard.html" class="active"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+-        <li><a href="products.html"><i class="bi bi-box-seam"></i> Products</a></li>
+-        <li><a href="orders.html"><i class="bi bi-receipt"></i> Orders</a></li>
+-        <li><a href="../index.html"><i class="bi bi-arrow-left"></i> Back to Store</a></li>
+-      </ul>
+-
+-      <div class="admin-sidebar-footer">
+-        <div class="admin-user-chip">
+-          <div class="avatar" id="adminAvatar">?</div>
+-          <div>
+-            <div class="name" id="adminName">—</div>
+-            <span class="role-badge" id="adminRole">—</span>
+-          </div>
+-        </div>
+-        <button type="button" class="remove-item" id="adminLogoutBtn"><i class="bi bi-box-arrow-right"></i> Log Out</button>
+-      </div>
+-    </aside>
+-
+-    <main class="admin-main">
+-      <div class="admin-topbar">
+-        <h1>Dashboard</h1>
+-      </div>
+-
+-      <div class="kpi-grid">
+-        <div class="kpi-card">
+-          <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+-          <h3 id="kpiOrders">0</h3>
+-          <p>Total Orders</p>
+-        </div>
+-        <div class="kpi-card">
+-          <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
+-          <h3 id="kpiRevenue">&#8369;0</h3>
+-          <p>Total Revenue</p>
+-        </div>
+-        <div class="kpi-card">
+-          <div class="kpi-icon"><i class="bi bi-people"></i></div>
+-          <h3 id="kpiUsers">0</h3>
+-          <p>Registered Users</p>
+-        </div>
+-        <div class="kpi-card">
+-          <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+-          <h3 id="kpiPending">0</h3>
+-          <p>Pending Orders</p>
+-        </div>
+-      </div>
+-
+-      <!-- Super Admin only -->
+-      <div class="admin-panel d-none" id="userMgmtSection">
+-        <h4><i class="bi bi-people"></i> User Management</h4>
+-        <p class="text-muted" style="margin-top:-12px; font-size:0.85rem;">
+-          Change a user's role. Changes apply immediately.
+-        </p>
+-        <table class="admin-table">
+-          <thead>
+-            <tr><th>Name</th><th>Email</th><th>Role</th></tr>
+-          </thead>
+-          <tbody id="userMgmtBody">
+-            <tr><td colspan="3" class="text-center text-muted py-4">Loading...</td></tr>
+-          </tbody>
+-        </table>
+-      </div>
+-    </main>
+-  </div>
+-
+-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+-  <script type="module" src="../js/firebase.js"></script>
+-  <script type="module" src="../js/admin.js"></script>
+-</body>
+-</html>
+diff --git a/admin/orders.html b/admin/orders.html
+deleted file mode 100644
+index 71d531a..0000000
+--- a/admin/orders.html
++++ /dev/null
+@@ -1,75 +0,0 @@
+-<!doctype html>
+-<html lang="en">
+-<head>
+-  <meta charset="UTF-8" />
+-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-  <title>KalingaCare | Admin Orders</title>
+-  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+-
+-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+-  <link
+-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+-    rel="stylesheet"
+-  />
+-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+-
+-  <link rel="stylesheet" href="../css/style.css" />
+-  <link rel="stylesheet" href="../css/admin.css" />
+-</head>
+-
+-<body class="admin-body">
+-  <!-- Shown if the logged-in user's role is below "staff" -->
+-  <div class="container access-denied" id="accessDenied" style="display:none;">
+-    <i class="bi bi-shield-lock"></i>
+-    <h3>You don't have access to this page</h3>
+-    <p class="text-muted">This area is restricted to KalingaCare staff.</p>
+-    <a href="../index.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Home</a>
+-  </div>
+-
+-  <div class="admin-shell" id="adminShell" style="display:none;">
+-    <aside class="admin-sidebar">
+-      <a href="../index.html" class="logo"><img src="../assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
+-
+-      <ul class="admin-nav">
+-        <li><a href="dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+-        <li><a href="products.html"><i class="bi bi-box-seam"></i> Products</a></li>
+-        <li><a href="orders.html" class="active"><i class="bi bi-receipt"></i> Orders</a></li>
+-        <li><a href="../index.html"><i class="bi bi-arrow-left"></i> Back to Store</a></li>
+-      </ul>
+-
+-      <div class="admin-sidebar-footer">
+-        <div class="admin-user-chip">
+-          <div class="avatar" id="adminAvatar">?</div>
+-          <div>
+-            <div class="name" id="adminName">—</div>
+-            <span class="role-badge" id="adminRole">—</span>
+-          </div>
+-        </div>
+-        <button type="button" class="remove-item" id="adminLogoutBtn"><i class="bi bi-box-arrow-right"></i> Log Out</button>
+-      </div>
+-    </aside>
+-
+-    <main class="admin-main">
+-      <div class="admin-topbar">
+-        <h1>Orders</h1>
+-      </div>
+-
+-      <div class="admin-panel">
+-        <table class="admin-table" id="adminOrdersTable">
+-          <thead>
+-            <tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Date</th><th>Status</th></tr>
+-          </thead>
+-          <tbody>
+-            <tr><td colspan="6" class="text-center text-muted py-4">Loading...</td></tr>
+-          </tbody>
+-        </table>
+-      </div>
+-    </main>
+-  </div>
+-
+-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+-  <script type="module" src="../js/firebase.js"></script>
+-  <script type="module" src="../js/admin.js"></script>
+-</body>
+-</html>
+diff --git a/admin/products.html b/admin/products.html
+deleted file mode 100644
+index d544630..0000000
+--- a/admin/products.html
++++ /dev/null
+@@ -1,101 +0,0 @@
+-<!doctype html>
+-<html lang="en">
+-<head>
+-  <meta charset="UTF-8" />
+-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-  <title>KalingaCare | Admin Products</title>
+-  <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+-
+-  <link rel="preconnect" href="https://fonts.googleapis.com" />
+-  <link
+-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+-    rel="stylesheet"
+-  />
+-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+-
+-  <link rel="stylesheet" href="../css/style.css" />
+-  <link rel="stylesheet" href="../css/admin.css" />
+-</head>
+-
+-<body class="admin-body">
+-  <!-- Shown if the logged-in user's role is below "staff" -->
+-  <div class="container access-denied" id="accessDenied" style="display:none;">
+-    <i class="bi bi-shield-lock"></i>
+-    <h3>You don't have access to this page</h3>
+-    <p class="text-muted">This area is restricted to KalingaCare staff.</p>
+-    <a href="../index.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Home</a>
+-  </div>
+-
+-  <div class="admin-shell" id="adminShell" style="display:none;">
+-    <aside class="admin-sidebar">
+-      <a href="../index.html" class="logo"><img src="../assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
+-
+-      <ul class="admin-nav">
+-        <li><a href="dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+-        <li><a href="products.html" class="active"><i class="bi bi-box-seam"></i> Products</a></li>
+-        <li><a href="orders.html"><i class="bi bi-receipt"></i> Orders</a></li>
+-        <li><a href="../index.html"><i class="bi bi-arrow-left"></i> Back to Store</a></li>
+-      </ul>
+-
+-      <div class="admin-sidebar-footer">
+-        <div class="admin-user-chip">
+-          <div class="avatar" id="adminAvatar">?</div>
+-          <div>
+-            <div class="name" id="adminName">—</div>
+-            <span class="role-badge" id="adminRole">—</span>
+-          </div>
+-        </div>
+-        <button type="button" class="remove-item" id="adminLogoutBtn"><i class="bi bi-box-arrow-right"></i> Log Out</button>
+-      </div>
+-    </aside>
+-
+-    <main class="admin-main">
+-      <div class="admin-topbar">
+-        <h1>Products</h1>
+-      </div>
+-
+-      <div class="row g-4">
+-        <div class="col-lg-4">
+-          <div class="admin-panel product-edit-only d-none">
+-            <h4 id="productFormTitle">Add Product</h4>
+-            <form class="admin-form" id="productForm">
+-              <input type="hidden" id="productEditingId" />
+-              <input type="text" id="pName" placeholder="Product name" required />
+-              <select id="pCategory" required>
+-                <option value="mobility">Mobility</option>
+-                <option value="wellness">Wellness</option>
+-                <option value="digital">Digital Health</option>
+-              </select>
+-              <input type="text" id="pSubcategory" placeholder="Subcategory (e.g. Walking Aids)" />
+-              <input type="number" id="pPrice" placeholder="Price (PHP)" min="0" required />
+-              <input type="number" id="pStock" placeholder="Stock quantity" min="0" />
+-              <input type="text" id="pImg" placeholder="Image path (e.g. assets/images/products/product1.jpg)" />
+-              <button type="submit" class="btn-success w-100">Save Product</button>
+-              <button type="button" class="remove-item d-none mt-2" id="cancelEditBtn">Cancel editing</button>
+-            </form>
+-          </div>
+-        </div>
+-
+-        <div class="col-lg-8">
+-          <div class="admin-panel">
+-            <h4>All Products</h4>
+-            <table class="admin-table" id="adminProductsTable">
+-              <thead>
+-                <tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th></th></tr>
+-              </thead>
+-              <tbody>
+-                <tr><td colspan="6" class="text-center text-muted py-4">Loading...</td></tr>
+-              </tbody>
+-            </table>
+-          </div>
+-        </div>
+-      </div>
+-    </main>
+-  </div>
+-
+-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+-  <script type="module" src="../js/firebase.js"></script>
+-  <script type="module" src="../js/admin.js"></script>
+-</body>
+-</html>
+diff --git a/cart.html b/cart.html
+index 8597a17..2f37ee9 100644
+--- a/cart.html
++++ b/cart.html
+@@ -54,7 +54,7 @@
+               <a href="register.html" class="signup-btn">Get Started</a>
+             </div>
+             <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
+-              <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
++              <a href="admin/admin-dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
+               <div class="dropdown">
+                 <button class="account-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="My Account">
+                   <i class="bi bi-person-circle fs-5"></i>
+diff --git a/checkout.html b/checkout.html
+index 3f1d052..648715e 100644
+--- a/checkout.html
++++ b/checkout.html
+@@ -54,7 +54,7 @@
+               <a href="register.html" class="signup-btn">Get Started</a>
+             </div>
+             <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
+-              <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
++              <a href="admin/admin-dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
+               <div class="dropdown">
+                 <button class="account-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="My Account">
+                   <i class="bi bi-person-circle fs-5"></i>
+@@ -92,6 +92,16 @@
+       </div>
+     </div>
+ 
++    <!-- Shown for staff/admin/superadmin accounts — internal accounts don't shop -->
++    <div class="container" id="staffGate" style="display:none;">
++      <div class="auth-gate">
++        <i class="bi bi-shield-lock"></i>
++        <h3>Staff accounts can't place orders</h3>
++        <p class="text-muted">This keeps sales data accurate to real customers. Use a regular customer account to shop.</p>
++        <a href="admin/admin-dashboard.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Admin</a>
++      </div>
++    </div>
++
+     <!-- Shown if cart is empty (but logged in) -->
+     <div class="container" id="emptyGate" style="display:none;">
+       <div class="empty-state">
+diff --git a/css/admin.css b/css/admin.css
+index 04558f7..20498a6 100644
+--- a/css/admin.css
++++ b/css/admin.css
+@@ -75,7 +75,8 @@ body.admin-body {
+   gap: 10px;
+   margin-bottom: 12px;
+ }
+-.admin-user-chip .avatar {
++/* Generic avatar utility — usable anywhere, not just inside .admin-user-chip */
++.avatar {
+   width: 36px;
+   height: 36px;
+   border-radius: 50%;
+@@ -88,6 +89,8 @@ body.admin-body {
+   justify-content: center;
+   flex-shrink: 0;
+ }
++.avatar-sm { width: 30px; height: 30px; font-size: 0.75rem; }
++
+ .admin-user-chip .name {
+   font-size: 0.88rem;
+   font-weight: 600;
+@@ -231,6 +234,754 @@ body.admin-body {
+   display: block;
+ }
+ 
++/* Stock adjustment modal */
++.modal-content {
++  border-radius: 16px;
++  border: none;
++}
++.modal-header,
++.modal-footer {
++  border-color: var(--line);
++}
++.modal-title {
++  font-weight: 700;
++  color: var(--dark);
++  font-size: 1.05rem;
++}
++.stock-modal-product {
++  font-weight: 600;
++  color: var(--dark);
++  margin-bottom: 4px;
++}
++.stock-modal-current {
++  color: var(--gray);
++  font-size: 0.88rem;
++  margin-bottom: 18px;
++}
++.stock-modal-label {
++  display: block;
++  font-size: 0.85rem;
++  font-weight: 600;
++  color: var(--dark);
++  margin-bottom: 8px;
++}
++.stock-modal-input {
++  border: 1.5px solid var(--line);
++  border-radius: 10px;
++  padding: 10px 14px;
++  width: 100%;
++  font-family: "Poppins", sans-serif;
++  font-size: 1rem;
++}
++.stock-confirm-diff {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  gap: 14px;
++  font-size: 1.6rem;
++  font-weight: 700;
++  color: var(--dark);
++  padding: 10px 0 4px;
++}
++.stock-confirm-diff i {
++  font-size: 1.1rem;
++  color: var(--gray);
++}
++.stock-confirm-warning {
++  text-align: center;
++  color: #c0392b;
++  background: #fdecea;
++  border-radius: 10px;
++  padding: 8px 12px;
++  font-size: 0.85rem;
++  font-weight: 500;
++  margin-top: 14px;
++}
++.stock-modal-btn-secondary {
++  border: 1.5px solid var(--line);
++  background: none;
++  color: var(--gray);
++  border-radius: var(--radius-pill);
++  padding: 10px 20px;
++  font-weight: 600;
++  font-family: "Poppins", sans-serif;
++  cursor: pointer;
++  transition: 0.2s;
++}
++.stock-modal-btn-secondary:hover {
++  background: #f6f9fb;
++  color: var(--dark);
++}
++.stock-input-disabled-hint {
++  font-size: 0.78rem;
++  color: var(--gray);
++  margin-top: -10px;
++  margin-bottom: 14px;
++}
++
++/* ===========================
++   Admin redesign — topbar tools, filter tabs, status badges, filters panel
++   Reuses the existing palette (--primary/--pink/--line/--gray) and the same
++   soft-background + saturated-text language already used by .role-badge,
++   so nothing here introduces a new color outside the site's theme.
++=========================== */
++
++.admin-topbar {
++  flex-wrap: wrap;
++  gap: 16px;
++}
++
++.admin-topbar-tools {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++  position: relative; /* anchors the filters flyout panel */
++}
++
++.admin-search {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  background: #fff;
++  border: 1.5px solid var(--line);
++  border-radius: var(--radius-pill);
++  padding: 9px 16px;
++  min-width: 240px;
++}
++.admin-search i { color: var(--gray); font-size: 0.9rem; }
++.admin-search input {
++  border: none;
++  outline: none;
++  background: transparent;
++  font-family: "Poppins", sans-serif;
++  font-size: 0.86rem;
++  color: var(--dark);
++  width: 100%;
++}
++.admin-search input::placeholder { color: var(--gray); }
++
++.filters-btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  border: 1.5px solid var(--line);
++  background: #fff;
++  color: var(--dark);
++  border-radius: var(--radius-pill);
++  padding: 9px 18px;
++  font-weight: 600;
++  font-size: 0.85rem;
++  font-family: "Poppins", sans-serif;
++  cursor: pointer;
++  transition: 0.2s;
++  white-space: nowrap;
++}
++.filters-btn:hover { border-color: var(--primary); color: var(--primary-dark); }
++.filters-btn.active {
++  background: var(--primary-light);
++  border-color: var(--primary);
++  color: var(--primary-dark);
++}
++
++/* Quick-filter pill tabs (All / In Stock / Low Stock / Out of Stock, etc.) */
++.filter-tabs {
++  display: flex;
++  gap: 8px;
++  margin-bottom: 20px;
++  flex-wrap: wrap;
++}
++.filter-tab {
++  border: 1.5px solid var(--line);
++  background: #fff;
++  color: var(--gray);
++  padding: 8px 18px;
++  border-radius: var(--radius-pill);
++  font-size: 0.85rem;
++  font-weight: 600;
++  font-family: "Poppins", sans-serif;
++  cursor: pointer;
++  transition: 0.2s;
++}
++.filter-tab:hover { border-color: var(--primary); color: var(--primary-dark); }
++.filter-tab.active {
++  background: var(--primary);
++  border-color: var(--primary);
++  color: #fff;
++}
++
++/* Status badges — same visual language as .role-badge (soft bg, saturated text) */
++.status-badge {
++  display: inline-flex;
++  align-items: center;
++  padding: 4px 12px;
++  border-radius: var(--radius-pill);
++  font-size: 0.76rem;
++  font-weight: 600;
++  white-space: nowrap;
++}
++.status-badge.status-instock    { background: #e6f4ea; color: #1e7e34; }
++.status-badge.status-low        { background: #fff2cc; color: #916f00; }
++.status-badge.status-out        { background: #fdecea; color: #c0392b; }
++
++.status-badge.status-pending    { background: #fff2cc; color: #916f00; }
++.status-badge.status-processing { background: var(--primary-light); color: #0b5e83; }
++.status-badge.status-shipped    { background: var(--pink-light); color: #8d4c7b; }
++.status-badge.status-delivered  { background: #e6f4ea; color: #1e7e34; }
++.status-badge.status-cancelled  { background: #fdecea; color: #c0392b; }
++
++/* A <select> styled to look like a colored status pill instead of a plain
++   dropdown — stays fully functional (staff can still change order status),
++   it just now reads as a badge at a glance like the reference design. */
++.status-select {
++  border: none !important;
++  border-radius: var(--radius-pill) !important;
++  padding: 5px 28px 5px 14px !important;
++  font-size: 0.78rem !important;
++  font-weight: 600;
++  font-family: "Poppins", sans-serif;
++  cursor: pointer;
++  appearance: none;
++  -webkit-appearance: none;
++  background-repeat: no-repeat;
++  background-position: right 10px center;
++  background-size: 9px;
++  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%23000' opacity='.45' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
++}
++.status-select.status-pending    { background-color: #fff2cc; color: #916f00; }
++.status-select.status-processing { background-color: var(--primary-light); color: #0b5e83; }
++.status-select.status-shipped    { background-color: var(--pink-light); color: #8d4c7b; }
++.status-select.status-delivered  { background-color: #e6f4ea; color: #1e7e34; }
++.status-select.status-cancelled  { background-color: #fdecea; color: #c0392b; }
++
++/* Filters flyout panel */
++.filters-panel {
++  position: absolute;
++  top: calc(100% + 8px);
++  right: 0;
++  width: 280px;
++  background: #fff;
++  border: 1px solid var(--line);
++  border-radius: 16px;
++  box-shadow: var(--shadow-hover);
++  padding: 20px;
++  z-index: 50;
++}
++.filters-panel-header {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  margin-bottom: 14px;
++}
++.filters-panel-header h6 {
++  font-size: 0.95rem;
++  font-weight: 700;
++  color: var(--dark);
++  margin: 0;
++}
++.filters-panel-reset {
++  border: none;
++  background: none;
++  color: var(--primary-dark);
++  font-size: 0.8rem;
++  font-weight: 600;
++  cursor: pointer;
++}
++.filters-panel-reset:hover { text-decoration: underline; }
++
++.filter-group { margin-bottom: 16px; }
++.filter-group-label {
++  font-size: 0.72rem;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
++  color: var(--gray);
++  font-weight: 700;
++  margin-bottom: 8px;
++}
++.filter-checkbox-row {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  padding: 6px 0;
++  font-size: 0.88rem;
++  color: var(--dark);
++  cursor: pointer;
++}
++.filter-checkbox-row input[type="checkbox"] {
++  width: 16px;
++  height: 16px;
++  accent-color: var(--primary);
++  cursor: pointer;
++}
++.filters-panel-footer {
++  display: flex;
++  gap: 10px;
++  margin-top: 6px;
++}
++.filters-panel-footer button {
++  flex: 1;
++  border-radius: var(--radius-pill);
++  padding: 9px 0;
++  font-weight: 600;
++  font-size: 0.85rem;
++  font-family: "Poppins", sans-serif;
++  cursor: pointer;
++}
++.filters-cancel-btn { border: 1.5px solid var(--line); background: #fff; color: var(--gray); }
++.filters-cancel-btn:hover { background: #f6f9fb; }
++.filters-apply-btn { border: none; background: var(--primary); color: #fff; }
++.filters-apply-btn:hover { background: var(--primary-dark); }
++
++/* User Management search row (Dashboard) */
++.user-mgmt-header {
++  display: flex;
++  justify-content: space-between;
++  align-items: flex-start;
++  flex-wrap: wrap;
++  gap: 12px;
++  margin-bottom: 18px;
++}
++.user-mgmt-search { min-width: 220px; }
++
++/* ===========================
++   Global header bar — notification bell + top-right user dropdown
++   Replaces the old sidebar-bottom user chip on all 3 admin pages.
++=========================== */
++.admin-header-bar {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  margin-bottom: 20px;
++}
++.admin-header-greeting {
++  font-size: 1.05rem;
++  font-weight: 600;
++  color: var(--dark);
++}
++.admin-header-actions {
++  display: flex;
++  align-items: center;
++  gap: 14px;
++}
++
++.icon-btn-round {
++  position: relative;
++  width: 40px;
++  height: 40px;
++  border-radius: 50%;
++  border: 1.5px solid var(--line);
++  background: #fff;
++  color: var(--gray);
++  font-size: 1.05rem;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  cursor: pointer;
++  transition: 0.2s;
++}
++.icon-btn-round:hover { border-color: var(--primary); color: var(--primary-dark); }
++
++.notif-bell-wrap { position: relative; }
++.notif-dot {
++  position: absolute;
++  top: 8px;
++  right: 9px;
++  width: 8px;
++  height: 8px;
++  border-radius: 50%;
++  background: #e63946;
++  border: 2px solid #fff;
++}
++.notif-dropdown {
++  position: absolute;
++  top: calc(100% + 10px);
++  right: 0;
++  width: 300px;
++  background: #fff;
++  border: 1px solid var(--line);
++  border-radius: 16px;
++  box-shadow: var(--shadow-hover);
++  overflow: hidden;
++  z-index: 60;
++}
++.notif-dropdown-header {
++  padding: 14px 18px;
++  font-weight: 700;
++  font-size: 0.9rem;
++  color: var(--dark);
++  border-bottom: 1px solid var(--line);
++}
++.notif-empty {
++  padding: 20px 18px;
++  color: var(--gray);
++  font-size: 0.85rem;
++  margin: 0;
++}
++.notif-item {
++  display: block;
++  padding: 10px 18px;
++  border-bottom: 1px solid #f0f4f7;
++  text-decoration: none;
++  color: var(--dark);
++}
++.notif-item:hover { background: #f6fbff; }
++.notif-item .notif-item-title { font-size: 0.85rem; font-weight: 600; }
++.notif-item .notif-item-sub { font-size: 0.78rem; color: var(--gray); margin-top: 2px; }
++.notif-view-all {
++  display: block;
++  text-align: center;
++  padding: 12px;
++  font-size: 0.82rem;
++  font-weight: 600;
++  color: var(--primary-dark);
++  text-decoration: none;
++  background: #f6fbff;
++}
++.notif-view-all:hover { text-decoration: underline; }
++
++.header-user-wrap { position: relative; }
++.header-user-btn {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  border: 1.5px solid var(--line);
++  background: #fff;
++  border-radius: var(--radius-pill);
++  padding: 6px 14px 6px 6px;
++  cursor: pointer;
++  transition: 0.2s;
++}
++.header-user-btn:hover { border-color: var(--primary); }
++.header-user-btn > i { color: var(--gray); font-size: 0.8rem; }
++.header-user-info { text-align: left; }
++.header-user-info .name {
++  font-size: 0.85rem;
++  font-weight: 600;
++  color: var(--dark);
++  line-height: 1.2;
++}
++.header-user-dropdown {
++  position: absolute;
++  top: calc(100% + 10px);
++  right: 0;
++  width: 160px;
++  background: #fff;
++  border: 1px solid var(--line);
++  border-radius: 14px;
++  box-shadow: var(--shadow-hover);
++  padding: 8px;
++  z-index: 60;
++}
++.header-user-dropdown button {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  width: 100%;
++  border: none;
++  background: none;
++  color: #c0392b;
++  font-family: "Poppins", sans-serif;
++  font-size: 0.85rem;
++  font-weight: 600;
++  padding: 9px 10px;
++  border-radius: 8px;
++  cursor: pointer;
++}
++.header-user-dropdown button:hover { background: #fdecea; }
++
++/* ===========================
++   Dashboard — KPI change badges + chart grid
++=========================== */
++.kpi-card-top {
++  display: flex;
++  justify-content: space-between;
++  align-items: flex-start;
++  margin-bottom: 14px;
++}
++.kpi-change {
++  font-size: 0.75rem;
++  font-weight: 700;
++  padding: 3px 9px;
++  border-radius: var(--radius-pill);
++}
++.kpi-change.positive { background: #e6f4ea; color: #1e7e34; }
++.kpi-change.negative { background: #fdecea; color: #c0392b; }
++.kpi-change.neutral { background: #f0f4f7; color: var(--gray); }
++
++.dash-grid {
++  display: grid;
++  grid-template-columns: 1.4fr 1.4fr 1fr;
++  gap: 20px;
++  margin-bottom: 28px;
++  align-items: stretch;
++}
++.dash-chart-panel, .dash-chart-panel-small {
++  margin-bottom: 0;
++  display: flex;
++  flex-direction: column;
++}
++.dash-panel-header { margin-bottom: 14px; }
++.dash-panel-header h4 { margin: 0; }
++.category-legend {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++  margin-top: 14px;
++}
++.category-legend-item {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  font-size: 0.82rem;
++  color: var(--dark);
++}
++.category-legend-swatch {
++  display: inline-block;
++  width: 10px;
++  height: 10px;
++  border-radius: 50%;
++  margin-right: 8px;
++}
++.category-legend-label { display: flex; align-items: center; }
++.category-legend-pct { font-weight: 700; color: var(--gray); }
++
++@media (max-width: 1100px) {
++  .dash-grid { grid-template-columns: 1fr 1fr; }
++  .dash-chart-panel-small { grid-column: span 2; }
++}
++@media (max-width: 768px) {
++  .dash-grid { grid-template-columns: 1fr; }
++  .dash-chart-panel-small { grid-column: span 1; }
++}
++
++/* ===========================
++   Orders — toolbar dropdowns, bulk bar, row menu, avatars
++=========================== */
++.orders-toolbar {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 10px;
++  margin-bottom: 18px;
++}
++.orders-search { min-width: 260px; flex: 1; }
++
++.toolbar-dropdown { position: relative; }
++.toolbar-dropdown-btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  border: 1.5px solid var(--line);
++  background: #fff;
++  color: var(--gray);
++  border-radius: var(--radius-pill);
++  padding: 9px 16px;
++  font-size: 0.85rem;
++  font-family: "Poppins", sans-serif;
++  cursor: pointer;
++  transition: 0.2s;
++  white-space: nowrap;
++}
++.toolbar-dropdown-btn strong { color: var(--dark); font-weight: 600; }
++.toolbar-dropdown-btn:hover { border-color: var(--primary); }
++.toolbar-dropdown-btn i { font-size: 0.7rem; margin-left: 2px; }
++
++.toolbar-dropdown-menu {
++  position: absolute;
++  top: calc(100% + 8px);
++  left: 0;
++  min-width: 200px;
++  background: #fff;
++  border: 1px solid var(--line);
++  border-radius: 14px;
++  box-shadow: var(--shadow-hover);
++  padding: 6px;
++  z-index: 55;
++}
++.tdm-item {
++  display: block;
++  width: 100%;
++  text-align: left;
++  border: none;
++  background: none;
++  color: var(--dark);
++  font-family: "Poppins", sans-serif;
++  font-size: 0.85rem;
++  padding: 9px 12px;
++  border-radius: 9px;
++  cursor: pointer;
++}
++.tdm-item:hover { background: #f6fbff; }
++.tdm-item.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
++
++.bulk-action-bar {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  background: var(--primary-light);
++  border-radius: 14px;
++  padding: 12px 18px;
++  margin-bottom: 16px;
++  font-size: 0.85rem;
++  font-weight: 600;
++  color: var(--primary-dark);
++}
++.bulk-cancel-btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  border: none;
++  background: #c0392b;
++  color: #fff;
++  border-radius: var(--radius-pill);
++  padding: 7px 16px;
++  font-size: 0.82rem;
++  font-weight: 600;
++  font-family: "Poppins", sans-serif;
++  cursor: pointer;
++}
++.bulk-cancel-btn:hover { background: #a73325; }
++
++.orders-table td { position: relative; }
++.orders-table input[type="checkbox"] {
++  width: 16px;
++  height: 16px;
++  accent-color: var(--primary);
++  cursor: pointer;
++}
++.order-customer-cell {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++}
++.order-customer-cell .avatar { flex-shrink: 0; }
++.order-customer-name { font-weight: 500; }
++
++.row-action-wrap { position: relative; display: inline-block; }
++.row-action-btn {
++  border: none;
++  background: none;
++  color: var(--gray);
++  font-size: 1.1rem;
++  cursor: pointer;
++  padding: 4px 8px;
++}
++.row-action-btn:hover { color: var(--primary-dark); }
++.row-action-menu {
++  position: absolute;
++  top: 100%;
++  right: 0;
++  min-width: 160px;
++  background: #fff;
++  border: 1px solid var(--line);
++  border-radius: 12px;
++  box-shadow: var(--shadow-hover);
++  padding: 6px;
++  z-index: 55;
++}
++.row-action-menu button {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  width: 100%;
++  text-align: left;
++  border: none;
++  background: none;
++  font-family: "Poppins", sans-serif;
++  font-size: 0.85rem;
++  color: var(--dark);
++  padding: 8px 10px;
++  border-radius: 8px;
++  cursor: pointer;
++}
++.row-action-menu button:hover { background: #f6fbff; }
++.row-action-menu button.danger { color: #c0392b; }
++.row-action-menu button.danger:hover { background: #fdecea; }
++
++/* ===========================
++   Order detail slide-over panel
++=========================== */
++.order-panel-backdrop {
++  position: fixed;
++  inset: 0;
++  background: rgba(30, 41, 59, 0.35);
++  z-index: 90;
++}
++.order-detail-panel {
++  position: fixed;
++  top: 0;
++  right: -420px;
++  width: 400px;
++  max-width: 90vw;
++  height: 100vh;
++  background: #fff;
++  box-shadow: -12px 0 40px rgba(0,0,0,0.15);
++  z-index: 95;
++  transition: right 0.3s ease;
++  display: flex;
++  flex-direction: column;
++}
++.order-detail-panel.open { right: 0; }
++.order-detail-header {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  padding: 20px 22px;
++  border-bottom: 1px solid var(--line);
++}
++.order-detail-header h5 { margin: 0; font-weight: 700; color: var(--dark); }
++.order-detail-body {
++  padding: 22px;
++  overflow-y: auto;
++  flex: 1;
++}
++.od-meta { color: var(--gray); font-size: 0.82rem; margin: 8px 0 20px; }
++.od-customer {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++  padding: 14px;
++  background: #f6f9fb;
++  border-radius: 14px;
++  margin-bottom: 20px;
++}
++.od-customer-name { font-weight: 600; color: var(--dark); font-size: 0.92rem; }
++.od-customer-email { color: var(--gray); font-size: 0.8rem; }
++.od-section-label {
++  font-size: 0.75rem;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
++  color: var(--gray);
++  font-weight: 700;
++  margin-bottom: 10px;
++  margin-top: 20px;
++}
++.od-item-row {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++  padding: 10px 0;
++  border-bottom: 1px solid #f0f4f7;
++}
++.od-item-row img { width: 44px; height: 44px; object-fit: cover; border-radius: 10px; }
++.od-item-name { font-size: 0.88rem; font-weight: 500; color: var(--dark); }
++.od-item-qty { font-size: 0.78rem; color: var(--gray); }
++.od-item-price { margin-left: auto; font-size: 0.88rem; font-weight: 600; color: var(--dark); }
++.od-total-row {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  padding: 14px 0;
++  margin-top: 6px;
++  border-top: 1.5px solid var(--line);
++  font-size: 0.95rem;
++}
++.od-total-row strong { color: var(--dark); font-size: 1.1rem; }
++#odStatusSelect { width: 100%; margin-top: 4px; }
++
++@media (max-width: 768px) {
++  .admin-header-greeting { display: none; }
++  .orders-toolbar { flex-direction: column; align-items: stretch; }
++}
++
+ @media (max-width: 992px) {
+   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+ }
+@@ -240,4 +991,176 @@ body.admin-body {
+   .admin-sidebar { width: 100%; height: auto; }
+   .admin-main { height: auto; padding: 20px; }
+   .kpi-grid { grid-template-columns: 1fr; }
++  .admin-topbar-tools { width: 100%; flex-wrap: wrap; }
++  .admin-search { min-width: 0; flex: 1; }
++  .filters-panel { right: auto; left: 0; width: 100%; }
++}
++
++/* ===========================
++   Products page — 3-card KPI row, toolbar layout, Add Product button, date filter
++=========================== */
++.kpi-grid-3 {
++  grid-template-columns: repeat(3, 1fr);
++  margin-bottom: 24px;
++}
++
++.products-toolbar {
++  margin-bottom: 0;
++}
++.products-toolbar .filters-panel { top: calc(100% + 8px); }
++
++.add-product-btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  border: none;
++  background: var(--primary);
++  color: #fff;
++  border-radius: var(--radius-pill);
++  padding: 9px 20px;
++  font-weight: 600;
++  font-size: 0.85rem;
++  font-family: "Poppins", sans-serif;
++  cursor: pointer;
++  transition: 0.2s;
++  white-space: nowrap;
++  margin-left: auto;
++}
++.add-product-btn:hover { background: var(--primary-dark); }
++
++.date-filter-wrap { position: relative; display: flex; align-items: center; }
++.visually-hidden-date-input {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  opacity: 0;
++  pointer-events: none;
++}
++.date-filter-clear {
++  border: none;
++  background: none;
++  color: var(--gray);
++  font-size: 1rem;
++  cursor: pointer;
++  padding: 4px 6px;
++  margin-left: -6px;
++}
++.date-filter-clear:hover { color: #c0392b; }
++
++@media (max-width: 992px) {
++  .kpi-grid-3 { grid-template-columns: 1fr; }
++}
++@media (max-width: 768px) {
++  .products-toolbar { flex-direction: column; align-items: stretch; }
++  .add-product-btn { margin-left: 0; }
++}
++
++/* ===========================
++   Settings page — reuses .auth-error's look without needing auth.css
++=========================== */
++.auth-error {
++  background: #fde8e6;
++  color: #c0392b;
++  padding: 10px 14px;
++  border-radius: 8px;
++  font-size: 0.85rem;
++  margin-bottom: 16px;
++  display: none;
++}
++.auth-error.show { display: block; }
++
++.settings-success {
++  background: #e6f4ea;
++  color: #1e7e34;
++  padding: 10px 14px;
++  border-radius: 8px;
++  font-size: 0.85rem;
++  margin-bottom: 16px;
++}
++
++/* ===========================
++   Product image drag-and-drop zone (replaces the old image-path text input)
++=========================== */
++.image-drop-zone {
++  border: 2px dashed var(--line);
++  border-radius: 14px;
++  padding: 20px;
++  text-align: center;
++  cursor: pointer;
++  transition: 0.2s;
++  margin-bottom: 14px;
++  background: #fafeff;
++}
++.image-drop-zone:hover,
++.image-drop-zone.dragover {
++  border-color: var(--primary);
++  background: var(--primary-light);
++}
++.image-drop-zone i {
++  font-size: 1.6rem;
++  color: var(--primary);
++  margin-bottom: 6px;
++  display: block;
++}
++.image-drop-zone p {
++  margin: 0;
++  font-size: 0.85rem;
++  color: var(--gray);
++}
++.image-drop-zone .drop-hint-small {
++  font-size: 0.72rem;
++  color: var(--gray);
++  margin-top: 2px;
++}
++.image-drop-preview {
++  position: relative;
++  width: 100%;
++  max-width: 220px;
++  margin: 0 auto 14px;
++}
++.image-drop-preview img {
++  width: 100%;
++  aspect-ratio: 1;
++  object-fit: cover;
++  border-radius: 14px;
++  border: 1px solid var(--line);
++}
++.image-drop-preview .remove-image-btn {
++  position: absolute;
++  top: -8px;
++  right: -8px;
++  width: 26px;
++  height: 26px;
++  border-radius: 50%;
++  background: #fff;
++  border: 1.5px solid var(--line);
++  color: #c0392b;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  cursor: pointer;
++  font-size: 0.8rem;
++}
++
++/* Adjust Stock trigger inside the product modal, next to the disabled field */
++.stock-inline-adjust {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 10px;
++  margin-top: -8px;
++  margin-bottom: 14px;
++}
++.stock-inline-adjust-btn {
++  border: 1.5px solid var(--primary);
++  background: var(--primary-light);
++  color: var(--primary-dark);
++  border-radius: var(--radius-pill);
++  padding: 6px 14px;
++  font-size: 0.78rem;
++  font-weight: 600;
++  font-family: "Poppins", sans-serif;
++  cursor: pointer;
++  white-space: nowrap;
+ }
++.stock-inline-adjust-btn:hover { background: var(--primary); color: #fff; }
+diff --git a/firestore.rules b/firestore.rules
+new file mode 100644
+index 0000000..44719b5
+--- /dev/null
++++ b/firestore.rules
+@@ -0,0 +1,87 @@
++rules_version = '2';
++service cloud.firestore {
++  match /databases/{database}/documents {
++
++    /* ---------- helpers ---------- */
++    function isSignedIn() {
++      return request.auth != null;
++    }
++
++    function isOwner(userId) {
++      return isSignedIn() && request.auth.uid == userId;
++    }
++
++    // Looks up the CALLER's own role from their /users/{uid} doc.
++    // Used everywhere below instead of trusting a role claim on the request.
++    function myRole() {
++      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
++    }
++
++    function isStaffUp() {
++      return isSignedIn() && myRole() in ["staff", "admin", "superadmin"];
++    }
++
++    function isAdminUp() {
++      return isSignedIn() && myRole() in ["admin", "superadmin"];
++    }
++
++    function isSuperAdmin() {
++      return isSignedIn() && myRole() == "superadmin";
++    }
++
++    /* ---------- users ----------
++       Doc ID == Firebase Auth uid (set on signup in auth.js).
++       Self-service fields: fullName, savedAddress, photoBase64, preferences.
++       role is NEVER settable by the user themselves — only a superadmin,
++       via the dashboard's User Management table. */
++    match /users/{userId} {
++      allow read: if isOwner(userId) || isStaffUp();
++
++      // Signup (auth.js / Google sign-in) always writes role: "user".
++      allow create: if isOwner(userId)
++                    && request.resource.data.role == "user";
++
++      allow update: if isSuperAdmin()
++                    || (isOwner(userId)
++                        && request.resource.data.role == resource.data.role);
++
++      allow delete: if false;
++    }
++
++    /* ---------- products ----------
++       Public storefront reads with no login (products.js loads on page
++       open, unauthenticated). Only admin/superadmin can add, edit
++       (including the confirmed stock-adjust flow), or delete. */
++    match /products/{productId} {
++      allow read: if true;
++      allow create, update, delete: if isAdminUp();
++    }
++
++    /* ---------- orders ----------
++       Every order doc carries userId (set at checkout in checkout.js).
++       Owner can read their own orders (profile.js) and cancel them
++       (profile.js — status -> "Cancelled" only, nothing else changes).
++       Staff/admin/superadmin can read and update any order (admin-orders.html),
++       EXCEPT a Cancelled order is terminal — nobody, including staff+, can
++       change it further once cancelled. */
++    match /orders/{orderId} {
++      allow read: if isSignedIn()
++                  && (resource.data.userId == request.auth.uid || isStaffUp());
++
++      allow create: if isSignedIn()
++                    && request.resource.data.userId == request.auth.uid;
++
++      allow update: if (isStaffUp() && resource.data.status != "Cancelled")
++                    || (
++                      isSignedIn()
++                      && resource.data.userId == request.auth.uid
++                      && resource.data.status != "Cancelled"
++                      && request.resource.data.status == "Cancelled"
++                      && request.resource.data.total == resource.data.total
++                      && request.resource.data.items == resource.data.items
++                    );
++
++      allow delete: if false;
++    }
++  }
++}
+diff --git a/index.html b/index.html
+index 0385c4e..e2e1a0d 100644
+--- a/index.html
++++ b/index.html
+@@ -94,7 +94,7 @@
+                 class="d-none d-flex align-items-center gap-3"
+               >
+                 <a
+-                  href="admin/dashboard.html"
++                  href="admin/admin-dashboard.html"
+                   id="navAdminLink"
+                   class="login-btn d-none"
+                   title="Admin Dashboard"
+diff --git a/js/admin.js b/js/admin.js
+index 5ca1403..9bf606a 100644
+--- a/js/admin.js
++++ b/js/admin.js
+@@ -1,6 +1,7 @@
+ // js/admin.js
+-// KalingaCare — Admin panel logic, shared by admin/dashboard.html,
+-// admin/products.html, and admin/orders.html (same pattern as auth.js
++// KalingaCare — Admin panel logic, shared by admin/admin-dashboard.html,
++// admin/admin-products.html, admin/admin-orders.html, admin/admin-users.html,
++// and admin/admin-settings.html (same pattern as auth.js
+ // serving both login.html and register.html: one file, DOM-guarded
+ // sections so each page only runs the code its own elements need).
+ //
+@@ -10,7 +11,8 @@
+ // and change other people's roles.
+ 
+ import { auth, db } from "./firebase.js";
+-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
++import { showToast, resizeImageToDataUrl } from "./site.js";
++import { onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+ import {
+   collection,
+   doc,
+@@ -21,6 +23,7 @@ import {
+   deleteDoc,
+   setDoc,
+   query,
++  where,
+   orderBy,
+   onSnapshot,
+   serverTimestamp,
+@@ -60,14 +63,19 @@ onAuthStateChanged(auth, async (user) => {
+   if (shell) shell.style.display = "flex";
+   if (denied) denied.style.display = "none";
+ 
+-  const chipAvatar = document.getElementById("adminAvatar");
+-  const chipName = document.getElementById("adminName");
+-  const chipRole = document.getElementById("adminRole");
+-  if (chipAvatar) chipAvatar.textContent = initials(user.displayName || userData.fullName);
+-  if (chipName) chipName.textContent = user.displayName || userData.fullName || user.email;
+-  if (chipRole) {
+-    chipRole.textContent = role;
+-    chipRole.className = `role-badge role-${role}`;
++  const displayName = user.displayName || userData.fullName || user.email;
++
++  const greeting = document.getElementById("headerGreeting");
++  if (greeting) greeting.textContent = `Welcome back, ${(displayName || "").split(" ")[0]}!`;
++
++  const headerAvatar = document.getElementById("headerAvatar");
++  const headerName = document.getElementById("headerName");
++  const headerRole = document.getElementById("headerRole");
++  if (headerAvatar) headerAvatar.textContent = initials(displayName);
++  if (headerName) headerName.textContent = displayName;
++  if (headerRole) {
++    headerRole.textContent = role;
++    headerRole.className = `role-badge role-${role}`;
+   }
+ 
+   // Only superadmin sees the User Management panel on the dashboard.
+@@ -78,14 +86,76 @@ onAuthStateChanged(auth, async (user) => {
+   const productControls = document.querySelectorAll(".product-edit-only");
+   productControls.forEach((el) => el.classList.toggle("d-none", !["admin", "superadmin"].includes(role)));
+ 
++  initHeaderDropdowns();
++  initNotifBell();
+   initPageFor(role);
+ });
+ 
+-const logoutBtn = document.getElementById("adminLogoutBtn");
+-if (logoutBtn) {
+-  logoutBtn.addEventListener("click", async () => {
+-    await signOut(auth);
+-    window.location.href = "../index.html";
++/* ===== Header user dropdown (top-right avatar) ===== */
++function initHeaderDropdowns() {
++  const userBtn = document.getElementById("headerUserBtn");
++  const userDropdown = document.getElementById("headerUserDropdown");
++  const logoutBtn = document.getElementById("headerLogoutBtn");
++
++  if (userBtn && userDropdown) {
++    userBtn.addEventListener("click", (e) => {
++      e.stopPropagation();
++      userDropdown.classList.toggle("d-none");
++    });
++    document.addEventListener("click", (e) => {
++      if (!userDropdown.classList.contains("d-none") && !userDropdown.contains(e.target) && !userBtn.contains(e.target)) {
++        userDropdown.classList.add("d-none");
++      }
++    });
++  }
++
++  if (logoutBtn) {
++    logoutBtn.addEventListener("click", async () => {
++      await signOut(auth);
++      window.location.href = "../index.html";
++    });
++  }
++}
++
++/* ===== Notification bell — real data: currently Pending orders =====
++   Runs on every admin page (not just Orders), so a staff member sees it
++   the moment they land on Dashboard or Products too. */
++async function initNotifBell() {
++  const bellBtn = document.getElementById("notifBellBtn");
++  const dropdown = document.getElementById("notifDropdown");
++  const dot = document.getElementById("notifDot");
++  const list = document.getElementById("notifList");
++  if (!bellBtn || !dropdown) return;
++
++  const snap = await getDocs(query(collection(db, "orders"), where("status", "==", "Pending")));
++  const pending = snap.docs
++    .map((d) => ({ id: d.id, ...d.data() }))
++    .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
++
++  if (pending.length > 0) {
++    dot.classList.remove("d-none");
++    list.innerHTML = pending
++      .slice(0, 5)
++      .map(
++        (o) => `
++        <a href="orders.html" class="notif-item">
++          <div class="notif-item-title">#${o.id.slice(0, 8).toUpperCase()} — ${o.shippingInfo?.fullName || "—"}</div>
++          <div class="notif-item-sub">${peso(o.total)} · awaiting processing</div>
++        </a>`,
++      )
++      .join("");
++  } else {
++    list.innerHTML = `<p class="notif-empty">No pending orders right now.</p>`;
++  }
++
++  bellBtn.addEventListener("click", (e) => {
++    e.stopPropagation();
++    dropdown.classList.toggle("d-none");
++  });
++  document.addEventListener("click", (e) => {
++    if (!dropdown.classList.contains("d-none") && !dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
++      dropdown.classList.add("d-none");
++    }
+   });
+ }
+ 
+@@ -93,88 +163,534 @@ function initPageFor(role) {
+   if (document.getElementById("kpiOrders")) initDashboard(role);
+   if (document.getElementById("adminProductsTable")) initProducts(role);
+   if (document.getElementById("adminOrdersTable")) initOrders(role);
++  if (document.getElementById("staffMgmtBody")) initUsers(role);
++  if (document.getElementById("adminNameForm")) initSettings();
+ }
+ 
+ /* =====================================================
+    DASHBOARD
+ ===================================================== */
+-async function initDashboard() {
+-  const ordersSnap = await getDocs(collection(db, "orders"));
+-  const usersSnap = await getDocs(collection(db, "users"));
++const CATEGORY_LABELS = { mobility: "Mobility", wellness: "Wellness", digital: "Digital Health" };
++const CATEGORY_COLORS = { mobility: "#67c8f7", wellness: "#f8b4d9", digital: "#f6b93b" };
++const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
++const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
++
++function monthKey(date) {
++  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
++}
++
++function pctChange(current, previous) {
++  if (previous === 0) return current === 0 ? { label: "No change", cls: "neutral" } : { label: "New", cls: "positive" };
++  const pct = ((current - previous) / previous) * 100;
++  const rounded = Math.abs(pct) < 0.1 ? 0 : Math.round(pct * 10) / 10;
++  if (rounded === 0) return { label: "No change", cls: "neutral" };
++  return { label: `${rounded > 0 ? "+" : ""}${rounded}%`, cls: rounded > 0 ? "positive" : "negative" };
++}
++
++function renderKpiChange(elId, current, previous) {
++  const el = document.getElementById(elId);
++  if (!el) return;
++  const { label, cls } = pctChange(current, previous);
++  el.textContent = label;
++  el.className = `kpi-change ${cls}`;
++}
++
++/* Comparing "all of this month so far" against "all of last month" always
++   looks catastrophic in the first few weeks of a new month, since a 14-day-old
++   month is compared against a full 30-day one. This instead compares matching
++   date ranges: day 1 through today, this month vs. the same cutoff last month —
++   shared by Dashboard and Products KPI cards so both use the identical fix. */
++function getMonthToDateRanges() {
++  const now = new Date();
++  const daysInMonth = (year, monthIndex) => new Date(year, monthIndex + 1, 0).getDate();
++
++  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
++  const thisCutoffDay = now.getDate();
++
++  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
++  const lastMonthStart = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1);
++  const lastCutoffDay = Math.min(thisCutoffDay, daysInMonth(lastMonthDate.getFullYear(), lastMonthDate.getMonth()));
++  const lastMonthCutoff = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), lastCutoffDay, 23, 59, 59, 999);
++
++  return {
++    now,
++    inThisMonthToDate: (d) => d >= thisMonthStart && d <= now,
++    inLastMonthToDate: (d) => d >= lastMonthStart && d <= lastMonthCutoff,
++  };
++}
++
++async function initDashboard(role) {
++  const [ordersSnap, usersSnap, productsSnap] = await Promise.all([
++    getDocs(collection(db, "orders")),
++    getDocs(collection(db, "users")),
++    getDocs(collection(db, "products")),
++  ]);
++
++  const orders = ordersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
++  const users = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
++  const products = productsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
++  const productCategoryOf = Object.fromEntries(products.map((p) => [p.id, p.category]));
++
++  const { inThisMonthToDate, inLastMonthToDate } = getMonthToDateRanges();
+ 
+   let revenue = 0;
+   let pending = 0;
+-  ordersSnap.forEach((d) => {
+-    const o = d.data();
++  let ordersThisMonth = 0;
++  let ordersLastMonth = 0;
++  let revenueThisMonth = 0;
++  let revenueLastMonth = 0;
++
++  orders.forEach((o) => {
+     revenue += o.total || 0;
+     if ((o.status || "Pending") === "Pending") pending += 1;
++    const d = o.createdAt?.toDate ? o.createdAt.toDate() : null;
++    if (!d) return;
++    if (inThisMonthToDate(d)) {
++      ordersThisMonth += 1;
++      revenueThisMonth += o.total || 0;
++    } else if (inLastMonthToDate(d)) {
++      ordersLastMonth += 1;
++      revenueLastMonth += o.total || 0;
++    }
+   });
+ 
+-  document.getElementById("kpiOrders").textContent = ordersSnap.size;
++  let usersThisMonth = 0;
++  let usersLastMonth = 0;
++  users.forEach((u) => {
++    const d = u.createdAt?.toDate ? u.createdAt.toDate() : null;
++    if (!d) return;
++    if (inThisMonthToDate(d)) usersThisMonth += 1;
++    else if (inLastMonthToDate(d)) usersLastMonth += 1;
++  });
++
++  document.getElementById("kpiOrders").textContent = orders.length;
+   document.getElementById("kpiRevenue").textContent = peso(revenue);
+-  document.getElementById("kpiUsers").textContent = usersSnap.size;
++  document.getElementById("kpiUsers").textContent = users.length;
+   document.getElementById("kpiPending").textContent = pending;
+ 
+-  // User Management table (superadmin only — hidden for everyone else above)
+-  const tbody = document.getElementById("userMgmtBody");
+-  if (!tbody) return;
++  renderKpiChange("kpiOrdersChange", ordersThisMonth, ordersLastMonth);
++  renderKpiChange("kpiRevenueChange", revenueThisMonth, revenueLastMonth);
++  renderKpiChange("kpiUsersChange", usersThisMonth, usersLastMonth);
+ 
+-  tbody.innerHTML = usersSnap.docs
+-    .map((d) => {
+-      const u = d.data();
+-      const roles = ["user", "staff", "admin", "superadmin"];
+-      const options = roles
+-        .map((r) => `<option value="${r}" ${u.role === r ? "selected" : ""}>${r}</option>`)
+-        .join("");
+-      return `
++  /* ---- Charts (only if Chart.js + canvases are present, i.e. Dashboard page) ---- */
++  if (typeof Chart !== "undefined" && document.getElementById("ordersMonthChart")) {
++    renderDashboardCharts(orders, products, productCategoryOf);
++  }
++}
++
++/* =====================================================
++   USERS — dedicated page, grouped into Staff & Admins vs. Customers.
++   Restricted to superadmin; staff/admin see a restricted-access notice.
++===================================================== */
++async function initUsers(role) {
++  const restrictedNotice = document.getElementById("usersRestrictedNotice");
++  const content = document.getElementById("usersContent");
++
++  if (role !== "superadmin") {
++    if (restrictedNotice) restrictedNotice.classList.remove("d-none");
++    if (content) content.classList.add("d-none");
++    return;
++  }
++  if (restrictedNotice) restrictedNotice.classList.add("d-none");
++  if (content) content.classList.remove("d-none");
++
++  const usersSnap = await getDocs(collection(db, "users"));
++  const allUsers = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
++
++  const staffBody = document.getElementById("staffMgmtBody");
++  const customerBody = document.getElementById("customerMgmtBody");
++
++  function roleOptions(u) {
++    const roles = ["user", "staff", "admin", "superadmin"];
++    return roles.map((r) => `<option value="${r}" ${u.role === r ? "selected" : ""}>${r}</option>`).join("");
++  }
++
++  function renderGroup(tbody, list, emptyMsg) {
++    if (list.length === 0) {
++      tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-4">${emptyMsg}</td></tr>`;
++      return;
++    }
++    tbody.innerHTML = list
++      .map(
++        (u) => `
+         <tr>
+           <td>${u.fullName || "—"}</td>
+           <td>${u.email || "—"}</td>
+-          <td><select data-uid="${d.id}" class="role-select">${options}</select></td>
+-        </tr>`;
+-    })
+-    .join("");
++          <td><select data-uid="${u.id}" class="role-select">${roleOptions(u)}</select></td>
++        </tr>`,
++      )
++      .join("");
++
++    tbody.querySelectorAll(".role-select").forEach((select) => {
++      select.addEventListener("change", async () => {
++        try {
++          await updateDoc(doc(db, "users", select.dataset.uid), { role: select.value });
++          showToast("Role updated.");
++        } catch (err) {
++          console.error(err);
++          showToast("Couldn't update role — see console for details.");
++        }
++      });
++    });
++  }
++
++  function renderAll(list) {
++    const staff = list.filter((u) => ["staff", "admin", "superadmin"].includes(u.role));
++    const customers = list.filter((u) => (u.role || "user") === "user");
++    renderGroup(staffBody, staff, "No staff or admin accounts match that search.");
++    renderGroup(customerBody, customers, "No customer accounts match that search.");
++  }
++
++  renderAll(allUsers);
++
++  const searchInput = document.getElementById("userMgmtSearch");
++  if (searchInput) {
++    searchInput.addEventListener("input", () => {
++      const term = searchInput.value.trim().toLowerCase();
++      const filtered = term
++        ? allUsers.filter(
++            (u) =>
++              (u.fullName || "").toLowerCase().includes(term) ||
++              (u.email || "").toLowerCase().includes(term),
++          )
++        : allUsers;
++      renderAll(filtered);
++    });
++  }
++}
++
++/* =====================================================
++   SETTINGS — the logged-in admin's own name + photo.
++===================================================== */
++function initSettings() {
++  const nameInput = document.getElementById("settingsFullName");
++  const roleBadge = document.getElementById("settingsRoleBadge");
++  const emailEl = document.getElementById("settingsEmail");
++  const avatarImg = document.getElementById("avatarImg");
++  const avatarInitialsText = document.getElementById("avatarInitialsText");
++  const errorEl = document.getElementById("settingsError");
++  const successEl = document.getElementById("settingsSuccess");
++
++  function renderAvatar(name, photoBase64) {
++    if (photoBase64) {
++      avatarImg.src = photoBase64;
++      avatarImg.classList.remove("d-none");
++      avatarInitialsText.classList.add("d-none");
++    } else {
++      avatarImg.classList.add("d-none");
++      avatarInitialsText.classList.remove("d-none");
++      avatarInitialsText.textContent = initials(name);
++    }
++  }
++
++  onAuthStateChanged(auth, async (user) => {
++    if (!user) return;
++    const snap = await getDoc(doc(db, "users", user.uid));
++    const userData = snap.exists() ? snap.data() : {};
++    const role = userData.role || "user";
++
++    nameInput.value = user.displayName || userData.fullName || "";
++    emailEl.textContent = user.email || "—";
++    roleBadge.textContent = role;
++    roleBadge.className = `role-badge role-${role}`;
++    renderAvatar(nameInput.value, userData.photoBase64);
++  });
++
++  function showMsg(el, text) {
++    successEl.classList.add("d-none");
++    errorEl.textContent = text;
++    errorEl.classList.add("show");
++  }
++
++  document.getElementById("adminNameForm").addEventListener("submit", async (e) => {
++    e.preventDefault();
++    errorEl.classList.remove("show");
++    successEl.classList.add("d-none");
++    const fullName = nameInput.value.trim();
++    if (!fullName) return;
++
++    try {
++      await updateDoc(doc(db, "users", auth.currentUser.uid), { fullName });
++      await updateProfile(auth.currentUser, { displayName: fullName });
++      successEl.classList.remove("d-none");
++      document.getElementById("headerName").textContent = fullName;
++      document.getElementById("headerAvatar").textContent = initials(fullName);
++    } catch (err) {
++      showMsg(errorEl, "Couldn't save name — please try again.");
++    }
++  });
++
++  document.getElementById("avatarEditBtn").addEventListener("click", () => {
++    document.getElementById("avatarUpload").click();
++  });
++
++  document.getElementById("avatarUpload").addEventListener("change", async (e) => {
++    const file = e.target.files[0];
++    if (!file) return;
+ 
+-  tbody.querySelectorAll(".role-select").forEach((select) => {
+-    select.addEventListener("change", async () => {
+-      await updateDoc(doc(db, "users", select.dataset.uid), { role: select.value });
++    errorEl.classList.remove("show");
++    if (!file.type.startsWith("image/")) {
++      showMsg(errorEl, "Please choose an image file.");
++      return;
++    }
++    if (file.size > 8 * 1024 * 1024) {
++      showMsg(errorEl, "Image is too large (max 8MB before resizing).");
++      return;
++    }
++
++    try {
++      const dataUrl = await resizeImageToDataUrl(file);
++      await updateDoc(doc(db, "users", auth.currentUser.uid), { photoBase64: dataUrl });
++      renderAvatar(nameInput.value, dataUrl);
++      document.getElementById("headerAvatar").innerHTML = `<img src="${dataUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
++    } catch (err) {
++      showMsg(errorEl, err.message || "Couldn't update photo.");
++    }
++  });
++}
++
++/* ---- Chart builders — all data is real, derived from orders/products above ---- */
++function renderDashboardCharts(orders, products, productCategoryOf) {
++  const gridColor = "rgba(100, 116, 139, 0.08)";
++  const textColor = "#64748b";
++  Chart.defaults.font.family = "Poppins, sans-serif";
++
++  /* Orders per month — last 6 calendar months, oldest to newest */
++  const now = new Date();
++  const monthBuckets = [];
++  for (let i = 5; i >= 0; i--) {
++    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
++    monthBuckets.push({ key: monthKey(d), label: MONTH_LABELS[d.getMonth()] });
++  }
++  const monthCounts = monthBuckets.map(
++    (b) => orders.filter((o) => o.createdAt?.toDate && monthKey(o.createdAt.toDate()) === b.key).length,
++  );
++
++  new Chart(document.getElementById("ordersMonthChart"), {
++    type: "bar",
++    data: {
++      labels: monthBuckets.map((b) => b.label),
++      datasets: [{ data: monthCounts, backgroundColor: "#67c8f7", borderRadius: 8, maxBarThickness: 38 }],
++    },
++    options: {
++      plugins: { legend: { display: false } },
++      scales: {
++        y: { beginAtZero: true, ticks: { precision: 0, color: textColor }, grid: { color: gridColor } },
++        x: { ticks: { color: textColor }, grid: { display: false } },
++      },
++    },
++  });
++
++  /* Orders by day of week — across all-time orders */
++  const dowCounts = [0, 0, 0, 0, 0, 0, 0];
++  orders.forEach((o) => {
++    const d = o.createdAt?.toDate ? o.createdAt.toDate() : null;
++    if (d) dowCounts[d.getDay()] += 1;
++  });
++
++  new Chart(document.getElementById("ordersDowChart"), {
++    type: "bar",
++    data: {
++      labels: DOW_LABELS,
++      datasets: [{ data: dowCounts, backgroundColor: "#f8b4d9", borderRadius: 8, maxBarThickness: 38 }],
++    },
++    options: {
++      plugins: { legend: { display: false } },
++      scales: {
++        y: { beginAtZero: true, ticks: { precision: 0, color: textColor }, grid: { color: gridColor } },
++        x: { ticks: { color: textColor }, grid: { display: false } },
++      },
++    },
++  });
++
++  /* Top categories — by units sold across all order items, resolved via live product catalog */
++  const categoryQty = { mobility: 0, wellness: 0, digital: 0 };
++  orders.forEach((o) => {
++    (o.items || []).forEach((item) => {
++      const cat = productCategoryOf[item.id];
++      if (cat && categoryQty[cat] !== undefined) categoryQty[cat] += item.qty || 0;
++    });
++  });
++  const categoryTotal = Object.values(categoryQty).reduce((a, b) => a + b, 0);
++  const categoryKeys = Object.keys(categoryQty);
++
++  new Chart(document.getElementById("categoryDonutChart"), {
++    type: "doughnut",
++    data: {
++      labels: categoryKeys.map((k) => CATEGORY_LABELS[k]),
++      datasets: [
++        {
++          data: categoryKeys.map((k) => categoryQty[k]),
++          backgroundColor: categoryKeys.map((k) => CATEGORY_COLORS[k]),
++          borderWidth: 0,
++        },
++      ],
++    },
++    options: { plugins: { legend: { display: false } }, cutout: "68%" },
++  });
++
++  const legendEl = document.getElementById("categoryLegend");
++  if (legendEl) {
++    legendEl.innerHTML = categoryKeys
++      .map((k) => {
++        const pct = categoryTotal > 0 ? Math.round((categoryQty[k] / categoryTotal) * 100) : 0;
++        return `
++          <div class="category-legend-item">
++            <span class="category-legend-label"><span class="category-legend-swatch" style="background:${CATEGORY_COLORS[k]}"></span>${CATEGORY_LABELS[k]}</span>
++            <span class="category-legend-pct">${categoryTotal > 0 ? pct + "%" : "—"}</span>
++          </div>`;
++      })
++      .join("");
++  }
++
++  /* Top selling products — aggregate units sold + revenue across all order items */
++  const productAgg = {};
++  orders.forEach((o) => {
++    (o.items || []).forEach((item) => {
++      if (!productAgg[item.id]) productAgg[item.id] = { name: item.name, qty: 0, revenue: 0 };
++      productAgg[item.id].qty += item.qty || 0;
++      productAgg[item.id].revenue += (item.price || 0) * (item.qty || 0);
+     });
+   });
++  const topProducts = Object.entries(productAgg)
++    .sort((a, b) => b[1].qty - a[1].qty)
++    .slice(0, 5);
++
++  const topTbody = document.querySelector("#topProductsTable tbody");
++  if (topTbody) {
++    if (topProducts.length === 0) {
++      topTbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">No sales yet.</td></tr>`;
++    } else {
++      topTbody.innerHTML = topProducts
++        .map(([productId, agg]) => {
++          const cat = productCategoryOf[productId];
++          return `
++            <tr>
++              <td>${agg.name}</td>
++              <td>${cat ? CATEGORY_LABELS[cat] : "—"}</td>
++              <td>${agg.qty}</td>
++              <td>${peso(agg.revenue)}</td>
++            </tr>`;
++        })
++        .join("");
++    }
++  }
+ }
+ 
+ /* =====================================================
+    PRODUCTS
+ ===================================================== */
++// Stock at or below this (but above 0) shows as "Low Stock". Adjust here if
++// the group wants a different cutoff — it's the only place this lives.
++const LOW_STOCK_THRESHOLD = 10;
++
++function stockStatusOf(stock) {
++  const s = stock ?? 0;
++  if (s === 0) return "out";
++  if (s <= LOW_STOCK_THRESHOLD) return "low";
++  return "instock";
++}
++
++function stockBadge(status) {
++  const labels = { instock: "In Stock", low: "Low Stock", out: "Out of Stock" };
++  return `<span class="status-badge status-${status}">${labels[status]}</span>`;
++}
++
+ function initProducts(role) {
+   const tbody = document.querySelector("#adminProductsTable tbody");
+   const form = document.getElementById("productForm");
+   const editingIdField = document.getElementById("productEditingId");
+   const formTitle = document.getElementById("productFormTitle");
+-  const cancelEditBtn = document.getElementById("cancelEditBtn");
++  const editable = ["admin", "superadmin"].includes(role);
+ 
+   const productsRef = collection(db, "products");
+ 
+-  onSnapshot(query(productsRef, orderBy("name")), (snap) => {
+-    if (snap.empty) {
+-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No products yet — add one using the form.</td></tr>`;
++  /* ---- KPI cards: Total Orders / Monthly Revenue / Out of Stock ----
++     Same month-to-date comparison fix used on Dashboard, so the two pages
++     never disagree on what "this month" means. */
++  (async () => {
++    const ordersSnap = await getDocs(collection(db, "orders"));
++    const orders = ordersSnap.docs.map((d) => d.data());
++    const { inThisMonthToDate, inLastMonthToDate } = getMonthToDateRanges();
++
++    let ordersThisMonth = 0;
++    let ordersLastMonth = 0;
++    let revenueThisMonth = 0;
++    let revenueLastMonth = 0;
++
++    orders.forEach((o) => {
++      const d = o.createdAt?.toDate ? o.createdAt.toDate() : null;
++      if (!d) return;
++      if (inThisMonthToDate(d)) {
++        ordersThisMonth += 1;
++        revenueThisMonth += o.total || 0;
++      } else if (inLastMonthToDate(d)) {
++        ordersLastMonth += 1;
++        revenueLastMonth += o.total || 0;
++      }
++    });
++
++    document.getElementById("prodKpiOrders").textContent = orders.length;
++    document.getElementById("prodKpiRevenue").textContent = peso(revenueThisMonth);
++    renderKpiChange("prodKpiOrdersChange", ordersThisMonth, ordersLastMonth);
++    renderKpiChange("prodKpiRevenueChange", revenueThisMonth, revenueLastMonth);
++  })();
++
++  // Cached locally so search/tabs/filters can re-render instantly without
++  // re-querying Firestore — onSnapshot only needs to refresh this cache.
++  let allProducts = [];
++  let searchTerm = "";
++  let stockFilter = new Set(["instock", "low", "out"]);
++  let categoryFilter = new Set(["mobility", "wellness", "digital"]);
++  let dateFilterValue = ""; // "" = no filter, else "YYYY-MM-DD"
++
++  function localDateKey(date) {
++    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
++  }
++
++  function matchesFilters(p) {
++    if (!stockFilter.has(stockStatusOf(p.stock))) return false;
++    if (!categoryFilter.has(p.category)) return false;
++    if (dateFilterValue) {
++      const d = p.updatedAt?.toDate ? p.updatedAt.toDate() : null;
++      if (!d || localDateKey(d) !== dateFilterValue) return false;
++    }
++    if (searchTerm) {
++      const haystack = `${p.name} ${p.category} ${p.subcategory || ""}`.toLowerCase();
++      if (!haystack.includes(searchTerm)) return false;
++    }
++    return true;
++  }
++
++  function renderRows() {
++    const filtered = allProducts.filter(matchesFilters);
++
++    document.getElementById("prodKpiOutOfStock").textContent = allProducts.filter((p) => stockStatusOf(p.stock) === "out").length;
++
++    if (filtered.length === 0) {
++      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No products match these filters.</td></tr>`;
+       return;
+     }
+-    tbody.innerHTML = snap.docs
+-      .map((d) => {
+-        const p = d.data();
+-        const editable = ["admin", "superadmin"].includes(role);
++
++    tbody.innerHTML = filtered
++      .map((p) => {
++        const status = stockStatusOf(p.stock);
++        const updated = p.updatedAt?.toDate ? p.updatedAt.toDate().toLocaleDateString("en-PH") : "—";
++        const thumb = p.imgBase64 || `../${p.img || "assets/images/products/placeholder.jpg"}`;
+         return `
+           <tr>
+-            <td><img src="../${p.img || "assets/images/products/placeholder.jpg"}" alt="${p.name}" /></td>
++            <td><img src="${thumb}" alt="${p.name}" /></td>
+             <td>${p.name}</td>
+             <td>${p.category}<br><span class="text-muted" style="font-size:0.78rem;">${p.subcategory || ""}</span></td>
+             <td>${peso(p.price)}</td>
+             <td>${p.stock ?? "—"}</td>
++            <td>${stockBadge(status)}</td>
++            <td class="text-muted" style="font-size:0.85rem;">${updated}</td>
+             <td>
+               ${
+                 editable
+-                  ? `<button class="icon-btn edit-product" data-id="${d.id}"><i class="bi bi-pencil"></i></button>
+-                     <button class="icon-btn danger delete-product" data-id="${d.id}"><i class="bi bi-trash3"></i></button>`
++                  ? `<button class="icon-btn edit-product" data-id="${p.id}"><i class="bi bi-pencil"></i></button>
++                     <button class="icon-btn danger delete-product" data-id="${p.id}"><i class="bi bi-trash3"></i></button>`
+                   : ""
+               }
+             </td>
+@@ -193,10 +709,16 @@ function initProducts(role) {
+         document.getElementById("pSubcategory").value = p.subcategory || "";
+         document.getElementById("pPrice").value = p.price;
+         document.getElementById("pStock").value = p.stock ?? "";
++        document.getElementById("pStock").disabled = true;
++        document.getElementById("stockInlineAdjustWrap").classList.remove("d-none");
++        document.getElementById("stockInlineAdjustBtn").dataset.id = btn.dataset.id;
++
+         document.getElementById("pImg").value = p.img || "";
++        document.getElementById("pImgBase64").value = p.imgBase64 || "";
++        setImagePreview(p.imgBase64 || (p.img ? `../${p.img}` : ""));
++
+         formTitle.textContent = "Edit Product";
+-        cancelEditBtn.classList.remove("d-none");
+-        form.scrollIntoView({ behavior: "smooth" });
++        productModalInstance.show();
+       }),
+     );
+ 
+@@ -207,6 +729,241 @@ function initProducts(role) {
+         }
+       }),
+     );
++  }
++
++  onSnapshot(query(productsRef, orderBy("name")), (snap) => {
++    allProducts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
++    document.getElementById("prodKpiOutOfStock").textContent = allProducts.filter((p) => stockStatusOf(p.stock) === "out").length;
++    if (allProducts.length === 0) {
++      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No products yet — add one using the "Add Product" button.</td></tr>`;
++      return;
++    }
++    renderRows();
++  });
++
++  /* ---- Search ---- */
++  const searchInput = document.getElementById("productSearch");
++  if (searchInput) {
++    searchInput.addEventListener("input", () => {
++      searchTerm = searchInput.value.trim().toLowerCase();
++      renderRows();
++    });
++  }
++
++  /* ---- Select Date filter (filters by Last Updated) ----
++     A real <input type="date"> hidden behind a pill button, so it gets the
++     browser's native calendar picker without hand-building one. */
++  const dateBtn = document.getElementById("dateFilterBtn");
++  const dateInput = document.getElementById("stockDateInput");
++  const dateLabel = document.getElementById("selectDateLabel");
++  const dateClearBtn = document.getElementById("dateFilterClear");
++
++  if (dateBtn && dateInput) {
++    dateBtn.addEventListener("click", () => {
++      if (typeof dateInput.showPicker === "function") {
++        try {
++          dateInput.showPicker();
++        } catch {
++          dateInput.focus();
++        }
++      } else {
++        dateInput.focus();
++      }
++    });
++
++    dateInput.addEventListener("change", () => {
++      dateFilterValue = dateInput.value;
++      if (dateFilterValue) {
++        const [y, m, d] = dateFilterValue.split("-").map(Number);
++        dateLabel.textContent = new Date(y, m - 1, d).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
++        dateClearBtn.classList.remove("d-none");
++      } else {
++        dateLabel.textContent = "Select Date";
++        dateClearBtn.classList.add("d-none");
++      }
++      renderRows();
++    });
++
++    dateClearBtn.addEventListener("click", () => {
++      dateInput.value = "";
++      dateFilterValue = "";
++      dateLabel.textContent = "Select Date";
++      dateClearBtn.classList.add("d-none");
++      renderRows();
++    });
++  }
++
++  /* ---- Quick-filter tabs (kept in sync with the checkbox panel below) ---- */
++  const tabsWrap = document.getElementById("productFilterTabs");
++  const stockCheckboxes = document.querySelectorAll(".pf-stock");
++  const categoryCheckboxes = document.querySelectorAll(".pf-category");
++
++  function setActiveTab(tab) {
++    tabsWrap.querySelectorAll(".filter-tab").forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tab));
++    stockFilter = tab === "all" ? new Set(["instock", "low", "out"]) : new Set([tab]);
++    stockCheckboxes.forEach((cb) => (cb.checked = stockFilter.has(cb.value)));
++    renderRows();
++  }
++
++  if (tabsWrap) {
++    tabsWrap.querySelectorAll(".filter-tab").forEach((btn) => {
++      btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
++    });
++  }
++
++  /* ---- Filters flyout panel (Stock Status + Category, multi-select) ---- */
++  const filtersBtn = document.getElementById("productFiltersBtn");
++  const filtersPanel = document.getElementById("productFiltersPanel");
++
++  if (filtersBtn && filtersPanel) {
++    filtersBtn.addEventListener("click", () => {
++      filtersPanel.classList.toggle("d-none");
++      filtersBtn.classList.toggle("active", !filtersPanel.classList.contains("d-none"));
++    });
++
++    document.addEventListener("click", (e) => {
++      if (!filtersPanel.classList.contains("d-none") && !filtersPanel.contains(e.target) && !filtersBtn.contains(e.target)) {
++        filtersPanel.classList.add("d-none");
++        filtersBtn.classList.remove("active");
++      }
++    });
++
++    document.getElementById("productFiltersApply").addEventListener("click", () => {
++      stockFilter = new Set(Array.from(stockCheckboxes).filter((cb) => cb.checked).map((cb) => cb.value));
++      categoryFilter = new Set(Array.from(categoryCheckboxes).filter((cb) => cb.checked).map((cb) => cb.value));
++      // A custom multi-select doesn't map to one tab, so only "All Stock" stays
++      // highlighted, and only when the panel's selection happens to equal it.
++      const isAll = stockFilter.size === 3;
++      tabsWrap.querySelectorAll(".filter-tab").forEach((btn) => btn.classList.toggle("active", isAll && btn.dataset.tab === "all"));
++      filtersPanel.classList.add("d-none");
++      filtersBtn.classList.remove("active");
++      renderRows();
++    });
++
++    document.getElementById("productFiltersCancel").addEventListener("click", () => {
++      // Discard unapplied checkbox edits, reverting to the last applied filter.
++      stockCheckboxes.forEach((cb) => (cb.checked = stockFilter.has(cb.value)));
++      categoryCheckboxes.forEach((cb) => (cb.checked = categoryFilter.has(cb.value)));
++      filtersPanel.classList.add("d-none");
++      filtersBtn.classList.remove("active");
++    });
++
++    document.getElementById("productFiltersReset").addEventListener("click", () => {
++      stockCheckboxes.forEach((cb) => (cb.checked = true));
++      categoryCheckboxes.forEach((cb) => (cb.checked = true));
++      categoryFilter = new Set(["mobility", "wellness", "digital"]);
++      setActiveTab("all");
++    });
++  }
++
++  /* ---- Add / Edit Product modal ---- */
++  const productModalEl = document.getElementById("productModal");
++  const productModalInstance = new bootstrap.Modal(productModalEl);
++
++  const addProductBtn = document.getElementById("addProductBtn");
++  if (addProductBtn) {
++    addProductBtn.addEventListener("click", () => {
++      formTitle.textContent = "Add Product";
++      productModalInstance.show();
++    });
++  }
++
++  /* ---- Image drag-and-drop (replaces the old image-path text field) ----
++     Resizes client-side via the shared resizeImageToDataUrl (same approach
++     as avatar uploads) and stores as `imgBase64` on the product doc. No
++     Firebase Storage needed — consistent with the rest of the app. */
++  const dropZone = document.getElementById("imageDropZone");
++  const fileInput = document.getElementById("imageFileInput");
++  const previewWrap = document.getElementById("imagePreviewWrap");
++  const previewImg = document.getElementById("imagePreview");
++  const removeImageBtn = document.getElementById("removeImageBtn");
++  const pImgBase64Field = document.getElementById("pImgBase64");
++
++  function setImagePreview(src) {
++    if (src) {
++      previewImg.src = src;
++      previewWrap.classList.remove("d-none");
++      dropZone.classList.add("d-none");
++    } else {
++      previewImg.src = "";
++      previewWrap.classList.add("d-none");
++      dropZone.classList.remove("d-none");
++    }
++  }
++
++  async function handleImageFile(file) {
++    if (!file) return;
++    if (!file.type.startsWith("image/")) {
++      showToast("Please choose an image file.");
++      return;
++    }
++    if (file.size > 8 * 1024 * 1024) {
++      showToast("Image is too large (max 8MB before resizing).");
++      return;
++    }
++    try {
++      const dataUrl = await resizeImageToDataUrl(file, 500, 0.75);
++      pImgBase64Field.value = dataUrl;
++      document.getElementById("pImg").value = ""; // new upload replaces any old path reference
++      setImagePreview(dataUrl);
++    } catch (err) {
++      showToast(err.message || "Couldn't read that image.");
++    }
++  }
++
++  if (dropZone) {
++    dropZone.addEventListener("click", () => fileInput.click());
++    dropZone.addEventListener("dragover", (e) => {
++      e.preventDefault();
++      dropZone.classList.add("dragover");
++    });
++    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
++    dropZone.addEventListener("drop", (e) => {
++      e.preventDefault();
++      dropZone.classList.remove("dragover");
++      handleImageFile(e.dataTransfer.files[0]);
++    });
++    fileInput.addEventListener("change", (e) => handleImageFile(e.target.files[0]));
++  }
++
++  if (removeImageBtn) {
++    removeImageBtn.addEventListener("click", (e) => {
++      e.stopPropagation();
++      pImgBase64Field.value = "";
++      document.getElementById("pImg").value = "";
++      fileInput.value = "";
++      setImagePreview("");
++    });
++  }
++
++  /* ---- Adjust Stock, triggered from inside the edit modal ----
++     Stacks on top of the product modal: hide this one, open the stock
++     modal for the same product. Nothing needs to reopen afterward — the
++     table refreshes live via onSnapshot once the stock change is confirmed. */
++  const stockInlineAdjustBtn = document.getElementById("stockInlineAdjustBtn");
++  if (stockInlineAdjustBtn) {
++    stockInlineAdjustBtn.addEventListener("click", async () => {
++      const productId = stockInlineAdjustBtn.dataset.id;
++      if (!productId) return;
++      const snap2 = await getDoc(doc(db, "products", productId));
++      if (!snap2.exists()) return;
++      productModalInstance.hide();
++      openStockModal(productId, snap2.data());
++    });
++  }
++
++  // Always reset to a clean "Add" state when the modal closes, whether that's
++  // from a successful save, the × button, backdrop click, or Esc — one place
++  // to keep the form from ever reopening stale.
++  productModalEl.addEventListener("hidden.bs.modal", () => {
++    form.reset();
++    editingIdField.value = "";
++    document.getElementById("pStock").disabled = false;
++    document.getElementById("stockInlineAdjustWrap").classList.add("d-none");
++    pImgBase64Field.value = "";
++    fileInput.value = "";
++    setImagePreview("");
++    formTitle.textContent = "Add Product";
+   });
+ 
+   if (form) {
+@@ -219,66 +976,503 @@ function initProducts(role) {
+         price: Number(document.getElementById("pPrice").value),
+         stock: Number(document.getElementById("pStock").value) || 0,
+         img: document.getElementById("pImg").value.trim(),
++        imgBase64: pImgBase64Field.value || null,
++        updatedAt: serverTimestamp(),
+       };
+ 
+-      if (editingIdField.value) {
+-        await updateDoc(doc(db, "products", editingIdField.value), data);
+-      } else {
+-        await addDoc(productsRef, { ...data, createdAt: serverTimestamp() });
++      try {
++        if (editingIdField.value) {
++          await updateDoc(doc(db, "products", editingIdField.value), data);
++          showToast(`${data.name} updated.`);
++        } else {
++          await addDoc(productsRef, { ...data, createdAt: serverTimestamp() });
++          showToast(`${data.name} added.`);
++        }
++        productModalInstance.hide();
++      } catch (err) {
++        console.error(err);
++        showToast("Couldn't save — see console for details.");
+       }
+-
+-      form.reset();
+-      editingIdField.value = "";
+-      formTitle.textContent = "Add Product";
+-      cancelEditBtn.classList.add("d-none");
+     });
+   }
+ 
+-  if (cancelEditBtn) {
+-    cancelEditBtn.addEventListener("click", () => {
+-      form.reset();
+-      editingIdField.value = "";
+-      formTitle.textContent = "Add Product";
+-      cancelEditBtn.classList.add("d-none");
+-    });
+-  }
++  wireStockModal();
++}
++
++/* =====================================================
++   STOCK ADJUSTMENT MODAL
++   Two-step confirm for the one path that can silently zero out or drastically
++   change a product's stock: edit → new quantity → explicit "are you sure"
++   showing old → new before anything writes to Firestore.
++===================================================== */
++let stockModalEl, stockModalInstance;
++let currentStockProductId = null;
++let currentStockName = "";
++let currentStockOldQty = 0;
++
++function openStockModal(productId, product) {
++  currentStockProductId = productId;
++  currentStockName = product.name;
++  currentStockOldQty = product.stock ?? 0;
++
++  document.getElementById("stockProductName").textContent = currentStockName;
++  document.getElementById("stockCurrentQty").textContent = currentStockOldQty;
++  document.getElementById("stockNewQty").value = currentStockOldQty;
++
++  showStockStep("edit");
++  stockModalInstance.show();
++}
++
++function showStockStep(step) {
++  document.getElementById("stockStepEdit").classList.toggle("d-none", step !== "edit");
++  document.getElementById("stockStepConfirm").classList.toggle("d-none", step !== "confirm");
++  document.getElementById("stockBackBtn").classList.toggle("d-none", step !== "confirm");
++  document.getElementById("stockConfirmBtn").classList.toggle("d-none", step !== "confirm");
++  document.getElementById("stockContinueBtn").classList.toggle("d-none", step !== "edit");
++}
++
++function wireStockModal() {
++  stockModalEl = document.getElementById("stockModal");
++  if (!stockModalEl || stockModalInstance) return; // already wired, or not on this page
++
++  stockModalInstance = new bootstrap.Modal(stockModalEl);
++  const newQtyInput = document.getElementById("stockNewQty");
++
++  document.getElementById("stockContinueBtn").addEventListener("click", () => {
++    const newQty = Number(newQtyInput.value);
++    if (Number.isNaN(newQty) || newQty < 0) {
++      newQtyInput.focus();
++      return;
++    }
++
++    document.getElementById("confirmProductName").textContent = currentStockName;
++    document.getElementById("confirmOldQty").textContent = currentStockOldQty;
++    document.getElementById("confirmNewQty").textContent = newQty;
++
++    const warning = document.getElementById("confirmWarning");
++    const drop = currentStockOldQty - newQty;
++    if (newQty === 0 && currentStockOldQty > 0) {
++      warning.textContent = "This will take the product out of stock.";
++      warning.classList.remove("d-none");
++    } else if (currentStockOldQty > 0 && drop / currentStockOldQty >= 0.5) {
++      warning.textContent = `This is a ${Math.round((drop / currentStockOldQty) * 100)}% reduction from the current stock.`;
++      warning.classList.remove("d-none");
++    } else {
++      warning.classList.add("d-none");
++    }
++
++    showStockStep("confirm");
++  });
++
++  document.getElementById("stockBackBtn").addEventListener("click", () => {
++    showStockStep("edit");
++  });
++
++  document.getElementById("stockConfirmBtn").addEventListener("click", async () => {
++    const newQty = Number(newQtyInput.value);
++    await updateDoc(doc(db, "products", currentStockProductId), { stock: newQty, updatedAt: serverTimestamp() });
++    stockModalInstance.hide();
++    showToast(`Stock updated — ${currentStockName} now has ${newQty} in stock.`);
++  });
++
++  // Reset to step 1 whenever the modal closes, so it doesn't reopen mid-confirm next time.
++  stockModalEl.addEventListener("hidden.bs.modal", () => {
++    showStockStep("edit");
++    currentStockProductId = null;
++  });
+ }
+ 
+ /* =====================================================
+    ORDERS
+ ===================================================== */
++const PAYMENT_LABELS = { cod: "Cash on Delivery", card: "Card", paypal: "PayPal" };
++// Matches the customer-side rule in profile.js exactly (CANCELLABLE = ["pending","processing"]) —
++// once an order is Shipped or Delivered, neither the customer nor an admin can cancel it here.
++const CANCELLABLE_STATUSES = ["Pending", "Processing"];
++
++function wireToolbarDropdown(btnId, menuId, labelId, onSelect) {
++  const btn = document.getElementById(btnId);
++  const menu = document.getElementById(menuId);
++  const label = document.getElementById(labelId);
++  if (!btn || !menu) return;
++
++  btn.addEventListener("click", (e) => {
++    e.stopPropagation();
++    document.querySelectorAll(".toolbar-dropdown-menu").forEach((m) => {
++      if (m !== menu) m.classList.add("d-none");
++    });
++    menu.classList.toggle("d-none");
++  });
++
++  menu.querySelectorAll(".tdm-item").forEach((item) => {
++    item.addEventListener("click", () => {
++      menu.querySelectorAll(".tdm-item").forEach((i) => i.classList.remove("active"));
++      item.classList.add("active");
++      if (label) label.textContent = item.textContent.trim();
++      menu.classList.add("d-none");
++      onSelect(item.dataset.value);
++    });
++  });
++
++  document.addEventListener("click", (e) => {
++    if (!menu.classList.contains("d-none") && !menu.contains(e.target) && !btn.contains(e.target)) {
++      menu.classList.add("d-none");
++    }
++  });
++}
++
+ function initOrders() {
+   const tbody = document.querySelector("#adminOrdersTable tbody");
+   const statuses = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
+ 
+-  onSnapshot(query(collection(db, "orders"), orderBy("createdAt", "desc")), (snap) => {
+-    if (snap.empty) {
+-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No orders yet.</td></tr>`;
++  let allOrders = [];
++  let searchTerm = "";
++  let statusFilterValue = "all";
++  let paymentFilterValue = "all";
++  let sortValue = "date-desc";
++  const selectedIds = new Set();
++
++  function matchesFilters(o) {
++    const status = o.status || "Pending";
++    if (statusFilterValue !== "all" && status !== statusFilterValue) return false;
++    if (paymentFilterValue !== "all" && o.shippingInfo?.paymentMethod !== paymentFilterValue) return false;
++    if (searchTerm) {
++      const haystack = `${o.id} ${o.shippingInfo?.fullName || ""} ${o.shippingInfo?.email || ""}`.toLowerCase();
++      if (!haystack.includes(searchTerm)) return false;
++    }
++    return true;
++  }
++
++  function sortOrders(list) {
++    const sorted = [...list];
++    if (sortValue === "date-desc") sorted.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
++    else if (sortValue === "date-asc") sorted.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
++    else if (sortValue === "total-desc") sorted.sort((a, b) => (b.total || 0) - (a.total || 0));
++    else if (sortValue === "total-asc") sorted.sort((a, b) => (a.total || 0) - (b.total || 0));
++    return sorted;
++  }
++
++  function updateBulkBar() {
++    const bar = document.getElementById("bulkActionBar");
++    const countEl = document.getElementById("bulkSelectedCount");
++    if (selectedIds.size > 0) {
++      bar.classList.remove("d-none");
++      countEl.textContent = `${selectedIds.size} selected`;
++    } else {
++      bar.classList.add("d-none");
++    }
++    const selectAll = document.getElementById("selectAllOrders");
++    if (selectAll) {
++      const visibleIds = allOrders.filter(matchesFilters).map((o) => o.id);
++      const allChecked = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
++      selectAll.checked = allChecked;
++      selectAll.indeterminate = !allChecked && visibleIds.some((id) => selectedIds.has(id));
++    }
++  }
++
++  function renderRows() {
++    const filtered = sortOrders(allOrders.filter(matchesFilters));
++
++    if (filtered.length === 0) {
++      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No orders match these filters.</td></tr>`;
++      updateBulkBar();
+       return;
+     }
+-    tbody.innerHTML = snap.docs
+-      .map((d) => {
+-        const o = d.data();
++
++    tbody.innerHTML = filtered
++      .map((o) => {
+         const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString("en-PH") : "—";
++        const status = o.status || "Pending";
++        const payment = PAYMENT_LABELS[o.shippingInfo?.paymentMethod] || "—";
+         const options = statuses
+-          .map((s) => `<option value="${s}" ${o.status === s ? "selected" : ""}>${s}</option>`)
++          .map((s) => `<option value="${s}" ${status === s ? "selected" : ""}>${s}</option>`)
+           .join("");
+         return `
+-          <tr>
+-            <td>#${d.id.slice(0, 8).toUpperCase()}</td>
+-            <td>${o.shippingInfo?.fullName || "—"}<br><span class="text-muted" style="font-size:0.8rem;">${o.shippingInfo?.email || ""}</span></td>
++          <tr data-order-row="${o.id}">
++            <td><input type="checkbox" class="order-row-check" data-id="${o.id}" ${selectedIds.has(o.id) ? "checked" : ""} /></td>
++            <td>#${o.id.slice(0, 8).toUpperCase()}</td>
++            <td>
++              <div class="order-customer-cell">
++                <div class="avatar avatar-sm">${initials(o.shippingInfo?.fullName)}</div>
++                <div>
++                  <div class="order-customer-name">${o.shippingInfo?.fullName || "—"}</div>
++                  <span class="text-muted" style="font-size:0.78rem;">${o.shippingInfo?.email || ""}</span>
++                </div>
++              </div>
++            </td>
+             <td>${o.items?.length || 0} item${(o.items?.length || 0) > 1 ? "s" : ""}</td>
+             <td>${peso(o.total)}</td>
++            <td>${payment}</td>
+             <td>${date}</td>
+-            <td><select data-id="${d.id}" class="status-select">${options}</select></td>
++            <td>
++              ${
++                status === "Cancelled"
++                  ? `<span class="status-badge status-cancelled">Cancelled</span>`
++                  : `<select data-id="${o.id}" class="status-select status-${status.toLowerCase()}">${options}</select>`
++              }
++            </td>
++            <td>
++              <div class="row-action-wrap">
++                <button type="button" class="row-action-btn" data-id="${o.id}"><i class="bi bi-three-dots"></i></button>
++                <div class="row-action-menu d-none">
++                  <button type="button" class="row-view-details" data-id="${o.id}"><i class="bi bi-eye"></i> View Details</button>
++                  ${CANCELLABLE_STATUSES.includes(status) ? `<button type="button" class="row-cancel-order danger" data-id="${o.id}"><i class="bi bi-x-circle"></i> Cancel Order</button>` : ""}
++                </div>
++              </div>
++            </td>
+           </tr>`;
+       })
+       .join("");
+ 
++    tbody.querySelectorAll(".order-row-check").forEach((cb) => {
++      cb.addEventListener("click", (e) => e.stopPropagation());
++      cb.addEventListener("change", () => {
++        if (cb.checked) selectedIds.add(cb.dataset.id);
++        else selectedIds.delete(cb.dataset.id);
++        updateBulkBar();
++      });
++    });
++
+     tbody.querySelectorAll(".status-select").forEach((select) => {
++      select.addEventListener("click", (e) => e.stopPropagation());
+       select.addEventListener("change", async () => {
+-        await updateDoc(doc(db, "orders", select.dataset.id), { status: select.value });
++        const previousClass = select.className;
++        const newStatus = select.value;
++        select.className = `status-select status-${newStatus.toLowerCase()}`;
++        try {
++          await updateDoc(doc(db, "orders", select.dataset.id), { status: newStatus });
++        } catch (err) {
++          console.error(err);
++          select.className = previousClass; // revert visual change since the write failed
++          showToast("Couldn't update status — see console for details.");
++        }
++      });
++    });
++
++    tbody.querySelectorAll(".row-action-btn").forEach((btn) => {
++      btn.addEventListener("click", (e) => {
++        e.stopPropagation();
++        const menu = btn.nextElementSibling;
++        document.querySelectorAll(".row-action-menu").forEach((m) => {
++          if (m !== menu) m.classList.add("d-none");
++        });
++        menu.classList.toggle("d-none");
++      });
++    });
++
++    tbody.querySelectorAll(".row-view-details").forEach((btn) => {
++      btn.addEventListener("click", (e) => {
++        e.stopPropagation();
++        btn.closest(".row-action-menu").classList.add("d-none");
++        openOrderDetail(btn.dataset.id);
++      });
++    });
++
++    tbody.querySelectorAll(".row-cancel-order").forEach((btn) => {
++      btn.addEventListener("click", async (e) => {
++        e.stopPropagation();
++        btn.closest(".row-action-menu").classList.add("d-none");
++        if (!confirm("Cancel this order?")) return;
++        try {
++          await updateDoc(doc(db, "orders", btn.dataset.id), { status: "Cancelled" });
++          showToast("Order cancelled.");
++        } catch (err) {
++          console.error(err);
++          showToast("Couldn't cancel this order — see console for details.");
++        }
+       });
+     });
++
++    tbody.querySelectorAll("tr[data-order-row]").forEach((tr) => {
++      tr.addEventListener("click", () => openOrderDetail(tr.dataset.orderRow));
++    });
++
++    updateBulkBar();
++  }
++
++  onSnapshot(query(collection(db, "orders"), orderBy("createdAt", "desc")), (snap) => {
++    allOrders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
++    if (allOrders.length === 0) {
++      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No orders yet.</td></tr>`;
++      return;
++    }
++    renderRows();
++  });
++
++  // Close any open row action menu on outside click (button clicks stopPropagation, so this
++  // only fires for genuine "elsewhere" clicks).
++  document.addEventListener("click", () => {
++    document.querySelectorAll(".row-action-menu").forEach((m) => m.classList.add("d-none"));
++  });
++
++  /* ---- Search ---- */
++  const searchInput = document.getElementById("orderSearch");
++  if (searchInput) {
++    searchInput.addEventListener("input", () => {
++      searchTerm = searchInput.value.trim().toLowerCase();
++      renderRows();
++    });
++  }
++
++  /* ---- Toolbar dropdowns: Status / Payment / Sort ---- */
++  wireToolbarDropdown("statusFilterBtn", "statusFilterMenu", "statusFilterLabel", (val) => {
++    statusFilterValue = val;
++    renderRows();
++  });
++  wireToolbarDropdown("paymentFilterBtn", "paymentFilterMenu", "paymentFilterLabel", (val) => {
++    paymentFilterValue = val;
++    renderRows();
++  });
++  wireToolbarDropdown("sortByBtn", "sortByMenu", "sortByLabel", (val) => {
++    sortValue = val;
++    renderRows();
++  });
++
++  /* ---- Select all + bulk cancel ---- */
++  const selectAllCb = document.getElementById("selectAllOrders");
++  if (selectAllCb) {
++    selectAllCb.addEventListener("change", () => {
++      const visibleIds = allOrders.filter(matchesFilters).map((o) => o.id);
++      if (selectAllCb.checked) visibleIds.forEach((id) => selectedIds.add(id));
++      else visibleIds.forEach((id) => selectedIds.delete(id));
++      renderRows();
++    });
++  }
++
++  const bulkCancelBtn = document.getElementById("bulkCancelBtn");
++  if (bulkCancelBtn) {
++    bulkCancelBtn.addEventListener("click", async () => {
++      if (selectedIds.size === 0) return;
++
++      const selectedOrders = allOrders.filter((o) => selectedIds.has(o.id));
++      const cancellable = selectedOrders.filter((o) => CANCELLABLE_STATUSES.includes(o.status || "Pending"));
++      const skipped = selectedOrders.length - cancellable.length;
++
++      if (cancellable.length === 0) {
++        showToast("None of the selected orders can be cancelled (already Shipped/Delivered/Cancelled).");
++        return;
++      }
++      const skipNote = skipped > 0 ? ` (${skipped} already Shipped/Delivered will be skipped)` : "";
++      if (!confirm(`Cancel ${cancellable.length} selected order(s)?${skipNote}`)) return;
++
++      try {
++        await Promise.all(
++          cancellable.map((o) => updateDoc(doc(db, "orders", o.id), { status: "Cancelled" })),
++        );
++        selectedIds.clear();
++        showToast(skipped > 0 ? `${cancellable.length} order(s) cancelled, ${skipped} skipped.` : "Selected orders cancelled.");
++      } catch (err) {
++        console.error(err);
++        showToast("Some orders couldn't be cancelled — see console for details.");
++      }
++    });
++  }
++
++  /* ---- Order detail slide-over panel ---- */
++  const detailPanel = document.getElementById("orderDetailPanel");
++  const detailBackdrop = document.getElementById("orderPanelBackdrop");
++
++  function closeOrderDetail() {
++    detailPanel.classList.remove("open");
++    detailBackdrop.classList.add("d-none");
++  }
++
++  function openOrderDetail(orderId) {
++    const o = allOrders.find((x) => x.id === orderId);
++    if (!o) return;
++    const status = o.status || "Pending";
++
++    document.getElementById("odOrderId").textContent = `#${o.id.slice(0, 8).toUpperCase()}`;
++    const badge = document.getElementById("odStatusBadge");
++    badge.textContent = status;
++    badge.className = `status-badge status-${status.toLowerCase()}`;
++
++    const placedDate = o.createdAt?.toDate
++      ? o.createdAt.toDate().toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })
++      : "—";
++    document.getElementById("odPlacedDate").textContent = `Placed on ${placedDate}`;
++
++    document.getElementById("odCustomerAvatar").textContent = initials(o.shippingInfo?.fullName);
++    document.getElementById("odCustomerName").textContent = o.shippingInfo?.fullName || "—";
++    document.getElementById("odCustomerEmail").textContent = o.shippingInfo?.email || "—";
++
++    const itemsList = document.getElementById("odItemsList");
++    itemsList.innerHTML = (o.items || [])
++      .map(
++        (item) => `
++        <div class="od-item-row">
++          <img src="${item.imgBase64 || `../${item.img || "assets/images/products/placeholder.jpg"}`}" alt="${item.name}" />
++          <div>
++            <div class="od-item-name">${item.name}</div>
++            <div class="od-item-qty">Qty: ${item.qty}</div>
++          </div>
++          <div class="od-item-price">${peso(item.price * item.qty)}</div>
++        </div>`,
++      )
++      .join("");
++
++    document.getElementById("odTotal").textContent = peso(o.total);
++
++    const statusUpdateWrap = document.getElementById("odStatusUpdateWrap");
++    const terminalNote = document.getElementById("odTerminalNote");
++    const statusSelect = document.getElementById("odStatusSelect");
++
++    if (status === "Cancelled") {
++      statusUpdateWrap.classList.add("d-none");
++      terminalNote.classList.remove("d-none");
++    } else {
++      statusUpdateWrap.classList.remove("d-none");
++      terminalNote.classList.add("d-none");
++      statusSelect.innerHTML = statuses.map((s) => `<option value="${s}" ${status === s ? "selected" : ""}>${s}</option>`).join("");
++      statusSelect.className = `status-select status-${status.toLowerCase()}`;
++      statusSelect.dataset.id = o.id;
++    }
++
++    const cancelBtn = document.getElementById("odCancelOrderBtn");
++    cancelBtn.classList.toggle("d-none", !CANCELLABLE_STATUSES.includes(status));
++    cancelBtn.dataset.id = o.id;
++
++    detailPanel.classList.add("open");
++    detailBackdrop.classList.remove("d-none");
++  }
++
++  document.getElementById("odCloseBtn").addEventListener("click", closeOrderDetail);
++  detailBackdrop.addEventListener("click", closeOrderDetail);
++
++  document.getElementById("odStatusSelect").addEventListener("change", async (e) => {
++    const previousClass = e.target.className;
++    const newStatus = e.target.value;
++    e.target.className = `status-select status-${newStatus.toLowerCase()}`;
++    try {
++      await updateDoc(doc(db, "orders", e.target.dataset.id), { status: newStatus });
++      const badge = document.getElementById("odStatusBadge");
++      badge.textContent = newStatus;
++      badge.className = `status-badge status-${newStatus.toLowerCase()}`;
++      document.getElementById("odCancelOrderBtn").classList.toggle("d-none", !CANCELLABLE_STATUSES.includes(newStatus));
++
++      // Selecting "Cancelled" directly from the dropdown is just as terminal
++      // as using the Cancel Order button — lock the control immediately so
++      // it can't be un-cancelled from here either.
++      if (newStatus === "Cancelled") {
++        document.getElementById("odStatusUpdateWrap").classList.add("d-none");
++        document.getElementById("odTerminalNote").classList.remove("d-none");
++      }
++    } catch (err) {
++      console.error(err);
++      e.target.className = previousClass;
++      showToast("Couldn't update status — see console for details.");
++    }
++  });
++
++  document.getElementById("odCancelOrderBtn").addEventListener("click", async (e) => {
++    if (!confirm("Cancel this order?")) return;
++    try {
++      await updateDoc(doc(db, "orders", e.target.dataset.id), { status: "Cancelled" });
++      showToast("Order cancelled.");
++      closeOrderDetail();
++    } catch (err) {
++      console.error(err);
++      showToast("Couldn't cancel this order — see console for details.");
++    }
+   });
+ }
+diff --git a/js/cart.js b/js/cart.js
+index 481c764..78ec0af 100644
+--- a/js/cart.js
++++ b/js/cart.js
+@@ -28,7 +28,7 @@ function render() {
+     .map(
+       (item, index) => `
+     <div class="cart-item">
+-      <img src="${item.img || "assets/images/products/placeholder.jpg"}" alt="${item.name}" />
++      <img src="${item.imgBase64 || item.img || "assets/images/products/placeholder.jpg"}" alt="${item.name}" />
+       <div class="cart-item-info">
+         <h5>${item.name}</h5>
+         <p class="cart-item-price">${peso(item.price)}</p>
+diff --git a/js/checkout.js b/js/checkout.js
+index 9dc81d7..7969f74 100644
+--- a/js/checkout.js
++++ b/js/checkout.js
+@@ -13,6 +13,7 @@ import {
+ } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+ 
+ const authGate = document.getElementById("authGate");
++const staffGate = document.getElementById("staffGate");
+ const emptyGate = document.getElementById("emptyGate");
+ const successGate = document.getElementById("successGate");
+ const checkoutContent = document.getElementById("checkoutContent");
+@@ -23,6 +24,7 @@ function peso(amount) {
+ 
+ function hideAllGates() {
+   authGate.style.display = "none";
++  staffGate.style.display = "none";
+   emptyGate.style.display = "none";
+   successGate.style.display = "none";
+   checkoutContent.style.display = "none";
+@@ -48,7 +50,7 @@ function renderSummary(cart) {
+ let currentUser = null;
+ let savedAddressCoords = { lat: null, lng: null };
+ 
+-onAuthStateChanged(auth, (user) => {
++onAuthStateChanged(auth, async (user) => {
+   currentUser = user;
+   hideAllGates();
+ 
+@@ -57,6 +59,18 @@ onAuthStateChanged(auth, (user) => {
+     return;
+   }
+ 
++  // Internal accounts (staff/admin/superadmin) don't place real orders —
++  // keeps sales data accurate to actual customers. Checked here, not just
++  // on the Add to Cart button, so a cart built before a role change (or
++  // direct navigation to this page) is still blocked at the actual
++  // order-creating step.
++  const roleSnap = await getDoc(doc(db, "users", user.uid));
++  const role = roleSnap.exists() ? roleSnap.data().role || "user" : "user";
++  if (["staff", "admin", "superadmin"].includes(role)) {
++    staffGate.style.display = "block";
++    return;
++  }
++
+   const cart = loadCart();
+   if (cart.length === 0) {
+     emptyGate.style.display = "block";
+diff --git a/js/products.js b/js/products.js
+index bf00784..897ec5d 100644
+--- a/js/products.js
++++ b/js/products.js
+@@ -3,15 +3,18 @@
+ //
+ // Previously this page rendered 9 hardcoded product cards straight in the
+ // HTML. It now fetches live from the Firestore "products" collection (the
+-// same collection admin/products.html manages), so adding/editing/deleting
+-// a product in the admin panel actually shows up here.
++// same collection admin/admin-products.html manages), so adding/editing/
++// deleting a product in the admin panel actually shows up here.
+ 
+ import { auth, db } from "./firebase.js";
++import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+ import {
+   collection,
+   query,
+   orderBy,
+   onSnapshot,
++  doc,
++  getDoc,
+ } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+ import { loadCart, saveCart, showToast } from "./site.js";
+ 
+@@ -33,6 +36,20 @@ const CATEGORY_BADGE_CLASS = {
+ };
+ 
+ let allProducts = [];
++let currentUserRole = null;
++
++// Staff/admin/superadmin are internal accounts — they shouldn't be able to
++// shop through the storefront (keeps sales data accurate to real customers).
++// Fetched once here rather than per-click, and re-checked at checkout too
++// in case a cart was built before a role change.
++onAuthStateChanged(auth, async (user) => {
++  if (!user) {
++    currentUserRole = null;
++    return;
++  }
++  const snap = await getDoc(doc(db, "users", user.uid));
++  currentUserRole = snap.exists() ? snap.data().role || "user" : "user";
++});
+ 
+ function peso(amount) {
+   return "\u20B1" + amount.toLocaleString("en-PH");
+@@ -67,7 +84,7 @@ function renderProducts() {
+       (p) => `
+     <div class="col-lg-4 col-md-6 product-item" data-category="${p.category}">
+       <div class="card product-card h-100">
+-        <img src="${p.img || "assets/images/products/placeholder.jpg"}" class="card-img-top" alt="${p.name}" />
++        <img src="${p.imgBase64 || p.img || "assets/images/products/placeholder.jpg"}" class="card-img-top" alt="${p.name}" />
+         <div class="card-body">
+           <span class="badge ${CATEGORY_BADGE_CLASS[p.category] || "bg-secondary"} mb-2">${CATEGORY_LABELS[p.category] || p.category}</span>
+           <h5>${p.name}</h5>
+@@ -122,6 +139,11 @@ grid.addEventListener("click", (e) => {
+     return;
+   }
+ 
++  if (["staff", "admin", "superadmin"].includes(currentUserRole)) {
++    showToast("Staff accounts can't add items to cart. Use a customer account to shop.");
++    return;
++  }
++
+   const product = allProducts.find((p) => p.id === button.dataset.id);
+   if (!product) return;
+ 
+@@ -135,6 +157,7 @@ grid.addEventListener("click", (e) => {
+       name: product.name,
+       price: product.price,
+       img: product.img,
++      imgBase64: product.imgBase64 || null,
+       qty: 1,
+     });
+   }
+diff --git a/js/profile.js b/js/profile.js
+index c5e245e..aab2976 100644
+--- a/js/profile.js
++++ b/js/profile.js
+@@ -15,7 +15,7 @@ import {
+   where,
+   getDocs,
+ } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+-import { loadGoogleMaps, GOOGLE_MAPS_API_KEY, HQ_LOCATION, DEMO_MAP_ID } from "./site.js";
++import { loadGoogleMaps, GOOGLE_MAPS_API_KEY, HQ_LOCATION, DEMO_MAP_ID, resizeImageToDataUrl } from "./site.js";
+ 
+ const authGate = document.getElementById("authGate");
+ const profileContent = document.getElementById("profileContent");
+@@ -302,41 +302,8 @@ document.getElementById("orderHistoryList").addEventListener("click", async (e)
+ });
+ 
+ /* ===== Avatar upload =====
+-   No Firebase Storage here on purpose: since Feb 2026, Cloud Storage for
+-   Firebase requires the paid Blaze plan just to create a bucket, even to
+-   stay within the free tier. Instead we resize the image down client-side
+-   and store it as a base64 string directly on the user's Firestore doc —
+-   free, no billing account needed. Trade-off: capped to a small thumbnail
+-   size (photos aren't optimized/CDN-served like real image hosting would
+-   give you), fine for a profile picture, not something to reuse for large
+-   images. */
+-function resizeImageToDataUrl(file, maxSize = 300, quality = 0.75) {
+-  return new Promise((resolve, reject) => {
+-    const reader = new FileReader();
+-    reader.onload = (e) => {
+-      const img = new Image();
+-      img.onload = () => {
+-        let { width, height } = img;
+-        if (width > height && width > maxSize) {
+-          height = Math.round(height * (maxSize / width));
+-          width = maxSize;
+-        } else if (height > maxSize) {
+-          width = Math.round(width * (maxSize / height));
+-          height = maxSize;
+-        }
+-        const canvas = document.createElement("canvas");
+-        canvas.width = width;
+-        canvas.height = height;
+-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+-        resolve(canvas.toDataURL("image/jpeg", quality));
+-      };
+-      img.onerror = () => reject(new Error("Couldn't read that image."));
+-      img.src = e.target.result;
+-    };
+-    reader.onerror = () => reject(new Error("Couldn't read that file."));
+-    reader.readAsDataURL(file);
+-  });
+-}
++   Uses the shared resizeImageToDataUrl from site.js (see that file for why
++   this is base64-in-Firestore rather than Firebase Storage). */
+ 
+ document.getElementById("avatarEditBtn").addEventListener("click", () => {
+   document.getElementById("avatarUpload").click();
+diff --git a/js/site.js b/js/site.js
+index 2eb5995..46477a6 100644
+--- a/js/site.js
++++ b/js/site.js
+@@ -42,6 +42,43 @@ export function showToast(message, duration = 1800) {
+   }, duration);
+ }
+ 
++/* ===== Image resize + base64 encode =====
++   No Firebase Storage on purpose: since Feb 2026, Cloud Storage for Firebase
++   requires the paid Blaze plan just to create a bucket, even to stay within
++   the free tier. Instead images are resized down client-side and stored as
++   a base64 string directly on the Firestore doc — free, no billing account
++   needed. Trade-off: capped to a modest size (not CDN-served like real image
++   hosting), fine for avatars and product thumbnails, not for large photos.
++   Originally lived only in profile.js (avatar upload); shared here so the
++   admin product-image drop-zone reuses the same tested resize logic. */
++export function resizeImageToDataUrl(file, maxSize = 300, quality = 0.75) {
++  return new Promise((resolve, reject) => {
++    const reader = new FileReader();
++    reader.onload = (e) => {
++      const img = new Image();
++      img.onload = () => {
++        let { width, height } = img;
++        if (width > height && width > maxSize) {
++          height = Math.round(height * (maxSize / width));
++          width = maxSize;
++        } else if (height > maxSize) {
++          width = Math.round(width * (maxSize / height));
++          height = maxSize;
++        }
++        const canvas = document.createElement("canvas");
++        canvas.width = width;
++        canvas.height = height;
++        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
++        resolve(canvas.toDataURL("image/jpeg", quality));
++      };
++      img.onerror = () => reject(new Error("Couldn't read that image."));
++      img.src = e.target.result;
++    };
++    reader.onerror = () => reject(new Error("Couldn't read that file."));
++    reader.readAsDataURL(file);
++  });
++}
++
+ /* ===== Cart storage (shared by products.js / cart.js / checkout.js) ===== */
+ 
+ export const CART_KEY = "kalingacare_cart";
+diff --git a/login.html b/login.html
+index 9a29be6..1af62b7 100644
+--- a/login.html
++++ b/login.html
+@@ -53,7 +53,7 @@
+                 <a href="register.html" id="navSwitchAuth" class="signup-btn no-transition">Get Started</a>
+               </div>
+               <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
+-                <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
++                <a href="admin/admin-dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
+                 <div class="dropdown">
+                   <button class="account-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="My Account">
+                     <i class="bi bi-person-circle fs-5"></i>
+diff --git a/products.html b/products.html
+index eef5e1f..eaf4788 100644
+--- a/products.html
++++ b/products.html
+@@ -59,7 +59,7 @@
+               <a href="register.html" class="signup-btn">Get Started</a>
+             </div>
+             <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
+-              <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
++              <a href="admin/admin-dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
+               <div class="dropdown">
+                 <button class="account-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="My Account">
+                   <i class="bi bi-person-circle fs-5"></i>
+diff --git a/profile.html b/profile.html
+index 93c247d..9109950 100644
+--- a/profile.html
++++ b/profile.html
+@@ -66,7 +66,7 @@
+               <a href="register.html" class="signup-btn">Get Started</a>
+             </div>
+             <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
+-              <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
++              <a href="admin/admin-dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
+               <div class="dropdown">
+                 <button class="account-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="My Account">
+                   <i class="bi bi-person-circle fs-5"></i>
+diff --git a/register.html b/register.html
+index 647f13c..e401589 100644
+--- a/register.html
++++ b/register.html
+@@ -53,7 +53,7 @@
+                 <a href="register.html" class="signup-btn active no-transition">Get Started</a>
+               </div>
+               <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
+-                <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
++                <a href="admin/admin-dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
+                 <div class="dropdown">
+                   <button class="account-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="My Account">
+                     <i class="bi bi-person-circle fs-5"></i>
+diff --git a/settings.html b/settings.html
+index bd532dc..909c4e6 100644
+--- a/settings.html
++++ b/settings.html
+@@ -66,7 +66,7 @@
+               <a href="register.html" class="signup-btn">Get Started</a>
+             </div>
+             <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
+-              <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
++              <a href="admin/admin-dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
+               <div class="dropdown">
+                 <button class="account-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="My Account">
+                   <i class="bi bi-person-circle fs-5"></i>

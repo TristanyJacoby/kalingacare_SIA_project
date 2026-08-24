@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KalingaCare | Admin Products</title>
+    <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+  </head>
+
+  <body class="admin-body">
+    <!-- Shown if the logged-in user's role is below "staff" -->
+    <div
+      class="container access-denied"
+      id="accessDenied"
+      style="display: none"
+    >
+      <i class="bi bi-shield-lock"></i>
+      <h3>You don't have access to this page</h3>
+      <p class="text-muted">This area is restricted to KalingaCare staff.</p>
+      <a
+        href="../index.html"
+        class="hero-btn-primary"
+        style="text-decoration: none; display: inline-flex"
+        >Back to Home</a
+      >
+    </div>
+
+    <div class="admin-shell" id="adminShell" style="display: none">
+      <aside class="admin-sidebar">
+        <a href="../index.html" class="logo"
+          ><img
+            src="../assets/images/logo.png"
+            alt=""
+            class="navbar-logo-img"
+          />
+          KalingaCare</a
+        >
+
+        <ul class="admin-nav">
+          <li>
+            <a href="admin-dashboard.html"
+              ><i class="bi bi-speedometer2"></i> Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="admin-products.html" class="active"
+              ><i class="bi bi-box-seam"></i> Products</a
+            >
+          </li>
+          <li>
+            <a href="admin-orders.html"><i class="bi bi-receipt"></i> Orders</a>
+          </li>
+          <li>
+            <a href="admin-users.html"><i class="bi bi-people"></i> Users</a>
+          </li>
+          <li>
+            <a href="admin-settings.html"
+              ><i class="bi bi-gear"></i> Settings</a
+            >
+          </li>
+          <li>
+            <a href="../index.html"
+              ><i class="bi bi-arrow-left"></i> Back to Store</a
+            >
+          </li>
+        </ul>
+      </aside>
+
+      <main class="admin-main">
+        <div class="admin-header-bar">
+          <div class="admin-header-greeting" id="headerGreeting">
+            Welcome back!
+          </div>
+
+          <div class="admin-header-actions">
+            <div class="notif-bell-wrap">
+              <button type="button" class="icon-btn-round" id="notifBellBtn">
+                <i class="bi bi-bell"></i>
+                <span class="notif-dot d-none" id="notifDot"></span>
+              </button>
+              <div class="notif-dropdown d-none" id="notifDropdown">
+                <div class="notif-dropdown-header">Pending Orders</div>
+                <div id="notifList"><p class="notif-empty">Loading...</p></div>
+                <a href="admin-orders.html" class="notif-view-all"
+                  >View all orders</a
+                >
+              </div>
+            </div>
+
+            <div class="header-user-wrap">
+              <button type="button" class="header-user-btn" id="headerUserBtn">
+                <div class="avatar" id="headerAvatar">?</div>
+                <div class="header-user-info">
+                  <div class="name" id="headerName">—</div>
+                  <span class="role-badge" id="headerRole">—</span>
+                </div>
+                <i class="bi bi-chevron-down"></i>
+              </button>
+              <div class="header-user-dropdown d-none" id="headerUserDropdown">
+                <button type="button" id="headerLogoutBtn">
+                  <i class="bi bi-box-arrow-right"></i> Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-topbar">
+          <h1>Products</h1>
+        </div>
+
+        <div class="kpi-grid kpi-grid-3">
+          <div class="kpi-card">
+            <div class="kpi-card-top">
+              <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+              <span class="kpi-change" id="prodKpiOrdersChange">—</span>
+            </div>
+            <h3 id="prodKpiOrders">0</h3>
+            <p>Total Orders</p>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card-top">
+              <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
+              <span class="kpi-change" id="prodKpiRevenueChange">—</span>
+            </div>
+            <h3 id="prodKpiRevenue">&#8369;0</h3>
+            <p>Monthly Revenue</p>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">
+              <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h3 id="prodKpiOutOfStock">0</h3>
+            <p>Out of Stock</p>
+          </div>
+        </div>
+
+        <div class="admin-topbar-tools products-toolbar">
+          <div class="admin-search">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              id="productSearch"
+              placeholder="Search products..."
+            />
+          </div>
+
+          <div class="toolbar-dropdown date-filter-wrap">
+            <button
+              type="button"
+              class="toolbar-dropdown-btn"
+              id="dateFilterBtn"
+            >
+              <i class="bi bi-calendar3"></i>
+              <span id="selectDateLabel">Select Date</span>
+            </button>
+            <input
+              type="date"
+              id="stockDateInput"
+              class="visually-hidden-date-input"
+            />
+            <button
+              type="button"
+              class="date-filter-clear d-none"
+              id="dateFilterClear"
+              title="Clear date filter"
+            >
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+
+          <div class="toolbar-dropdown">
+            <button type="button" class="filters-btn" id="productFiltersBtn">
+              <i class="bi bi-sliders"></i> Filters
+            </button>
+
+            <div class="filters-panel d-none" id="productFiltersPanel">
+              <div class="filters-panel-header">
+                <h6>Filters</h6>
+                <button
+                  type="button"
+                  class="filters-panel-reset"
+                  id="productFiltersReset"
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div class="filter-group">
+                <div class="filter-group-label">Stock Status</div>
+                <label class="filter-checkbox-row"
+                  ><input
+                    type="checkbox"
+                    class="pf-stock"
+                    value="instock"
+                    checked
+                  />
+                  In Stock</label
+                >
+                <label class="filter-checkbox-row"
+                  ><input
+                    type="checkbox"
+                    class="pf-stock"
+                    value="low"
+                    checked
+                  />
+                  Low Stock</label
+                >
+                <label class="filter-checkbox-row"
+                  ><input
+                    type="checkbox"
+                    class="pf-stock"
+                    value="out"
+                    checked
+                  />
+                  Out of Stock</label
+                >
+              </div>
+
+              <div class="filter-group">
+                <div class="filter-group-label">Category</div>
+                <label class="filter-checkbox-row"
+                  ><input
+                    type="checkbox"
+                    class="pf-category"
+                    value="mobility"
+                    checked
+                  />
+                  Mobility</label
+                >
+                <label class="filter-checkbox-row"
+                  ><input
+                    type="checkbox"
+                    class="pf-category"
+                    value="wellness"
+                    checked
+                  />
+                  Wellness</label
+                >
+                <label class="filter-checkbox-row"
+                  ><input
+                    type="checkbox"
+                    class="pf-category"
+                    value="digital"
+                    checked
+                  />
+                  Digital Health</label
+                >
+              </div>
+
+              <div class="filters-panel-footer">
+                <button
+                  type="button"
+                  class="filters-cancel-btn"
+                  id="productFiltersCancel"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="filters-apply-btn"
+                  id="productFiltersApply"
+                >
+                  Apply Filter
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="add-product-btn product-edit-only d-none"
+            id="addProductBtn"
+          >
+            <i class="bi bi-plus-lg"></i> Add Product
+          </button>
+        </div>
+
+        <div class="admin-panel" style="margin-top: 24px">
+          <h4>All Products</h4>
+          <table class="admin-table" id="adminProductsTable">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Last Updated</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                  Loading...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+
+    <!-- Add / Edit Product modal — was previously a permanent card between the
+       toolbar and the table; moved into a modal so the table gets the full
+       width, matching the reference layout. -->
+    <div
+      class="modal fade"
+      id="productModal"
+      tabindex="-1"
+      aria-labelledby="productFormTitle"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="productFormTitle">Add Product</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form class="admin-form" id="productForm">
+              <input type="hidden" id="productEditingId" />
+              <input
+                type="text"
+                id="pName"
+                placeholder="Product name"
+                required
+              />
+              <select id="pCategory" required>
+                <option value="mobility">Mobility</option>
+                <option value="wellness">Wellness</option>
+                <option value="digital">Digital Health</option>
+              </select>
+              <input
+                type="text"
+                id="pSubcategory"
+                placeholder="Subcategory (e.g. Walking Aids)"
+              />
+              <input
+                type="number"
+                id="pPrice"
+                placeholder="Price (PHP)"
+                min="0"
+                required
+              />
+              <input
+                type="number"
+                id="pStock"
+                placeholder="Stock quantity"
+                min="0"
+              />
+              <div
+                class="stock-inline-adjust d-none"
+                id="stockInlineAdjustWrap"
+              >
+                <p class="stock-input-disabled-hint mb-0" style="margin-top: 0">
+                  Stock is locked while editing.
+                </p>
+                <button
+                  type="button"
+                  class="stock-inline-adjust-btn"
+                  id="stockInlineAdjustBtn"
+                >
+                  <i class="bi bi-plus-slash-minus"></i> Adjust Stock
+                </button>
+              </div>
+
+              <input type="hidden" id="pImg" />
+              <input type="hidden" id="pImgBase64" />
+              <div class="image-drop-preview d-none" id="imagePreviewWrap">
+                <img id="imagePreview" src="" alt="Product preview" />
+                <button
+                  type="button"
+                  class="remove-image-btn"
+                  id="removeImageBtn"
+                  title="Remove image"
+                >
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+              <div class="image-drop-zone" id="imageDropZone">
+                <i class="bi bi-cloud-arrow-up"></i>
+                <p>Drag &amp; drop a photo, or click to browse</p>
+                <p class="drop-hint-small">JPG or PNG, resized automatically</p>
+              </div>
+              <input
+                type="file"
+                id="imageFileInput"
+                accept="image/*"
+                class="d-none"
+              />
+
+              <button type="submit" class="btn-success w-100">
+                Save Product
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock Adjustment Modal — two-step: edit quantity, then confirm the change.
+       Added per instructor feedback: stock edits previously committed instantly
+       with no warning, which could let a drastic/accidental change through
+       unnoticed. This forces an explicit "are you sure" before anything writes
+       to Firestore. -->
+    <div
+      class="modal fade"
+      id="stockModal"
+      tabindex="-1"
+      aria-labelledby="stockModalTitle"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="stockModalTitle">Adjust Stock</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+
+          <!-- Step 1: enter the new quantity -->
+          <div class="modal-body" id="stockStepEdit">
+            <p class="stock-modal-product" id="stockProductName">—</p>
+            <p class="stock-modal-current">
+              Current stock: <strong id="stockCurrentQty">—</strong>
+            </p>
+            <label for="stockNewQty" class="stock-modal-label"
+              >New quantity</label
+            >
+            <input
+              type="number"
+              id="stockNewQty"
+              class="stock-modal-input"
+              min="0"
+              step="1"
+              required
+            />
+          </div>
+
+          <!-- Step 2: confirm the change before it's written -->
+          <div class="modal-body d-none" id="stockStepConfirm">
+            <p class="stock-modal-product">
+              Change stock for <strong id="confirmProductName">—</strong>?
+            </p>
+            <div class="stock-confirm-diff">
+              <span id="confirmOldQty">—</span>
+              <i class="bi bi-arrow-right"></i>
+              <span id="confirmNewQty">—</span>
+            </div>
+            <p class="stock-confirm-warning d-none" id="confirmWarning"></p>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="stock-modal-btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="stock-modal-btn-secondary d-none"
+              id="stockBackBtn"
+            >
+              Go Back
+            </button>
+            <button type="button" class="btn-success" id="stockContinueBtn">
+              Continue
+            </button>
+            <button
+              type="button"
+              class="btn-success d-none"
+              id="stockConfirmBtn"
+            >
+              Confirm Change
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="../js/firebase.js"></script>
+    <script type="module" src="../js/admin.js"></script>
+  </body>
+</html>
