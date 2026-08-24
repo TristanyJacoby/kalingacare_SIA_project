@@ -28,7 +28,7 @@ function render() {
     .map(
       (item, index) => `
     <div class="cart-item">
-      <img src="${item.img || "assets/images/products/placeholder.jpg"}" alt="${item.name}" />
+      <img src="${item.imgBase64 || item.img || "assets/images/products/placeholder.jpg"}" alt="${item.name}" />
       <div class="cart-item-info">
         <h5>${item.name}</h5>
         <p class="cart-item-price">${peso(item.price)}</p>
@@ -50,7 +50,9 @@ function render() {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
   document.getElementById("summarySubtotal").textContent = peso(subtotal);
   document.getElementById("summaryShipping").textContent = peso(SHIPPING_FEE);
-  document.getElementById("summaryTotal").textContent = peso(subtotal + SHIPPING_FEE);
+  document.getElementById("summaryTotal").textContent = peso(
+    subtotal + SHIPPING_FEE,
+  );
 }
 
 itemsList?.addEventListener("click", (e) => {
