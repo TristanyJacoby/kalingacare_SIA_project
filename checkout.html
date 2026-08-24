@@ -10,180 +10,297 @@
         }
       })();
     </script>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KalingaCare | Checkout</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KalingaCare | Checkout</title>
     <link rel="icon" type="image/png" href="assets/images/logo.png" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
 
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/shop.css" />
-</head>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/shop.css" />
+  </head>
 
-<body>
-  <header>
-    <nav class="navbar navbar-expand-lg sticky-top">
+  <body>
+    <header>
+      <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+          <a class="navbar-brand logo" href="index.html"
+            ><img src="assets/images/logo.png" alt="" class="navbar-logo-img" />
+            KalingaCare</a
+          >
+
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarNav"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mx-auto">
+              <li class="nav-item">
+                <a class="nav-link" href="index.html">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="products.html">Products</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="index.html#services">Services</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="index.html#contact">Contact</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="index.html#about">About</a>
+              </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-3">
+              <div id="navAuthLinks" class="d-flex align-items-center gap-3">
+                <a href="login.html" class="login-btn">Login</a>
+                <a href="register.html" class="signup-btn">Get Started</a>
+              </div>
+              <div
+                id="navCartWrap"
+                class="d-none d-flex align-items-center gap-3"
+              >
+                <a
+                  href="admin/admin-dashboard.html"
+                  id="navAdminLink"
+                  class="login-btn d-none"
+                  title="Admin Dashboard"
+                  ><i class="bi bi-speedometer2 fs-5"></i
+                ></a>
+                <div class="dropdown">
+                  <button
+                    class="account-menu-btn"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    title="My Account"
+                  >
+                    <i class="bi bi-person-circle fs-5"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="profile.html"
+                        ><i class="bi bi-person me-2"></i>Account</a
+                      >
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="settings.html"
+                        ><i class="bi bi-gear me-2"></i>Settings</a
+                      >
+                    </li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                      <a class="dropdown-item" href="#" id="navLogoutLink"
+                        ><i class="bi bi-box-arrow-right me-2"></i>Log Out</a
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <a href="cart.html" class="btn btn-success position-relative">
+                  <i class="bi bi-cart3"></i> Cart
+                  <span
+                    class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                    id="navCartCount"
+                    >0</span
+                  >
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <div class="container page-heading">
+        <h1><i class="bi bi-bag-check"></i> Checkout</h1>
+      </div>
+
+      <!-- Shown if not logged in -->
+      <div class="container" id="authGate" style="display: none">
+        <div class="auth-gate">
+          <i class="bi bi-lock"></i>
+          <h3>Please log in to checkout</h3>
+          <p class="text-muted">
+            You'll need an account so we can save your order and delivery
+            details.
+          </p>
+          <a
+            href="login.html"
+            class="hero-btn-primary"
+            style="text-decoration: none; display: inline-flex"
+            >Log In</a
+          >
+        </div>
+      </div>
+
+      <!-- Shown for staff/admin/superadmin accounts — internal accounts don't shop -->
+      <div class="container" id="staffGate" style="display: none">
+        <div class="auth-gate">
+          <i class="bi bi-shield-lock"></i>
+          <h3>Staff accounts can't place orders</h3>
+          <p class="text-muted">
+            This keeps sales data accurate to real customers. Use a regular
+            customer account to shop.
+          </p>
+          <a
+            href="admin/admin-dashboard.html"
+            class="hero-btn-primary"
+            style="text-decoration: none; display: inline-flex"
+            >Back to Admin</a
+          >
+        </div>
+      </div>
+
+      <!-- Shown if cart is empty (but logged in) -->
+      <div class="container" id="emptyGate" style="display: none">
+        <div class="empty-state">
+          <i class="bi bi-cart-x"></i>
+          <h3>Your cart is empty</h3>
+          <a
+            href="products.html"
+            class="hero-btn-primary"
+            style="text-decoration: none; display: inline-flex"
+            >Browse Products</a
+          >
+        </div>
+      </div>
+
+      <!-- Shown after a successful order -->
+      <div class="container" id="successGate" style="display: none">
+        <div class="auth-gate">
+          <i class="bi bi-check-circle"></i>
+          <h3>Order placed!</h3>
+          <p class="text-muted">
+            Thank you — we'll get this delivered to your family soon.
+          </p>
+          <a
+            href="index.html"
+            class="hero-btn-primary"
+            style="text-decoration: none; display: inline-flex"
+            >Back to Home</a
+          >
+        </div>
+      </div>
+
+      <!-- Checkout form -->
+      <div class="container pb-5" id="checkoutContent" style="display: none">
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <form id="checkoutForm" class="checkout-form">
+              <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="ckName" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input
+                  type="email"
+                  class="form-control"
+                  id="ckEmail"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label"
+                  >Recipient's Full Name (in the Philippines)</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="ckRecipient"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Delivery Address</label>
+                <textarea
+                  class="form-control"
+                  id="ckAddress"
+                  rows="3"
+                  required
+                ></textarea>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Contact Number</label>
+                  <input
+                    type="tel"
+                    class="form-control"
+                    id="ckPhone"
+                    required
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Payment Method</label>
+                  <select class="form-control" id="ckPayment">
+                    <option value="cod">Cash on Delivery</option>
+                    <option value="card">Credit / Debit Card</option>
+                    <option value="paypal">PayPal</option>
+                  </select>
+                </div>
+              </div>
+              <div class="auth-error" id="checkoutError"></div>
+              <button type="submit" class="btn-auth" id="placeOrderBtn">
+                Place Order
+              </button>
+            </form>
+          </div>
+
+          <div class="col-lg-5">
+            <div class="summary-card">
+              <h4>Order Summary</h4>
+              <div id="ckItemsSummary"></div>
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <span id="ckSubtotal">&#8369;0</span>
+              </div>
+              <div class="summary-row">
+                <span>Shipping Fee</span>
+                <span id="ckShipping">&#8369;150</span>
+              </div>
+              <div class="summary-row total">
+                <span>Total</span>
+                <span id="ckTotal">&#8369;0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
       <div class="container">
-        <a class="navbar-brand logo" href="index.html"><img src="assets/images/logo.png" alt="" class="navbar-logo-img" /> KalingaCare</a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav mx-auto">
-            <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
-            <li class="nav-item"><a class="nav-link" href="products.html">Products</a></li>
-            <li class="nav-item"><a class="nav-link" href="index.html#services">Services</a></li>
-            <li class="nav-item"><a class="nav-link" href="index.html#contact">Contact</a></li>
-            <li class="nav-item"><a class="nav-link" href="index.html#about">About</a></li>
-          </ul>
-
-          <div class="d-flex align-items-center gap-3">
-            <div id="navAuthLinks" class="d-flex align-items-center gap-3">
-              <a href="login.html" class="login-btn">Login</a>
-              <a href="register.html" class="signup-btn">Get Started</a>
-            </div>
-            <div id="navCartWrap" class="d-none d-flex align-items-center gap-3">
-              <a href="admin/dashboard.html" id="navAdminLink" class="login-btn d-none" title="Admin Dashboard"><i class="bi bi-speedometer2 fs-5"></i></a>
-              <div class="dropdown">
-                <button class="account-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="My Account">
-                  <i class="bi bi-person-circle fs-5"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li><a class="dropdown-item" href="profile.html"><i class="bi bi-person me-2"></i>Account</a></li>
-                  <li><a class="dropdown-item" href="settings.html"><i class="bi bi-gear me-2"></i>Settings</a></li>
-                  <li><hr class="dropdown-divider" /></li>
-                  <li><a class="dropdown-item" href="#" id="navLogoutLink"><i class="bi bi-box-arrow-right me-2"></i>Log Out</a></li>
-                </ul>
-              </div>
-              <a href="cart.html" class="btn btn-success position-relative">
-                <i class="bi bi-cart3"></i> Cart
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="navCartCount">0</span>
-              </a>
-            </div>
-          </div>
+        <div class="text-center">
+          <p class="mb-0">&copy; 2026 KalingaCare. All Rights Reserved.</p>
         </div>
       </div>
-    </nav>
-  </header>
+    </footer>
 
-  <main>
-    <div class="container page-heading">
-      <h1><i class="bi bi-bag-check"></i> Checkout</h1>
-    </div>
-
-    <!-- Shown if not logged in -->
-    <div class="container" id="authGate" style="display:none;">
-      <div class="auth-gate">
-        <i class="bi bi-lock"></i>
-        <h3>Please log in to checkout</h3>
-        <p class="text-muted">You'll need an account so we can save your order and delivery details.</p>
-        <a href="login.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Log In</a>
-      </div>
-    </div>
-
-    <!-- Shown if cart is empty (but logged in) -->
-    <div class="container" id="emptyGate" style="display:none;">
-      <div class="empty-state">
-        <i class="bi bi-cart-x"></i>
-        <h3>Your cart is empty</h3>
-        <a href="products.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Browse Products</a>
-      </div>
-    </div>
-
-    <!-- Shown after a successful order -->
-    <div class="container" id="successGate" style="display:none;">
-      <div class="auth-gate">
-        <i class="bi bi-check-circle"></i>
-        <h3>Order placed!</h3>
-        <p class="text-muted">Thank you — we'll get this delivered to your family soon.</p>
-        <a href="index.html" class="hero-btn-primary" style="text-decoration:none; display:inline-flex;">Back to Home</a>
-      </div>
-    </div>
-
-    <!-- Checkout form -->
-    <div class="container pb-5" id="checkoutContent" style="display:none;">
-      <div class="row g-4">
-        <div class="col-lg-7">
-          <form id="checkoutForm" class="checkout-form">
-            <div class="mb-3">
-              <label class="form-label">Full Name</label>
-              <input type="text" class="form-control" id="ckName" required />
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Email</label>
-              <input type="email" class="form-control" id="ckEmail" required />
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Recipient's Full Name (in the Philippines)</label>
-              <input type="text" class="form-control" id="ckRecipient" required />
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Delivery Address</label>
-              <textarea class="form-control" id="ckAddress" rows="3" required></textarea>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Contact Number</label>
-                <input type="tel" class="form-control" id="ckPhone" required />
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Payment Method</label>
-                <select class="form-control" id="ckPayment">
-                  <option value="cod">Cash on Delivery</option>
-                  <option value="card">Credit / Debit Card</option>
-                  <option value="paypal">PayPal</option>
-                </select>
-              </div>
-            </div>
-            <div class="auth-error" id="checkoutError"></div>
-            <button type="submit" class="btn-auth" id="placeOrderBtn">Place Order</button>
-          </form>
-        </div>
-
-        <div class="col-lg-5">
-          <div class="summary-card">
-            <h4>Order Summary</h4>
-            <div id="ckItemsSummary"></div>
-            <div class="summary-row">
-              <span>Subtotal</span>
-              <span id="ckSubtotal">&#8369;0</span>
-            </div>
-            <div class="summary-row">
-              <span>Shipping Fee</span>
-              <span id="ckShipping">&#8369;150</span>
-            </div>
-            <div class="summary-row total">
-              <span>Total</span>
-              <span id="ckTotal">&#8369;0</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <footer>
-    <div class="container">
-      <div class="text-center">
-        <p class="mb-0">&copy; 2026 KalingaCare. All Rights Reserved.</p>
-      </div>
-    </div>
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" src="js/firebase.js"></script>
-  <script type="module" src="js/site.js"></script>
-  <script type="module" src="js/checkout.js"></script>
-</body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/site.js"></script>
+    <script type="module" src="js/checkout.js"></script>
+  </body>
 </html>

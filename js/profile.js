@@ -5,7 +5,10 @@
 // js/settings.js.
 
 import { auth, db } from "./firebase.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   doc,
   getDoc,
@@ -15,7 +18,13 @@ import {
   where,
   getDocs,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { loadGoogleMaps, GOOGLE_MAPS_API_KEY, HQ_LOCATION, DEMO_MAP_ID } from "./site.js";
+import {
+  loadGoogleMaps,
+  GOOGLE_MAPS_API_KEY,
+  HQ_LOCATION,
+  DEMO_MAP_ID,
+  resizeImageToDataUrl,
+} from "./site.js";
 
 const authGate = document.getElementById("authGate");
 const profileContent = document.getElementById("profileContent");
@@ -115,7 +124,8 @@ onAuthStateChanged(auth, async (user) => {
   if (userData.createdAt?.toDate) {
     const date = userData.createdAt.toDate();
     document.getElementById("memberSince").textContent =
-      "Member since " + date.toLocaleDateString("en-PH", { year: "numeric", month: "long" });
+      "Member since " +
+      date.toLocaleDateString("en-PH", { year: "numeric", month: "long" });
   }
 
   loadOrderHistory(user.uid);
@@ -140,13 +150,18 @@ async function loadOrderHistory(uid) {
 
     const orders = snap.docs
       .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      .sort(
+        (a, b) =>
+          (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0),
+      );
 
     const CANCELLABLE = ["pending", "processing"];
 
     list.innerHTML = orders
       .map((order) => {
-        const date = order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString("en-PH") : "";
+        const date = order.createdAt?.toDate
+          ? order.createdAt.toDate().toLocaleDateString("en-PH")
+          : "";
         const statusClass = (order.status || "Pending").toLowerCase();
         const canCancel = CANCELLABLE.includes(statusClass);
         return `
@@ -186,8 +201,16 @@ function renderTrackerStepper(status) {
   return `
     <div class="tracker-steps">
       ${STATUS_STEPS.map((step, i) => {
-        const state = i < currentIndex ? "done" : i === currentIndex ? "done current" : "";
-        const icon = i === 0 ? "bi-receipt" : i === 1 ? "bi-box-seam" : i === 2 ? "bi-truck" : "bi-house-check";
+        const state =
+          i < currentIndex ? "done" : i === currentIndex ? "done current" : "";
+        const icon =
+          i === 0
+            ? "bi-receipt"
+            : i === 1
+              ? "bi-box-seam"
+              : i === 2
+                ? "bi-truck"
+                : "bi-house-check";
         return `
           <div class="tracker-step ${state}">
             <div class="tracker-dot"><i class="bi ${icon}"></i></div>
@@ -201,7 +224,10 @@ async function renderTrackingMap(containerId, destLat, destLng) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
-  if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === "YOUR_GOOGLE_MAPS_API_KEY") {
+  if (
+    !GOOGLE_MAPS_API_KEY ||
+    GOOGLE_MAPS_API_KEY === "YOUR_GOOGLE_MAPS_API_KEY"
+  ) {
     el.innerHTML = `<div class="map-placeholder">Map needs a Google Maps API key (see js/site.js).</div>`;
     return;
   }
@@ -213,7 +239,8 @@ async function renderTrackingMap(containerId, destLat, destLng) {
   let googleMaps, AdvancedMarkerElement, PinElement;
   try {
     googleMaps = await loadGoogleMaps();
-    ({ AdvancedMarkerElement, PinElement } = await googleMaps.importLibrary("marker"));
+    ({ AdvancedMarkerElement, PinElement } =
+      await googleMaps.importLibrary("marker"));
   } catch (err) {
     console.error("KalingaCare Maps error:", err);
     el.innerHTML = `<div class="map-placeholder">Couldn't load the map right now.</div>`;
@@ -237,7 +264,11 @@ async function renderTrackingMap(containerId, destLat, destLng) {
   // Blue pin for HQ, so it's visually distinct from the (default red)
   // destination pin — AdvancedMarkerElement customizes color via a
   // PinElement passed as `content`, unlike the old icon-URL approach.
-  const hqPin = new PinElement({ background: "#4285F4", borderColor: "#1a5fb4", glyphColor: "#ffffff" });
+  const hqPin = new PinElement({
+    background: "#4285F4",
+    borderColor: "#1a5fb4",
+    glyphColor: "#ffffff",
+  });
   new AdvancedMarkerElement({
     position: origin,
     map,
@@ -261,111 +292,92 @@ async function renderTrackingMap(containerId, destLat, destLng) {
 }
 
 // Event delegation, since order cards are re-rendered on every load/cancel.
-document.getElementById("orderHistoryList").addEventListener("click", async (e) => {
-  const trackBtn = e.target.closest(".track-order-btn");
-  if (trackBtn) {
-    const orderId = trackBtn.dataset.id;
-    const panel = document.getElementById(`tracking-${orderId}`);
-    const order = window.__ordersById?.[orderId];
+document
+  .getElementById("orderHistoryList")
+  .addEventListener("click", async (e) => {
+    const trackBtn = e.target.closest(".track-order-btn");
+    if (trackBtn) {
+      const orderId = trackBtn.dataset.id;
+      const panel = document.getElementById(`tracking-${orderId}`);
+      const order = window.__ordersById?.[orderId];
 
-    if (panel.classList.contains("d-none")) {
-      panel.classList.remove("d-none");
-      trackBtn.innerHTML = '<i class="bi bi-chevron-up"></i> Hide Tracking';
-      if (!panel.dataset.loaded) {
-        panel.dataset.loaded = "true";
-        panel.innerHTML = renderTrackerStepper(order?.status || "Pending") + `<div class="tracking-map mt-3" id="trackmap-${orderId}"></div>`;
-        renderTrackingMap(`trackmap-${orderId}`, order?.shippingInfo?.lat, order?.shippingInfo?.lng);
+      if (panel.classList.contains("d-none")) {
+        panel.classList.remove("d-none");
+        trackBtn.innerHTML = '<i class="bi bi-chevron-up"></i> Hide Tracking';
+        if (!panel.dataset.loaded) {
+          panel.dataset.loaded = "true";
+          panel.innerHTML =
+            renderTrackerStepper(order?.status || "Pending") +
+            `<div class="tracking-map mt-3" id="trackmap-${orderId}"></div>`;
+          renderTrackingMap(
+            `trackmap-${orderId}`,
+            order?.shippingInfo?.lat,
+            order?.shippingInfo?.lng,
+          );
+        }
+      } else {
+        panel.classList.add("d-none");
+        trackBtn.innerHTML = '<i class="bi bi-truck"></i> Track Order';
       }
-    } else {
-      panel.classList.add("d-none");
-      trackBtn.innerHTML = '<i class="bi bi-truck"></i> Track Order';
+      return;
     }
-    return;
-  }
 
-  const btn = e.target.closest(".cancel-order-btn");
-  if (!btn) return;
+    const btn = e.target.closest(".cancel-order-btn");
+    if (!btn) return;
 
-  if (!confirm("Cancel this order? This can't be undone.")) return;
+    if (!confirm("Cancel this order? This can't be undone.")) return;
 
-  btn.disabled = true;
-  btn.textContent = "Cancelling...";
+    btn.disabled = true;
+    btn.textContent = "Cancelling...";
 
-  try {
-    await updateDoc(doc(db, "orders", btn.dataset.id), { status: "Cancelled" });
-    loadOrderHistory(auth.currentUser.uid);
-  } catch (err) {
-    alert("Couldn't cancel this order. Please try again.");
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-x-circle"></i> Cancel Order';
-  }
-});
+    try {
+      await updateDoc(doc(db, "orders", btn.dataset.id), {
+        status: "Cancelled",
+      });
+      loadOrderHistory(auth.currentUser.uid);
+    } catch (err) {
+      alert("Couldn't cancel this order. Please try again.");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-x-circle"></i> Cancel Order';
+    }
+  });
 
 /* ===== Avatar upload =====
-   No Firebase Storage here on purpose: since Feb 2026, Cloud Storage for
-   Firebase requires the paid Blaze plan just to create a bucket, even to
-   stay within the free tier. Instead we resize the image down client-side
-   and store it as a base64 string directly on the user's Firestore doc —
-   free, no billing account needed. Trade-off: capped to a small thumbnail
-   size (photos aren't optimized/CDN-served like real image hosting would
-   give you), fine for a profile picture, not something to reuse for large
-   images. */
-function resizeImageToDataUrl(file, maxSize = 300, quality = 0.75) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > height && width > maxSize) {
-          height = Math.round(height * (maxSize / width));
-          width = maxSize;
-        } else if (height > maxSize) {
-          width = Math.round(width * (maxSize / height));
-          height = maxSize;
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.onerror = () => reject(new Error("Couldn't read that image."));
-      img.src = e.target.result;
-    };
-    reader.onerror = () => reject(new Error("Couldn't read that file."));
-    reader.readAsDataURL(file);
-  });
-}
+   Uses the shared resizeImageToDataUrl from site.js (see that file for why
+   this is base64-in-Firestore rather than Firebase Storage). */
 
 document.getElementById("avatarEditBtn").addEventListener("click", () => {
   document.getElementById("avatarUpload").click();
 });
 
-document.getElementById("avatarUpload").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+document
+  .getElementById("avatarUpload")
+  .addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const errorEl = document.getElementById("profileError");
-  errorEl.classList.remove("show");
+    const errorEl = document.getElementById("profileError");
+    errorEl.classList.remove("show");
 
-  if (!file.type.startsWith("image/")) {
-    showMsg(errorEl, "Please choose an image file.");
-    return;
-  }
-  if (file.size > 8 * 1024 * 1024) {
-    showMsg(errorEl, "Image is too large (max 8MB before resizing).");
-    return;
-  }
+    if (!file.type.startsWith("image/")) {
+      showMsg(errorEl, "Please choose an image file.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      showMsg(errorEl, "Image is too large (max 8MB before resizing).");
+      return;
+    }
 
-  try {
-    const dataUrl = await resizeImageToDataUrl(file);
-    await updateDoc(doc(db, "users", auth.currentUser.uid), { photoBase64: dataUrl });
-    renderAvatar(auth.currentUser.displayName, dataUrl);
-  } catch (err) {
-    showMsg(errorEl, err.message || "Couldn't update photo.");
-  }
-});
+    try {
+      const dataUrl = await resizeImageToDataUrl(file);
+      await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        photoBase64: dataUrl,
+      });
+      renderAvatar(auth.currentUser.displayName, dataUrl);
+    } catch (err) {
+      showMsg(errorEl, err.message || "Couldn't update photo.");
+    }
+  });
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
   await signOut(auth);
