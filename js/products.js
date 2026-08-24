@@ -3,15 +3,18 @@
 //
 // Previously this page rendered 9 hardcoded product cards straight in the
 // HTML. It now fetches live from the Firestore "products" collection (the
-// same collection admin/products.html manages), so adding/editing/deleting
-// a product in the admin panel actually shows up here.
+// same collection admin/admin-products.html manages), so adding/editing/
+// deleting a product in the admin panel actually shows up here.
 
 import { auth, db } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   collection,
   query,
   orderBy,
   onSnapshot,
+  doc,
+  getDoc,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { loadCart, saveCart, showToast } from "./site.js";
 
@@ -33,6 +36,20 @@ const CATEGORY_BADGE_CLASS = {
 };
 
 let allProducts = [];
+let currentUserRole = null;
+
+// Staff/admin/superadmin are internal accounts — they shouldn't be able to
+// shop through the storefront (keeps sales data accurate to real customers).
+// Fetched once here rather than per-click, and re-checked at checkout too
+// in case a cart was built before a role change.
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    currentUserRole = null;
+    return;
+  }
+  const snap = await getDoc(doc(db, "users", user.uid));
+  currentUserRole = snap.exists() ? snap.data().role || "user" : "user";
+});
 
 function peso(amount) {
   return "\u20B1" + amount.toLocaleString("en-PH");
@@ -67,7 +84,7 @@ function renderProducts() {
       (p) => `
     <div class="col-lg-4 col-md-6 product-item" data-category="${p.category}">
       <div class="card product-card h-100">
-        <img src="${p.img || "assets/images/products/placeholder.jpg"}" class="card-img-top" alt="${p.name}" />
+        <img src="${p.imgBase64 || p.img || "assets/images/products/placeholder.jpg"}" class="card-img-top" alt="${p.name}" />
         <div class="card-body">
           <span class="badge ${CATEGORY_BADGE_CLASS[p.category] || "bg-secondary"} mb-2">${CATEGORY_LABELS[p.category] || p.category}</span>
           <h5>${p.name}</h5>
@@ -122,6 +139,13 @@ grid.addEventListener("click", (e) => {
     return;
   }
 
+  if (["staff", "admin", "superadmin"].includes(currentUserRole)) {
+    showToast(
+      "Staff accounts can't add items to cart. Use a customer account to shop.",
+    );
+    return;
+  }
+
   const product = allProducts.find((p) => p.id === button.dataset.id);
   if (!product) return;
 
@@ -135,6 +159,7 @@ grid.addEventListener("click", (e) => {
       name: product.name,
       price: product.price,
       img: product.img,
+      imgBase64: product.imgBase64 || null,
       qty: 1,
     });
   }
