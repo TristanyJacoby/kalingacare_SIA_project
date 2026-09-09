@@ -451,6 +451,10 @@ body.admin-body {
   color: #c0392b;
 }
 
+.status-badge.status-new {
+  background: #ffe3d1;
+  color: #c2540a;
+}
 .status-badge.status-pending {
   background: #fff2cc;
   color: #916f00;
@@ -489,6 +493,10 @@ body.admin-body {
   background-position: right 10px center;
   background-size: 9px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%23000' opacity='.45' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+}
+.status-select.status-new {
+  background-color: #ffe3d1;
+  color: #c2540a;
 }
 .status-select.status-pending {
   background-color: #fff2cc;
@@ -690,6 +698,19 @@ body.admin-body {
   font-size: 0.9rem;
   color: var(--dark);
   border-bottom: 1px solid var(--line);
+}
+#notifList {
+  max-height: 360px;
+  overflow-y: auto;
+}
+.notif-section-title {
+  padding: 10px 18px 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--gray);
+  background: #fafcfe;
 }
 .notif-empty {
   padding: 20px 18px;
