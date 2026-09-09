@@ -125,7 +125,7 @@ document
         subtotal,
         shippingFee: SHIPPING_FEE,
         total: subtotal + SHIPPING_FEE,
-        status: "Pending",
+        status: "New",
         shippingInfo: {
           fullName: document.getElementById("ckName").value.trim(),
           email: document.getElementById("ckEmail").value.trim(),
