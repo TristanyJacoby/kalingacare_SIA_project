@@ -155,7 +155,7 @@ async function loadOrderHistory(uid) {
           (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0),
       );
 
-    const CANCELLABLE = ["pending", "processing"];
+    const CANCELLABLE = ["new", "pending", "processing"];
 
     list.innerHTML = orders
       .map((order) => {
@@ -164,12 +164,20 @@ async function loadOrderHistory(uid) {
           : "";
         const statusClass = (order.status || "Pending").toLowerCase();
         const canCancel = CANCELLABLE.includes(statusClass);
+        // Customers see "Pending" even when the real status is "New" —
+        // that distinction is purely about whether staff has opened the
+        // order yet, which isn't something a customer needs to know.
+        // Keeps this badge consistent with the tracker below it, which
+        // does the same normalization.
+        const isNew = statusClass === "new";
+        const displayStatus = isNew ? "Pending" : order.status || "Pending";
+        const displayClass = isNew ? "pending" : statusClass;
         return `
           <div class="cart-item" style="align-items:flex-start; flex-direction:column;">
             <div class="cart-item-info w-100">
               <div class="d-flex justify-content-between align-items-center mb-1">
                 <h5 class="mb-0">Order #${order.id.slice(0, 8).toUpperCase()}</h5>
-                <span class="status-badge status-${statusClass}">${order.status || "Pending"}</span>
+                <span class="status-badge status-${displayClass}">${displayStatus}</span>
               </div>
               <p class="text-muted mb-1" style="font-size:0.85rem;">${date} &middot; ${order.items.length} item${order.items.length > 1 ? "s" : ""}</p>
               <p class="cart-item-price mb-0">${peso(order.total)}</p>
@@ -197,7 +205,13 @@ function renderTrackerStepper(status) {
   if (status === "Cancelled") {
     return `<div class="tracker-cancelled"><i class="bi bi-x-circle"></i> This order was cancelled.</div>`;
   }
-  const currentIndex = STATUS_STEPS.indexOf(status);
+  // "New" vs "Pending" is an internal staff-viewed/unviewed distinction —
+  // the customer doesn't need to see that difference, so it's treated as
+  // Pending here. Without this, a fresh order (status "New") would fall
+  // through indexOf() to -1 and render a broken/blank tracker until staff
+  // opens it in Admin Orders.
+  const displayStatus = status === "New" ? "Pending" : status;
+  const currentIndex = STATUS_STEPS.indexOf(displayStatus);
   return `
     <div class="tracker-steps">
       ${STATUS_STEPS.map((step, i) => {
