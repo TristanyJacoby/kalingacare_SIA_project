@@ -29,6 +29,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
   onSnapshot,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -145,7 +146,7 @@ async function initNotifBell() {
   if (!bellBtn || !dropdown) return;
 
   const snap = await getDocs(
-    query(collection(db, "orders"), where("status", "==", "Pending")),
+    query(collection(db, "orders"), where("status", "in", ["New", "Pending"])),
   );
   const pending = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
@@ -154,21 +155,78 @@ async function initNotifBell() {
         (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0),
     );
 
-  if (pending.length > 0) {
+  // Recent reviews, most recent first — capped at 5, same as orders below.
+  // Unlike orders (which naturally drop out of "Pending" once handled),
+  // a review never resolves out of "recent" on its own, so the DOT only
+  // reacts to reviews from the last 48h (see recentReviews filter below)
+  // — otherwise it would stay lit forever after the very first review.
+  let reviews = [];
+  try {
+    const reviewsSnap = await getDocs(
+      query(collection(db, "reviews"), orderBy("createdAt", "desc"), limit(5)),
+    );
+    reviews = await Promise.all(
+      reviewsSnap.docs.map(async (d) => {
+        const r = { id: d.id, ...d.data() };
+        const productSnap = await getDoc(doc(db, "products", r.productId));
+        r.productName = productSnap.exists()
+          ? productSnap.data().name
+          : "a product";
+        return r;
+      }),
+    );
+  } catch (err) {
+    // Composite index (createdAt) may not exist yet — fail quietly, same
+    // approach used on the mobile side for this same query shape.
+    console.error("Couldn't load recent reviews for notif bell:", err);
+  }
+
+  const TWO_DAYS_MS = 48 * 60 * 60 * 1000;
+  const now = Date.now();
+  const recentReviews = reviews.filter((r) => {
+    const t = r.createdAt?.toMillis?.() || 0;
+    return now - t < TWO_DAYS_MS;
+  });
+
+  if (pending.length > 0 || recentReviews.length > 0) {
     dot.classList.remove("d-none");
-    list.innerHTML = pending
-      .slice(0, 5)
-      .map(
-        (o) => `
+  } else {
+    dot.classList.add("d-none");
+  }
+
+  const ordersHtml =
+    pending.length > 0
+      ? pending
+          .slice(0, 5)
+          .map(
+            (o) => `
         <a href="orders.html" class="notif-item">
           <div class="notif-item-title">#${o.id.slice(0, 8).toUpperCase()} — ${o.shippingInfo?.fullName || "—"}</div>
           <div class="notif-item-sub">${peso(o.total)} · awaiting processing</div>
         </a>`,
-      )
-      .join("");
-  } else {
-    list.innerHTML = `<p class="notif-empty">No pending orders right now.</p>`;
-  }
+          )
+          .join("")
+      : `<p class="notif-empty">No pending orders right now.</p>`;
+
+  const reviewsHtml =
+    reviews.length > 0
+      ? reviews
+          .map(
+            (r) => `
+        <a href="admin-products.html" class="notif-item">
+          <div class="notif-item-title">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)} on ${r.productName}</div>
+          <div class="notif-item-sub">${r.userName || "A customer"}${r.text ? " · " + r.text.slice(0, 40) + (r.text.length > 40 ? "…" : "") : ""}</div>
+        </a>`,
+          )
+          .join("")
+      : `<p class="notif-empty">No reviews yet.</p>`;
+
+  list.innerHTML = `
+    <div class="notif-section-title">Orders</div>
+    ${ordersHtml}
+    <div class="notif-section-title">Recent Reviews</div>
+    ${reviewsHtml}
+  `;
 
   bellBtn.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -313,7 +371,7 @@ async function initDashboard(role) {
 
   orders.forEach((o) => {
     revenue += o.total || 0;
-    if ((o.status || "Pending") === "Pending") pending += 1;
+    if (["New", "Pending"].includes(o.status || "Pending")) pending += 1;
     const d = o.createdAt?.toDate ? o.createdAt.toDate() : null;
     if (!d) return;
     if (inThisMonthToDate(d)) {
@@ -1289,9 +1347,9 @@ const PAYMENT_LABELS = {
   card: "Card",
   paypal: "PayPal",
 };
-// Matches the customer-side rule in profile.js exactly (CANCELLABLE = ["pending","processing"]) —
+// Matches the customer-side rule in profile.js exactly (CANCELLABLE = ["new","pending","processing"]) —
 // once an order is Shipped or Delivered, neither the customer nor an admin can cancel it here.
-const CANCELLABLE_STATUSES = ["Pending", "Processing"];
+const CANCELLABLE_STATUSES = ["New", "Pending", "Processing"];
 
 function wireToolbarDropdown(btnId, menuId, labelId, onSelect) {
   const btn = document.getElementById(btnId);
@@ -1333,6 +1391,7 @@ function wireToolbarDropdown(btnId, menuId, labelId, onSelect) {
 function initOrders() {
   const tbody = document.querySelector("#adminOrdersTable tbody");
   const statuses = [
+    "New",
     "Pending",
     "Processing",
     "Shipped",
@@ -1652,10 +1711,29 @@ function initOrders() {
     detailBackdrop.classList.add("d-none");
   }
 
-  function openOrderDetail(orderId) {
+  async function openOrderDetail(orderId) {
     const o = allOrders.find((x) => x.id === orderId);
     if (!o) return;
-    const status = o.status || "Pending";
+    let status = o.status || "Pending";
+
+    // Staff has now viewed this order — a "New" order becomes "Pending"
+    // right here, the moment its detail panel opens. This is the one and
+    // only place that transition happens; nothing else in the app writes
+    // it. Local state is updated optimistically so the panel and table
+    // reflect it immediately, matching the pattern used by the status
+    // dropdown elsewhere in this file.
+    if (status === "New") {
+      status = "Pending";
+      o.status = "Pending";
+      try {
+        await updateDoc(doc(db, "orders", orderId), { status: "Pending" });
+      } catch (err) {
+        console.error("Couldn't mark order as viewed:", err);
+        showToast(
+          "Couldn't update this order's status — see console for details.",
+        );
+      }
+    }
 
     document.getElementById("odOrderId").textContent =
       `#${o.id.slice(0, 8).toUpperCase()}`;
