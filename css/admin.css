@@ -56,11 +56,13 @@ body.admin-body {
 }
 .admin-nav a:hover {
   background: #f6fbff;
-  color: var(--primary);
+  /* Ink-Text Rule: Sky Blue text fails contrast on this near-white tint
+     — the background tint and left border already carry the state. */
+  color: var(--dark);
 }
 .admin-nav a.active {
   background: #f0faff;
-  color: var(--primary);
+  color: var(--dark);
   border-left-color: var(--primary);
   font-weight: 600;
 }
@@ -391,12 +393,14 @@ body.admin-body {
 }
 .filters-btn:hover {
   border-color: var(--primary);
-  color: var(--primary-dark);
+  /* Ink-Text Rule: Sky Blue Deep is only 2.7:1 — the border already
+     signals hover/active. */
+  color: var(--dark);
 }
 .filters-btn.active {
   background: var(--primary-light);
   border-color: var(--primary);
-  color: var(--primary-dark);
+  color: var(--dark);
 }
 
 /* Quick-filter pill tabs (All / In Stock / Low Stock / Out of Stock, etc.) */
@@ -420,12 +424,14 @@ body.admin-body {
 }
 .filter-tab:hover {
   border-color: var(--primary);
-  color: var(--primary-dark);
+  color: var(--dark);
 }
 .filter-tab.active {
+  /* Ink-Text Rule: white on solid Sky Blue is only 1.9:1 — same fix as
+     .signup-btn/.btn-success. */
   background: var(--primary);
   border-color: var(--primary);
-  color: #fff;
+  color: var(--dark);
 }
 
 /* Status badges — same visual language as .role-badge (soft bg, saturated text) */
@@ -544,44 +550,9 @@ body.admin-body {
   color: var(--dark);
   margin: 0;
 }
-.filters-panel-reset {
-  border: none;
-  background: none;
-  color: var(--primary-dark);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.filters-panel-reset:hover {
-  text-decoration: underline;
-}
-
-.filter-group {
-  margin-bottom: 16px;
-}
-.filter-group-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--gray);
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-.filter-checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  font-size: 0.88rem;
-  color: var(--dark);
-  cursor: pointer;
-}
-.filter-checkbox-row input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--primary);
-  cursor: pointer;
-}
+/* .filters-panel-reset, .filter-group, .filter-group-label, and
+   .filter-checkbox-row moved to style.css — shared with products.html's
+   filter sidebar, not just this dropdown panel. */
 .filters-panel-footer {
   display: flex;
   gap: 10px;
@@ -606,8 +577,9 @@ body.admin-body {
 }
 .filters-apply-btn {
   border: none;
+  /* Ink-Text Rule: white on solid Sky Blue is only 1.9:1. */
   background: var(--primary);
-  color: #fff;
+  color: var(--dark);
 }
 .filters-apply-btn:hover {
   background: var(--primary-dark);
@@ -743,7 +715,9 @@ body.admin-body {
   padding: 12px;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--primary-dark);
+  /* Ink-Text Rule: Sky Blue Deep is only 2.7:1 on this near-white bg —
+     the underline on hover carries the interactive signal. */
+  color: var(--dark);
   text-decoration: none;
   background: #f6fbff;
 }
@@ -978,8 +952,10 @@ body.admin-body {
   background: #f6fbff;
 }
 .tdm-item.active {
+  /* Ink-Text Rule: Sky Blue Deep is only 2.7:1 on the Sky Blue Light
+     background — the tint itself already signals the active item. */
   background: var(--primary-light);
-  color: var(--primary-dark);
+  color: var(--dark);
   font-weight: 600;
 }
 
@@ -993,7 +969,8 @@ body.admin-body {
   margin-bottom: 16px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--primary-dark);
+  /* Ink-Text Rule: Sky Blue Deep is only 2.7:1 on this background. */
+  color: var(--dark);
 }
 .bulk-cancel-btn {
   display: inline-flex;
@@ -1277,8 +1254,9 @@ body.admin-body {
   align-items: center;
   gap: 8px;
   border: none;
+  /* Ink-Text Rule: white on solid Sky Blue is only 1.9:1. */
   background: var(--primary);
-  color: #fff;
+  color: var(--dark);
   border-radius: var(--radius-pill);
   padding: 9px 20px;
   font-weight: 600;
@@ -1433,8 +1411,10 @@ body.admin-body {
 }
 .stock-inline-adjust-btn {
   border: 1.5px solid var(--primary);
+  /* Ink-Text Rule: Sky Blue Deep is only 2.7:1 on Sky Blue Light, and
+     white is only 1.9:1 on solid Sky Blue (hover) — Ink passes both. */
   background: var(--primary-light);
-  color: var(--primary-dark);
+  color: var(--dark);
   border-radius: var(--radius-pill);
   padding: 6px 14px;
   font-size: 0.78rem;
@@ -1445,5 +1425,5 @@ body.admin-body {
 }
 .stock-inline-adjust-btn:hover {
   background: var(--primary);
-  color: #fff;
+  color: var(--dark);
 }
