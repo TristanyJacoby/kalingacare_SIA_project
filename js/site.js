@@ -22,6 +22,9 @@ import {
 import {
   doc,
   getDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 /* ===== Toast notifications =====
@@ -100,6 +103,26 @@ export function saveCart(cart) {
 export function clearCart() {
   localStorage.removeItem(CART_KEY);
   updateNavCartBadge();
+}
+
+/* ===== Favorites (shared by products.js, product.js, favorites.js) =====
+   Stored as a plain array of product IDs on the user's own Firestore doc
+   (users/{uid}.favorites) rather than a separate collection — this app has
+   no other per-user subcollections (savedAddress, preferences, etc. are
+   all embedded fields on the same doc), and it means favorites work under
+   the existing Firestore rules that already let a user update their own
+   doc, with no new rule to write or deploy. */
+
+export async function getFavoriteIds(uid) {
+  const snap = await getDoc(doc(db, "users", uid));
+  return snap.exists() ? snap.data().favorites || [] : [];
+}
+
+export async function toggleFavorite(uid, productId, isFavorited) {
+  await updateDoc(doc(db, "users", uid), {
+    favorites: isFavorited ? arrayRemove(productId) : arrayUnion(productId),
+  });
+  return !isFavorited;
 }
 
 /* ===== Navbar: Login/Get Started vs. Cart, based on auth state ===== */

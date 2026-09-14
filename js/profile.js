@@ -118,6 +118,12 @@ onAuthStateChanged(auth, async (user) => {
   renderAvatar(fullName, userData.photoBase64);
   renderAddress(userData.savedAddress);
 
+  const favoritesCount = (userData.favorites || []).length;
+  document.getElementById("favoritesCountSummary").textContent =
+    favoritesCount === 0
+      ? "No saved items yet."
+      : `${favoritesCount} saved item${favoritesCount === 1 ? "" : "s"}.`;
+
   const badge = document.getElementById("roleBadge");
   badge.textContent = ROLE_LABELS[role] || "User";
   badge.classList.add(`role-${role}`);
@@ -156,6 +162,18 @@ async function loadOrderHistory(uid) {
           (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0),
       );
 
+    // Which order+product combos this user has already reviewed — matches
+    // mobile's MyOrders.tsx exactly, including the "orderId:productId" key
+    // shape, since reviews are create-only (see firestore-reviews-schema)
+    // and this client-side check is the only place a duplicate "Leave a
+    // Review" gets prevented.
+    const reviewsSnap = await getDocs(
+      query(collection(db, "reviews"), where("userId", "==", uid)),
+    );
+    const reviewedKeys = new Set(
+      reviewsSnap.docs.map((d) => `${d.data().orderId}:${d.data().productId}`),
+    );
+
     const CANCELLABLE = ["new", "pending", "processing"];
 
     list.innerHTML = orders
@@ -173,6 +191,31 @@ async function loadOrderHistory(uid) {
         const isNew = statusClass === "new";
         const displayStatus = isNew ? "Pending" : order.status || "Pending";
         const displayClass = isNew ? "pending" : statusClass;
+        const isDelivered = displayStatus === "Delivered";
+
+        // Only shown for delivered orders — matches mobile's MyOrders,
+        // where "Leave a Review" only ever appears per item once an order
+        // reaches that status, since reviewing requires actually having
+        // received the product.
+        const itemRows = isDelivered
+          ? `<div class="mt-2 pt-2" style="border-top: 1px solid var(--line)">
+              ${order.items
+                .map((item) => {
+                  const reviewed = reviewedKeys.has(`${order.id}:${item.id}`);
+                  return `
+                  <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 0.85rem">
+                    <span>${item.name} &times; ${item.qty}</span>
+                    ${
+                      reviewed
+                        ? `<span class="text-muted"><i class="bi bi-check-circle"></i> Reviewed</span>`
+                        : `<a href="review.html?orderId=${order.id}&productId=${item.id}" style="color: var(--primary); font-weight: 600; text-decoration: none;">Leave a Review</a>`
+                    }
+                  </div>`;
+                })
+                .join("")}
+            </div>`
+          : "";
+
         return `
           <div class="cart-item" style="align-items:flex-start; flex-direction:column;">
             <div class="cart-item-info w-100">
@@ -189,6 +232,7 @@ async function loadOrderHistory(uid) {
                 ${canCancel ? `<button type="button" class="remove-item cancel-order-btn" data-id="${order.id}"><i class="bi bi-x-circle"></i> Cancel Order</button>` : ""}
               </div>
               <div class="tracking-panel d-none" id="tracking-${order.id}"></div>
+              ${itemRows}
             </div>
           </div>`;
       })
