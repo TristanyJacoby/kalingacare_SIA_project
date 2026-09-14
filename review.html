@@ -12,9 +12,11 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KalingaCare | Cart</title>
+
+    <title>KalingaCare | Write a Review</title>
     <link rel="icon" type="image/png" href="assets/images/logo.png" />
 
+    <!-- Google Font (matches index.html) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -22,17 +24,21 @@
       rel="stylesheet"
     />
 
+    <!-- Bootstrap CSS -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <!-- Bootstrap Icons -->
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     />
 
+    <!-- Shared site styles, then page-specific -->
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/shop.css" />
+    <link rel="stylesheet" href="css/product.css" />
   </head>
 
   <body>
@@ -138,52 +144,97 @@
     </header>
 
     <main>
-      <div class="container page-heading">
-        <h1><i class="bi bi-cart3"></i> Your Cart</h1>
-      </div>
+      <div class="container product-detail-page" style="max-width: 640px">
+        <a href="profile.html" class="back-to-products">
+          <i class="bi bi-arrow-left"></i> Back to My Orders
+        </a>
 
-      <div class="container pb-5">
-        <div id="cartLoaded" class="row g-4">
-          <div class="col-lg-8">
-            <div id="cartItemsList"></div>
-          </div>
-          <div class="col-lg-4">
-            <div class="summary-card">
-              <h2>Order Summary</h2>
-              <div class="summary-row">
-                <span>Subtotal</span>
-                <span id="summarySubtotal">&#8369;0</span>
-              </div>
-              <div class="summary-row">
-                <span>Shipping Fee</span>
-                <span id="summaryShipping">&#8369;150</span>
-              </div>
-              <div class="summary-row total">
-                <span>Total</span>
-                <span id="summaryTotal">&#8369;0</span>
-              </div>
-              <a
-                href="checkout.html"
-                class="btn-success d-block text-center mt-4"
-                id="checkoutBtn"
-                style="text-decoration: none"
-              >
-                Proceed to Checkout
-              </a>
-            </div>
-          </div>
+        <div id="rvLoading" class="text-center text-muted py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-3">Loading...</p>
         </div>
 
-        <div id="cartEmpty" class="empty-state d-none">
-          <i class="bi bi-cart-x"></i>
-          <h3>Your cart is empty</h3>
-          <p>Looks like you haven't added anything yet.</p>
-          <a
-            href="products.html"
-            class="hero-btn-primary"
-            style="text-decoration: none; display: inline-flex"
-            >Browse Products</a
-          >
+        <div id="rvNotEligible" class="empty-state d-none">
+          <i class="bi bi-exclamation-circle"></i>
+          <h3>Can't review this item</h3>
+          <p id="rvNotEligibleReason">
+            Reviews can only be written for items from your own delivered
+            orders.
+          </p>
+          <a href="profile.html" class="btn-success">Back to My Orders</a>
+        </div>
+
+        <div id="rvAlreadyReviewed" class="empty-state d-none">
+          <i class="bi bi-check-circle"></i>
+          <h3>You've already reviewed this</h3>
+          <p>
+            Reviews can't be edited once submitted — thanks for sharing your
+            experience!
+          </p>
+          <a href="profile.html" class="btn-success">Back to My Orders</a>
+        </div>
+
+        <div id="rvContent" class="d-none">
+          <div class="pd-review-form" style="margin: 0 0 2rem">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <img
+                id="rvProductImage"
+                src=""
+                alt=""
+                style="
+                  width: 64px;
+                  height: 64px;
+                  object-fit: cover;
+                  border-radius: 10px;
+                  border: 1px solid var(--line);
+                "
+              />
+              <div>
+                <h4 class="mb-0" id="rvProductName"></h4>
+                <p class="text-muted mb-0" style="font-size: 0.8rem">
+                  From order #<span id="rvOrderIdShort"></span>
+                </p>
+              </div>
+            </div>
+
+            <h4>Your Rating</h4>
+            <div class="pd-star-input" id="rvStarInput">
+              <i class="bi bi-star" data-value="1"></i>
+              <i class="bi bi-star" data-value="2"></i>
+              <i class="bi bi-star" data-value="3"></i>
+              <i class="bi bi-star" data-value="4"></i>
+              <i class="bi bi-star" data-value="5"></i>
+            </div>
+            <textarea
+              id="rvReviewText"
+              class="form-control mt-2"
+              rows="4"
+              placeholder="Share what you thought about this product..."
+            ></textarea>
+
+            <div class="pd-review-photo-row mt-2">
+              <div class="pd-review-photo-preview d-none" id="rvPhotoPreviewWrap">
+                <img id="rvPhotoPreview" src="" alt="Your photo" />
+                <button type="button" id="rvPhotoRemove" title="Remove photo">
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+              <button type="button" class="pd-review-photo-btn" id="rvPhotoBtn">
+                <i class="bi bi-camera"></i> Add a photo (optional)
+              </button>
+              <input
+                type="file"
+                id="rvPhotoInput"
+                accept="image/*"
+                class="d-none"
+              />
+            </div>
+
+            <div class="auth-error mt-2" id="rvError"></div>
+            <button type="button" class="btn-success mt-2" id="rvSubmitBtn">
+              Submit Review
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -192,19 +243,29 @@
       <div class="container">
         <div class="row">
           <div class="col-md-4">
-            <h4 class="fw-bold">KalingaCare</h4>
+            <h3 class="fw-bold">
+              <i class="bi bi-heart-pulse-fill"></i> KalingaCare
+            </h3>
             <p>Care Beyond Borders</p>
+            <p>
+              Helping Overseas Filipino Workers care for their loved ones
+              through trusted healthcare products.
+            </p>
           </div>
           <div class="col-md-4">
-            <h5>Quick Links</h5>
+            <h4>Quick Links</h4>
             <ul class="list-unstyled">
               <li><a href="index.html">Home</a></li>
               <li><a href="products.html">Products</a></li>
+              <li><a href="index.html#about">About</a></li>
+              <li><a href="index.html#contact">Contact</a></li>
             </ul>
           </div>
           <div class="col-md-4">
-            <h5>Contact Us</h5>
-            <p>support@kalingacare.com</p>
+            <h4>Contact Us</h4>
+            <p><i class="bi bi-envelope-fill"></i> support@kalingacare.com</p>
+            <p><i class="bi bi-telephone-fill"></i> (+63) 912-345-6789</p>
+            <p><i class="bi bi-geo-alt-fill"></i> Manila, Philippines</p>
           </div>
         </div>
         <hr class="border-light" />
@@ -217,6 +278,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="js/firebase.js"></script>
     <script type="module" src="js/site.js"></script>
-    <script type="module" src="js/cart.js"></script>
+    <script type="module" src="js/review.js"></script>
   </body>
 </html>

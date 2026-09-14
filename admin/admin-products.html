@@ -132,7 +132,7 @@
               <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
               <span class="kpi-change" id="prodKpiOrdersChange">—</span>
             </div>
-            <h3 id="prodKpiOrders">0</h3>
+            <h2 id="prodKpiOrders">0</h2>
             <p>Total Orders</p>
           </div>
           <div class="kpi-card">
@@ -140,14 +140,14 @@
               <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
               <span class="kpi-change" id="prodKpiRevenueChange">—</span>
             </div>
-            <h3 id="prodKpiRevenue">&#8369;0</h3>
+            <h2 id="prodKpiRevenue">&#8369;0</h2>
             <p>Monthly Revenue</p>
           </div>
           <div class="kpi-card">
             <div class="kpi-icon">
               <i class="bi bi-exclamation-triangle"></i>
             </div>
-            <h3 id="prodKpiOutOfStock">0</h3>
+            <h2 id="prodKpiOutOfStock">0</h2>
             <p>Out of Stock</p>
           </div>
         </div>
@@ -193,7 +193,7 @@
 
             <div class="filters-panel d-none" id="productFiltersPanel">
               <div class="filters-panel-header">
-                <h6>Filters</h6>
+                <h3>Filters</h3>
                 <button
                   type="button"
                   class="filters-panel-reset"
@@ -360,6 +360,11 @@
                 id="pSubcategory"
                 placeholder="Subcategory (e.g. Walking Aids)"
               />
+              <textarea
+                id="pDescription"
+                placeholder="Description (shown on the product's detail page)"
+                rows="4"
+              ></textarea>
               <input
                 type="number"
                 id="pPrice"
@@ -391,26 +396,24 @@
 
               <input type="hidden" id="pImg" />
               <input type="hidden" id="pImgBase64" />
-              <div class="image-drop-preview d-none" id="imagePreviewWrap">
-                <img id="imagePreview" src="" alt="Product preview" />
-                <button
-                  type="button"
-                  class="remove-image-btn"
-                  id="removeImageBtn"
-                  title="Remove image"
-                >
-                  <i class="bi bi-x"></i>
-                </button>
-              </div>
+              <!-- Up to 4 photos per product (images[]), matching what the
+                   mobile app's gallery is already built to read — see
+                   js/admin.js's image upload section. First photo is the
+                   cover shown on cards/cart/checkout everywhere else. -->
+              <div class="image-grid-preview" id="imageGridPreview"></div>
               <div class="image-drop-zone" id="imageDropZone">
                 <i class="bi bi-cloud-arrow-up"></i>
-                <p>Drag &amp; drop a photo, or click to browse</p>
-                <p class="drop-hint-small">JPG or PNG, resized automatically</p>
+                <p>Drag &amp; drop up to 4 photos, or click to browse</p>
+                <p class="drop-hint-small">
+                  JPG or PNG, resized automatically &mdash; first photo is the
+                  cover image
+                </p>
               </div>
               <input
                 type="file"
                 id="imageFileInput"
                 accept="image/*"
+                multiple
                 class="d-none"
               />
 
