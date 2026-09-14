@@ -230,6 +230,14 @@
   font-weight: 600;
   margin-bottom: 0.6rem;
 }
+/* Shown under .product-card-price only for accounts with a non-PHP
+   currency set (see js/products.js) — the converted amount becomes the
+   primary price and this PHP figure becomes the reference line, since
+   PHP is what the order is actually charged in via Cash on Delivery. */
+.product-card-price-php {
+  font-size: 0.78rem;
+  margin-bottom: 0.6rem;
+}
 
 .badge.bg-success {
   background: var(--primary) !important;

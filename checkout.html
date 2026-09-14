@@ -284,6 +284,33 @@
                 <span>Total</span>
                 <span id="ckTotal">&#8369;0</span>
               </div>
+              <!-- Display-only conversion: KalingaCare charges in PHP via
+                   Cash on Delivery regardless of what's picked here — this
+                   just shows an OFW buyer roughly what that PHP total is
+                   in their own currency. Defaults from the buyer's Country
+                   (Settings/registration) but can be changed for this
+                   order only. -->
+              <div class="summary-row" id="ckConvertedRow" style="display: none">
+                <span>&#8776; in <span id="ckCurrencyLabel">USD</span></span>
+                <span id="ckConvertedTotal">—</span>
+              </div>
+              <p
+                class="text-muted mb-2"
+                id="ckRateNote"
+                style="font-size: 0.72rem; margin-top: -6px"
+              ></p>
+              <div class="mb-2">
+                <label class="form-label" for="ckCurrency">
+                  Show total in
+                </label>
+                <select class="form-control" id="ckCurrency">
+                  <!-- Populated from js/currency.js's COUNTRY_CURRENCY. -->
+                </select>
+                <p class="text-muted mt-1 mb-0" style="font-size: 0.78rem">
+                  For reference only — you're always charged in Philippine
+                  Peso (&#8369;) on delivery.
+                </p>
+              </div>
             </div>
           </div>
         </div>
