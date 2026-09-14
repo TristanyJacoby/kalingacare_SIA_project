@@ -11,6 +11,7 @@ import {
   getDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getRates, convertAndFormat, populateCurrencySelect } from "./currency.js";
 
 const authGate = document.getElementById("authGate");
 const staffGate = document.getElementById("staffGate");
@@ -30,6 +31,8 @@ function hideAllGates() {
   checkoutContent.style.display = "none";
 }
 
+let currentTotalPHP = 0;
+
 function renderSummary(cart) {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
   document.getElementById("ckItemsSummary").innerHTML = cart
@@ -43,11 +46,47 @@ function renderSummary(cart) {
     .join("");
   document.getElementById("ckSubtotal").textContent = peso(subtotal);
   document.getElementById("ckShipping").textContent = peso(SHIPPING_FEE);
-  document.getElementById("ckTotal").textContent = peso(
-    subtotal + SHIPPING_FEE,
-  );
+  currentTotalPHP = subtotal + SHIPPING_FEE;
+  document.getElementById("ckTotal").textContent = peso(currentTotalPHP);
+  updateConvertedDisplay();
   return subtotal;
 }
+
+// Display-only: converts currentTotalPHP into whatever currency is picked
+// in #ckCurrency and shows it under the real (PHP) total. Never touches
+// the actual order amount — see the note on #ckConvertedRow in checkout.html.
+async function updateConvertedDisplay() {
+  const currencySelect = document.getElementById("ckCurrency");
+  const convertedRow = document.getElementById("ckConvertedRow");
+  if (!currencySelect) return;
+
+  const code = currencySelect.value;
+  if (!code || code === "PHP") {
+    convertedRow.style.display = "none";
+    return;
+  }
+
+  document.getElementById("ckCurrencyLabel").textContent = code;
+  convertedRow.style.display = "flex";
+  document.getElementById("ckConvertedTotal").textContent = "…";
+
+  const { rates, liveCodes } = await getRates();
+  document.getElementById("ckConvertedTotal").textContent = convertAndFormat(
+    currentTotalPHP,
+    code,
+    rates,
+  );
+  // Gulf currencies (SAR/AED/QAR/KWD/BHD/OMR) and a few others aren't
+  // published by the live rate source at all — be upfront that those are
+  // an estimate rather than implying every currency here is live.
+  document.getElementById("ckRateNote").textContent = liveCodes.includes(code)
+    ? "Live exchange rate."
+    : "Estimated rate — live data isn't available for this currency.";
+}
+
+document
+  .getElementById("ckCurrency")
+  .addEventListener("change", updateConvertedDisplay);
 
 let currentUser = null;
 let savedAddressCoords = { lat: null, lng: null };
@@ -80,6 +119,13 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   checkoutContent.style.display = "block";
+
+  // Default the "show total in" picker to the buyer's own currency (set at
+  // registration or in Settings) rather than always starting on PHP —
+  // that's the whole point of asking for their country up front.
+  const userData = roleSnap.exists() ? roleSnap.data() : {};
+  populateCurrencySelect(document.getElementById("ckCurrency"), userData.currency || "PHP");
+
   renderSummary(cart);
 
   document.getElementById("ckName").value = user.displayName || "";
@@ -118,6 +164,13 @@ document
 
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
+    // Record what currency the buyer was viewing at order time, purely
+    // for admin/support context — the canonical subtotal/shippingFee/total
+    // above stay PHP no matter what's picked here (see the note on
+    // #ckConvertedRow in checkout.html: this is a display conversion,
+    // not a real multi-currency charge).
+    const displayCurrency = document.getElementById("ckCurrency").value;
+
     try {
       await addDoc(collection(db, "orders"), {
         userId: currentUser.uid,
@@ -125,6 +178,7 @@ document
         subtotal,
         shippingFee: SHIPPING_FEE,
         total: subtotal + SHIPPING_FEE,
+        displayCurrency,
         status: "New",
         shippingInfo: {
           fullName: document.getElementById("ckName").value.trim(),

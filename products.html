@@ -110,6 +110,11 @@
                       >
                     </li>
                     <li>
+                      <a class="dropdown-item" href="favorites.html"
+                        ><i class="bi bi-heart me-2"></i>Favorites</a
+                      >
+                    </li>
+                    <li>
                       <a class="dropdown-item" href="settings.html"
                         ><i class="bi bi-gear me-2"></i>Settings</a
                       >
@@ -138,67 +143,113 @@
     </header>
 
     <main>
-      <!-- HERO -->
-      <section class="shop-hero">
-        <div class="container text-center">
-          <h1>Senior Wellness <span>Products</span></h1>
-          <p class="lead">Care Beyond Borders</p>
-          <p>
-            Shop trusted healthcare products for your loved ones in the
-            Philippines.
-          </p>
+      <div class="products-page">
+        <!-- FILTERS SIDEBAR -->
+        <aside class="filters-sidebar">
+          <button
+            class="filters-mobile-toggle d-lg-none"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#filtersCollapse"
+          >
+            <span><i class="bi bi-funnel"></i> Filters</span>
+            <i class="bi bi-chevron-down"></i>
+          </button>
 
-          <div class="row justify-content-center">
-            <div class="col-lg-6">
-              <div class="input-group">
+          <div class="collapse d-lg-block" id="filtersCollapse">
+            <div class="filters-sidebar-header">
+              <span class="filters-sidebar-title"
+                ><i class="bi bi-funnel"></i> Filters</span
+              >
+              <button
+                class="filters-panel-reset"
+                type="button"
+                id="clearFiltersBtn"
+              >
+                Clear All
+              </button>
+            </div>
+
+            <div class="filter-group">
+              <div class="filter-group-label">Category</div>
+              <label class="filter-checkbox-row">
+                <input
+                  type="checkbox"
+                  class="category-filter-checkbox"
+                  value="mobility"
+                />
+                Mobility
+              </label>
+              <label class="filter-checkbox-row">
+                <input
+                  type="checkbox"
+                  class="category-filter-checkbox"
+                  value="wellness"
+                />
+                Wellness
+              </label>
+              <label class="filter-checkbox-row">
+                <input
+                  type="checkbox"
+                  class="category-filter-checkbox"
+                  value="digital"
+                />
+                Digital Health
+              </label>
+            </div>
+
+            <div class="filter-group">
+              <div class="filter-group-label">Price</div>
+              <label class="filter-checkbox-row">
+                <input type="radio" name="priceRange" value="0-1000" />
+                Under &#8369;1,000
+              </label>
+              <label class="filter-checkbox-row">
+                <input type="radio" name="priceRange" value="1000-3000" />
+                &#8369;1,000 &ndash; &#8369;3,000
+              </label>
+              <label class="filter-checkbox-row">
+                <input type="radio" name="priceRange" value="3000-7000" />
+                &#8369;3,000 &ndash; &#8369;7,000
+              </label>
+              <label class="filter-checkbox-row">
+                <input type="radio" name="priceRange" value="7000-" />
+                Over &#8369;7,000
+              </label>
+            </div>
+          </div>
+        </aside>
+
+        <!-- PRODUCTS MAIN -->
+        <div class="products-main">
+          <div class="products-toolbar-row">
+            <div>
+              <h1>Products</h1>
+              <p id="productsCount" class="products-count">
+                Showing products
+              </p>
+              <p id="productsCurrencyNote" class="products-count d-none"></p>
+            </div>
+            <div class="products-search-sort">
+              <div class="input-group products-search">
                 <input
                   type="text"
-                  class="form-control form-control-lg"
+                  class="form-control"
                   id="searchInput"
                   placeholder="Search products..."
                 />
-                <button class="btn btn-success">
+                <button class="btn btn-success" type="button">
                   <i class="bi bi-search"></i>
                 </button>
               </div>
+              <select class="products-sort-select" id="sortSelect">
+                <option value="name-asc">Sort: Name A&ndash;Z</option>
+                <option value="price-asc">Sort: Price Low to High</option>
+                <option value="price-desc">Sort: Price High to Low</option>
+              </select>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- CATEGORY FILTER -->
-      <section class="py-4">
-        <div class="container text-center">
-          <button
-            class="btn btn-success m-2 category-btn active"
-            data-filter="all"
-          >
-            All Products
-          </button>
-          <button
-            class="btn btn-outline-success m-2 category-btn"
-            data-filter="mobility"
-          >
-            Mobility
-          </button>
-          <button
-            class="btn btn-outline-success m-2 category-btn"
-            data-filter="wellness"
-          >
-            Wellness
-          </button>
-          <button
-            class="btn btn-outline-success m-2 category-btn"
-            data-filter="digital"
-          >
-            Digital Health
-          </button>
-        </div>
-      </section>
-
-      <!-- PRODUCTS -->
-      <section class="py-5">
-        <div class="container">
           <div class="row g-4" id="productsGrid">
             <div
               class="col-12 text-center text-muted py-5"
@@ -211,11 +262,11 @@
 
           <div class="empty-state d-none" id="productsEmpty">
             <i class="bi bi-box-seam"></i>
-            <h3>No products yet</h3>
+            <h2>No products yet</h2>
             <p>The catalog hasn't been stocked yet — check back soon.</p>
           </div>
         </div>
-      </section>
+      </div>
     </main>
 
     <!-- FOOTER -->
@@ -223,9 +274,9 @@
       <div class="container">
         <div class="row">
           <div class="col-md-4">
-            <h4 class="fw-bold">
+            <h3 class="fw-bold">
               <i class="bi bi-heart-pulse-fill"></i> KalingaCare
-            </h4>
+            </h3>
             <p>Care Beyond Borders</p>
             <p>
               Helping Overseas Filipino Workers care for their loved ones
@@ -233,7 +284,7 @@
             </p>
           </div>
           <div class="col-md-4">
-            <h5>Quick Links</h5>
+            <h4>Quick Links</h4>
             <ul class="list-unstyled">
               <li><a href="index.html">Home</a></li>
               <li><a href="products.html">Products</a></li>
@@ -242,7 +293,7 @@
             </ul>
           </div>
           <div class="col-md-4">
-            <h5>Contact Us</h5>
+            <h4>Contact Us</h4>
             <p><i class="bi bi-envelope-fill"></i> support@kalingacare.com</p>
             <p><i class="bi bi-telephone-fill"></i> (+63) 912-345-6789</p>
             <p><i class="bi bi-geo-alt-fill"></i> Manila, Philippines</p>

@@ -16,6 +16,7 @@ import {
   setDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
 
 const stage = document.getElementById("stage");
 const loginSection = document.getElementById("loginSection");
@@ -25,12 +26,15 @@ const brandText = document.getElementById("brandText");
 
 // Sends the user back to wherever they came from after logging in — e.g.
 // products.js redirects here with ?redirect=products.html when a guest
-// tries to add to cart. Only allows a plain same-site .html path (no
-// "http://", no "//"), which guards against turning this into an open
-// redirect to an external site via a crafted URL.
+// tries to add to cart, or product.js with ?redirect=product.html?id=xyz
+// to return to that exact product. Only allows a plain same-site .html
+// filename, optionally followed by a query string built from safe
+// characters — no "http://", no "//", no ":" — which guards against
+// turning this into an open redirect to an external site via a crafted
+// URL while still letting a deep link survive the round trip.
 function getRedirectDestination() {
   const redirect = new URLSearchParams(window.location.search).get("redirect");
-  if (redirect && /^[a-zA-Z0-9_-]+\.html$/.test(redirect)) {
+  if (redirect && /^[a-zA-Z0-9_-]+\.html(\?[a-zA-Z0-9_=&-]*)?$/.test(redirect)) {
     return redirect;
   }
   return "index.html";
@@ -111,14 +115,20 @@ loginForm.addEventListener("submit", async (e) => {
 const signupForm = document.getElementById("signupForm");
 const signupError = document.getElementById("signupError");
 
+const signupCountrySelect = document.getElementById("signupCountry");
+if (signupCountrySelect) populateCountrySelect(signupCountrySelect);
+
 signupForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   clearError(signupError);
 
   const fullName = document.getElementById("signupName").value.trim();
   const email = document.getElementById("signupEmail").value.trim();
+  const country = signupCountrySelect ? signupCountrySelect.value : "";
   const password = document.getElementById("signupPassword").value;
-  const confirmPassword = document.getElementById("signupConfirmPassword").value;
+  const confirmPassword = document.getElementById(
+    "signupConfirmPassword",
+  ).value;
   const submitBtn = signupForm.querySelector(".btn-auth");
 
   if (password !== confirmPassword) {
@@ -141,6 +151,8 @@ signupForm.addEventListener("submit", async (e) => {
     await setDoc(doc(db, "users", cred.user.uid), {
       fullName,
       email,
+      country,
+      currency: COUNTRY_CURRENCY[country] || "PHP",
       role: "user",
       createdAt: serverTimestamp(),
     });
@@ -168,7 +180,8 @@ if (switchLink) {
     // Preserve ?redirect=... across the switch, so someone who arrived at
     // login.html?redirect=products.html and clicks over to "Create Account"
     // still gets sent back to Products after signing up, not the homepage.
-    const destination = switchLink.getAttribute("href") + window.location.search;
+    const destination =
+      switchLink.getAttribute("href") + window.location.search;
     toggleMode();
     setTimeout(() => {
       window.location.href = destination;
@@ -197,10 +210,15 @@ async function handleGoogleSignIn(button) {
 
     if (!existing.exists()) {
       // First time this Google account has signed in — create the same
-      // Firestore profile the email/password signup flow creates.
+      // Firestore profile the email/password signup flow creates. There's
+      // no form here to ask for a country (Google's popup skips straight
+      // to an authenticated result), so it starts unset — Settings lets
+      // them fill it in afterward, which also (re)derives `currency`.
       await setDoc(userDocRef, {
         fullName: user.displayName || "",
         email: user.email || "",
+        country: "",
+        currency: "PHP",
         role: "user",
         createdAt: serverTimestamp(),
       });
@@ -210,16 +228,23 @@ async function handleGoogleSignIn(button) {
   } catch (err) {
     // auth/popup-closed-by-user just means they backed out — no error needed.
     if (err.code !== "auth/popup-closed-by-user") {
-      const errorEl = document.getElementById("loginError") || document.getElementById("signupError");
-      if (errorEl) showError(errorEl, "Couldn't sign in with Google. Please try again.");
+      const errorEl =
+        document.getElementById("loginError") ||
+        document.getElementById("signupError");
+      if (errorEl)
+        showError(errorEl, "Couldn't sign in with Google. Please try again.");
     }
     button.disabled = false;
     button.innerHTML = originalText;
   }
 }
 
-document.getElementById("googleSignInBtn")?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
-document.getElementById("googleSignUpBtn")?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
+document
+  .getElementById("googleSignInBtn")
+  ?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
+document
+  .getElementById("googleSignUpBtn")
+  ?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
 
 function friendlyAuthError(code) {
   switch (code) {

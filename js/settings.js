@@ -11,6 +11,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { loadGoogleMaps, GOOGLE_MAPS_API_KEY, DEMO_MAP_ID } from "./site.js";
+import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
 
 const authGate = document.getElementById("authGate");
 const settingsContent = document.getElementById("settingsContent");
@@ -170,6 +171,7 @@ onAuthStateChanged(auth, async (user) => {
   // Profile Information
   document.getElementById("profileName").value = user.displayName || userData.fullName || "";
   document.getElementById("profileEmail").value = user.email || "";
+  populateCountrySelect(document.getElementById("profileCountry"), userData.country || "");
 
   // Delivery Address
   let savedLat = null;
@@ -198,10 +200,15 @@ document.getElementById("profileForm").addEventListener("submit", async (e) => {
   successEl.classList.remove("show");
 
   const fullName = document.getElementById("profileName").value.trim();
+  const country = document.getElementById("profileCountry").value;
 
   try {
     await updateProfile(auth.currentUser, { displayName: fullName });
-    await updateDoc(doc(db, "users", auth.currentUser.uid), { fullName });
+    await updateDoc(doc(db, "users", auth.currentUser.uid), {
+      fullName,
+      country,
+      currency: COUNTRY_CURRENCY[country] || "PHP",
+    });
     showMsg(successEl, "Profile updated.", false);
   } catch (err) {
     showMsg(errorEl, "Couldn't save changes. Please try again.");

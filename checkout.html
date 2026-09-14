@@ -105,6 +105,11 @@
                       >
                     </li>
                     <li>
+                      <a class="dropdown-item" href="favorites.html"
+                        ><i class="bi bi-heart me-2"></i>Favorites</a
+                      >
+                    </li>
+                    <li>
                       <a class="dropdown-item" href="settings.html"
                         ><i class="bi bi-gear me-2"></i>Settings</a
                       >
@@ -141,7 +146,7 @@
       <div class="container" id="authGate" style="display: none">
         <div class="auth-gate">
           <i class="bi bi-lock"></i>
-          <h3>Please log in to checkout</h3>
+          <h2>Please log in to checkout</h2>
           <p class="text-muted">
             You'll need an account so we can save your order and delivery
             details.
@@ -159,7 +164,7 @@
       <div class="container" id="staffGate" style="display: none">
         <div class="auth-gate">
           <i class="bi bi-shield-lock"></i>
-          <h3>Staff accounts can't place orders</h3>
+          <h2>Staff accounts can't place orders</h2>
           <p class="text-muted">
             This keeps sales data accurate to real customers. Use a regular
             customer account to shop.
@@ -177,7 +182,7 @@
       <div class="container" id="emptyGate" style="display: none">
         <div class="empty-state">
           <i class="bi bi-cart-x"></i>
-          <h3>Your cart is empty</h3>
+          <h2>Your cart is empty</h2>
           <a
             href="products.html"
             class="hero-btn-primary"
@@ -191,7 +196,7 @@
       <div class="container" id="successGate" style="display: none">
         <div class="auth-gate">
           <i class="bi bi-check-circle"></i>
-          <h3>Order placed!</h3>
+          <h2>Order placed!</h2>
           <p class="text-muted">
             Thank you — we'll get this delivered to your family soon.
           </p>
@@ -270,7 +275,7 @@
 
           <div class="col-lg-5">
             <div class="summary-card">
-              <h4>Order Summary</h4>
+              <h3>Order Summary</h3>
               <div id="ckItemsSummary"></div>
               <div class="summary-row">
                 <span>Subtotal</span>
@@ -283,6 +288,33 @@
               <div class="summary-row total">
                 <span>Total</span>
                 <span id="ckTotal">&#8369;0</span>
+              </div>
+              <!-- Display-only conversion: KalingaCare charges in PHP via
+                   Cash on Delivery regardless of what's picked here — this
+                   just shows an OFW buyer roughly what that PHP total is
+                   in their own currency. Defaults from the buyer's Country
+                   (Settings/registration) but can be changed for this
+                   order only. -->
+              <div class="summary-row" id="ckConvertedRow" style="display: none">
+                <span>&#8776; in <span id="ckCurrencyLabel">USD</span></span>
+                <span id="ckConvertedTotal">—</span>
+              </div>
+              <p
+                class="text-muted mb-2"
+                id="ckRateNote"
+                style="font-size: 0.72rem; margin-top: -6px"
+              ></p>
+              <div class="mb-2">
+                <label class="form-label" for="ckCurrency">
+                  Show total in
+                </label>
+                <select class="form-control" id="ckCurrency">
+                  <!-- Populated from js/currency.js's COUNTRY_CURRENCY. -->
+                </select>
+                <p class="text-muted mt-1 mb-0" style="font-size: 0.78rem">
+                  For reference only — you're always charged in Philippine
+                  Peso (&#8369;) on delivery.
+                </p>
               </div>
             </div>
           </div>

@@ -26,7 +26,10 @@ html {
   --pink-light: #ffe5f2;
 
   --dark: #1e293b;
-  --gray: #64748b;
+  /* Slightly darker than a plain slate-500 (#64748b): the body's soft
+     radial-gradient wash lightens its background enough in places that
+     the original value dropped to 4.2:1, just under WCAG AA's 4.5:1. */
+  --gray: #5c6b7f;
   --white: #ffffff;
   --line: #dce8f0;
 
@@ -172,7 +175,10 @@ header {
 
 .nav-link:hover,
 .nav-link.active {
-  color: var(--primary) !important;
+  /* Sky Blue text on the near-white navbar fails WCAG contrast (The
+     Ink-Text Rule) — the animated underline below already carries the
+     hover/active signal, so text stays Ink in every state. */
+  color: var(--dark) !important;
 }
 
 .nav-link::after {
@@ -203,11 +209,16 @@ header {
   font-weight: 500;
   color: var(--dark);
   padding: 10px 15px;
+  border-radius: var(--radius-pill);
   transition: 0.3s;
 }
 .login-btn:hover,
 .login-btn.active {
-  color: var(--primary);
+  /* Ink-Text Rule: Sky Blue text fails contrast here, so hover feedback
+     comes from the Sky Blue Light fill (same pattern as outline buttons)
+     instead of a text color change. */
+  color: var(--dark);
+  background: var(--primary-light);
 }
 
 .signup-btn.active {
@@ -228,7 +239,9 @@ header {
   padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 34px);
   border-radius: var(--radius-pill);
   background: var(--primary) !important;
-  color: #fff !important;
+  /* White text on Sky Blue is only 1.9:1 — fails WCAG AA's 4.5:1 for body
+     text. Ink on Sky Blue is 7.8:1, comfortably passing in both themes. */
+  color: var(--dark) !important;
   font-weight: 600;
   transition: 0.3s ease;
 }
@@ -247,7 +260,10 @@ header {
 
 .btn-outline-success {
   border: 1.5px solid var(--primary) !important;
-  color: var(--primary) !important;
+  /* Ink-Text Rule: Sky Blue text on transparent/white fails contrast
+     (1.9:1) — border carries the brand color instead, same treatment
+     as .hero-btn-secondary. */
+  color: var(--dark) !important;
   background: transparent !important;
 }
 .btn-outline-success:hover {
@@ -285,8 +301,10 @@ header {
 }
 .dropdown-item:hover,
 .dropdown-item:focus {
+  /* Ink-Text Rule: the background tint already signals hover/focus, so
+     text stays Ink instead of the too-light Sky Blue. */
   background: var(--input-bg);
-  color: var(--primary);
+  color: var(--dark);
 }
 .dropdown-divider {
   border-color: var(--line);
@@ -373,6 +391,50 @@ header {
   transform: translateX(20px);
 }
 
+/* Filter rows — shared by admin's dropdown filter panels (orders/products)
+   and products.html's filter sidebar. */
+.filters-panel-reset {
+  border: none;
+  background: none;
+  /* Ink-Text Rule: Sky Blue Deep is only 2.66:1 on white, still short of
+     4.5:1 — the underline on hover already signals interactivity. */
+  color: var(--dark);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.filters-panel-reset:hover {
+  text-decoration: underline;
+}
+
+.filter-group {
+  margin-bottom: 16px;
+}
+.filter-group-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.filter-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.88rem;
+  color: var(--dark);
+  cursor: pointer;
+}
+.filter-checkbox-row input[type="checkbox"],
+.filter-checkbox-row input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
 .settings-row {
   display: flex;
   align-items: center;
@@ -384,10 +446,15 @@ header {
 .settings-row:last-child {
   border-bottom: none;
 }
-.settings-row h6 {
+.summary-card .settings-row h3 {
+  /* Specificity note: without the .summary-card prefix here, this loses
+     the cascade to .summary-card h3 (shop.css, loaded after this file) —
+     both these h3's live inside a .summary-card card AND a .settings-row
+     row, so the more specific selector has to win explicitly. */
   margin: 0 0 2px;
   color: var(--dark);
   font-size: 0.95rem;
+  font-weight: 500;
 }
 .settings-row p {
   margin: 0;
@@ -430,7 +497,11 @@ header {
 }
 .status-pending { background: #fff2cc; color: #916f00; }
 .status-processing { background: var(--primary-light); color: #0b5e83; }
-.status-shipped { background: #d9f3fd; color: #218bc2; }
+/* #218bc2 was only 3.3:1 on this background, failing WCAG AA for badge
+   text (not large text). Reusing the existing #0b5e83 token already used
+   for the same light-blue-background role elsewhere (Processing status,
+   mobility badge, staff role) gives 6.2:1 without adding a new color. */
+.status-shipped { background: #d9f3fd; color: #0b5e83; }
 .status-delivered { background: #e6f4ea; color: #1e7e34; }
 .status-cancelled { background: #fde8e6; color: #c0392b; }
 
@@ -466,8 +537,17 @@ footer a {
 footer a:hover {
   color: var(--primary-light);
 }
-footer h4,
-footer h5 {
+/* Semantic levels bumped from h4/h5 to h3/h4 to keep the document outline
+   sequential after the main content's last h2 — sizes pinned explicitly
+   below so the bump doesn't change how anything actually looks. */
+footer h3,
+footer h4 {
   margin-bottom: 0.8rem;
   color: #fff;
+}
+footer h3 {
+  font-size: 1.5rem;
+}
+footer h4 {
+  font-size: 1.25rem;
 }
