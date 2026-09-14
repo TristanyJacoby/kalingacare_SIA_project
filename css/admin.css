@@ -148,7 +148,7 @@ body.admin-body {
   background: var(--gradient);
   margin-bottom: 14px;
 }
-.kpi-card h3 {
+.kpi-card h2 {
   font-size: 1.7rem;
   font-weight: 700;
   color: var(--dark);
@@ -168,9 +168,16 @@ body.admin-body {
   padding: 24px;
   margin-bottom: 28px;
 }
-.admin-panel h4 {
+.admin-panel h4,
+.admin-panel h2,
+.admin-panel h3 {
+  /* Same panel-heading look regardless of level — which tag a given
+     instance uses depends on what keeps that page's document outline
+     correct (h1 -> h2 -> h3 -> h4 with no gaps), not on visual weight. */
   margin-bottom: 18px;
   color: var(--dark);
+  font-size: 1.5rem;
+  font-weight: 500;
 }
 
 .admin-table {
@@ -544,7 +551,7 @@ body.admin-body {
   align-items: center;
   margin-bottom: 14px;
 }
-.filters-panel-header h6 {
+.filters-panel-header h3 {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--dark);
@@ -830,8 +837,10 @@ body.admin-body {
 .dash-panel-header {
   margin-bottom: 14px;
 }
-.dash-panel-header h4 {
+.dash-panel-header h3 {
   margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
 }
 .category-legend {
   display: flex;
@@ -1096,10 +1105,11 @@ body.admin-body {
   padding: 20px 22px;
   border-bottom: 1px solid var(--line);
 }
-.order-detail-header h5 {
+.order-detail-header h2 {
   margin: 0;
   font-weight: 700;
   color: var(--dark);
+  font-size: 1.25rem;
 }
 .order-detail-body {
   padding: 22px;
@@ -1370,25 +1380,50 @@ body.admin-body {
   color: var(--gray);
   margin-top: 2px;
 }
-.image-drop-preview {
-  position: relative;
-  width: 100%;
-  max-width: 220px;
-  margin: 0 auto 14px;
+/* Up to 4 photos (images[]) — the first is the cover shown everywhere
+   else in the app (cards, cart, checkout), tagged so that's obvious
+   while editing. */
+.image-grid-preview {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
 }
-.image-drop-preview img {
-  width: 100%;
+.image-grid-preview:empty {
+  margin-bottom: 0;
+}
+.image-grid-item {
+  position: relative;
   aspect-ratio: 1;
+}
+.image-grid-item img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--line);
 }
-.image-drop-preview .remove-image-btn {
+.image-grid-item.is-cover img {
+  border-color: var(--primary);
+  border-width: 2px;
+}
+.image-grid-cover-tag {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: var(--primary);
+  color: var(--dark);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+}
+.image-grid-item .remove-image-btn {
   position: absolute;
   top: -8px;
   right: -8px;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #fff;
   border: 1.5px solid var(--line);
@@ -1397,7 +1432,8 @@ body.admin-body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
+  padding: 0;
 }
 
 /* Adjust Stock trigger inside the product modal, next to the disabled field */

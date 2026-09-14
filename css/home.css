@@ -422,6 +422,11 @@ h2 {
   text-align: center;
   transition: transform 0.25s, box-shadow 0.25s;
   position: relative;
+  /* Harmless on the <div> markup used here on the home page; needed when
+     product.js's related-products section reuses this class on a real
+     <a> link so it doesn't inherit browser link styling. */
+  text-decoration: none;
+  color: inherit;
 }
 .mini-product-card:hover {
   transform: translateY(-6px);

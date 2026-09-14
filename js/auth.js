@@ -26,12 +26,15 @@ const brandText = document.getElementById("brandText");
 
 // Sends the user back to wherever they came from after logging in — e.g.
 // products.js redirects here with ?redirect=products.html when a guest
-// tries to add to cart. Only allows a plain same-site .html path (no
-// "http://", no "//"), which guards against turning this into an open
-// redirect to an external site via a crafted URL.
+// tries to add to cart, or product.js with ?redirect=product.html?id=xyz
+// to return to that exact product. Only allows a plain same-site .html
+// filename, optionally followed by a query string built from safe
+// characters — no "http://", no "//", no ":" — which guards against
+// turning this into an open redirect to an external site via a crafted
+// URL while still letting a deep link survive the round trip.
 function getRedirectDestination() {
   const redirect = new URLSearchParams(window.location.search).get("redirect");
-  if (redirect && /^[a-zA-Z0-9_-]+\.html$/.test(redirect)) {
+  if (redirect && /^[a-zA-Z0-9_-]+\.html(\?[a-zA-Z0-9_=&-]*)?$/.test(redirect)) {
     return redirect;
   }
   return "index.html";

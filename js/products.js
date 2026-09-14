@@ -16,8 +16,15 @@ import {
   doc,
   getDoc,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { loadCart, saveCart, showToast } from "./site.js";
+import {
+  loadCart,
+  saveCart,
+  showToast,
+  getFavoriteIds,
+  toggleFavorite,
+} from "./site.js";
 import { getRates, formatCurrency } from "./currency.js";
+import { CATEGORY_LABELS, CATEGORY_BADGE_CLASS } from "./product-constants.js";
 
 const grid = document.getElementById("productsGrid");
 const loadingEl = document.getElementById("productsLoading");
@@ -31,17 +38,6 @@ const categoryCheckboxes = document.querySelectorAll(
 );
 const priceRadios = document.querySelectorAll('input[name="priceRange"]');
 
-const CATEGORY_LABELS = {
-  mobility: "Mobility",
-  wellness: "Wellness",
-  digital: "Digital Health",
-};
-const CATEGORY_BADGE_CLASS = {
-  mobility: "bg-success",
-  wellness: "bg-primary",
-  digital: "bg-warning text-dark",
-};
-
 let allProducts = [];
 let currentUserRole = null;
 
@@ -51,6 +47,7 @@ let currentUserRole = null;
 // the common case still renders the single-line price it always has.
 let currentUserCurrency = null;
 let currentRates = null;
+let currentFavorites = new Set();
 
 // Staff/admin/superadmin are internal accounts — they shouldn't be able to
 // shop through the storefront (keeps sales data accurate to real customers).
@@ -61,12 +58,15 @@ onAuthStateChanged(auth, async (user) => {
     currentUserRole = null;
     currentUserCurrency = null;
     currentRates = null;
+    currentFavorites = new Set();
     renderProducts();
     return;
   }
   const snap = await getDoc(doc(db, "users", user.uid));
   const userData = snap.exists() ? snap.data() : {};
   currentUserRole = userData.role || "user";
+  currentFavorites = new Set(userData.favorites || []);
+  renderProducts();
 
   const currency = userData.currency;
   if (currency && currency !== "PHP") {
@@ -146,7 +146,14 @@ function renderProducts() {
     .map(
       (p) => `
     <div class="col-lg-3 col-md-4 col-6 product-item" data-category="${p.category}">
-      <div class="card product-card h-100">
+      <div class="card product-card h-100" data-id="${p.id}">
+        <button
+          class="favorite-btn${currentFavorites.has(p.id) ? " active" : ""}"
+          data-id="${p.id}"
+          aria-label="${currentFavorites.has(p.id) ? "Remove from favorites" : "Add to favorites"}"
+        >
+          <i class="bi ${currentFavorites.has(p.id) ? "bi-heart-fill" : "bi-heart"}"></i>
+        </button>
         <img src="${p.imgBase64 || p.img || "assets/images/products/placeholder.jpg"}" class="card-img-top" alt="${p.name}" />
         <div class="card-body">
           <span class="badge ${CATEGORY_BADGE_CLASS[p.category] || "bg-secondary"} mb-2">${CATEGORY_LABELS[p.category] || p.category}</span>
@@ -192,9 +199,47 @@ clearFiltersBtn?.addEventListener("click", () => {
   renderProducts();
 });
 
-// Event delegation for Add to Cart, since cards are re-rendered on every
-// Firestore update — listeners attached directly to buttons would be lost.
+// Single delegated listener for the whole grid (cards, favorite hearts, and
+// Add to Cart buttons alike), since cards are fully re-rendered on every
+// Firestore update — listeners attached directly to elements would be lost.
+// Favorite and Add to Cart are checked first and return early so clicking
+// either doesn't also navigate to the product's detail page.
 grid.addEventListener("click", (e) => {
+  const favoriteBtn = e.target.closest(".favorite-btn");
+  if (favoriteBtn) {
+    if (!auth.currentUser) {
+      showToast("Please log in to save favorites.");
+      setTimeout(() => {
+        window.location.href = "login.html?redirect=products.html";
+      }, 1200);
+      return;
+    }
+    const productId = favoriteBtn.dataset.id;
+    const wasFavorited = currentFavorites.has(productId);
+    // Optimistic UI: flip immediately, then persist. Firestore write
+    // failures here are rare enough (same-doc update, already-authed
+    // user) that rolling back on error would add more complexity than
+    // the failure mode is worth for a "favorite" toggle.
+    if (wasFavorited) currentFavorites.delete(productId);
+    else currentFavorites.add(productId);
+    favoriteBtn.classList.toggle("active", !wasFavorited);
+    favoriteBtn.querySelector("i").className = !wasFavorited
+      ? "bi bi-heart-fill"
+      : "bi bi-heart";
+    favoriteBtn.setAttribute(
+      "aria-label",
+      !wasFavorited ? "Remove from favorites" : "Add to favorites",
+    );
+    toggleFavorite(auth.currentUser.uid, productId, wasFavorited);
+    return;
+  }
+
+  const card = e.target.closest(".product-card");
+  if (card && !e.target.closest(".add-to-cart-btn")) {
+    window.location.href = `product.html?id=${card.dataset.id}`;
+    return;
+  }
+
   const button = e.target.closest(".add-to-cart-btn");
   if (!button) return;
 

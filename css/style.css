@@ -446,10 +446,15 @@ header {
 .settings-row:last-child {
   border-bottom: none;
 }
-.settings-row h6 {
+.summary-card .settings-row h3 {
+  /* Specificity note: without the .summary-card prefix here, this loses
+     the cascade to .summary-card h3 (shop.css, loaded after this file) —
+     both these h3's live inside a .summary-card card AND a .settings-row
+     row, so the more specific selector has to win explicitly. */
   margin: 0 0 2px;
   color: var(--dark);
   font-size: 0.95rem;
+  font-weight: 500;
 }
 .settings-row p {
   margin: 0;

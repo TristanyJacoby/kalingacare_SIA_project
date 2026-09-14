@@ -901,6 +901,7 @@ function initProducts(role) {
         document.getElementById("pName").value = p.name;
         document.getElementById("pCategory").value = p.category;
         document.getElementById("pSubcategory").value = p.subcategory || "";
+        document.getElementById("pDescription").value = p.description || "";
         document.getElementById("pPrice").value = p.price;
         document.getElementById("pStock").value = p.stock ?? "";
         document.getElementById("pStock").disabled = true;
@@ -910,9 +911,16 @@ function initProducts(role) {
         document.getElementById("stockInlineAdjustBtn").dataset.id =
           btn.dataset.id;
 
-        document.getElementById("pImg").value = p.img || "";
-        document.getElementById("pImgBase64").value = p.imgBase64 || "";
-        setImagePreview(p.imgBase64 || (p.img ? `../${p.img}` : ""));
+        // Older products only ever had one image (img/imgBase64, no images[]
+        // array yet) — fall back to that single photo as a one-item gallery
+        // so editing an old product doesn't look like it lost its picture.
+        currentImages =
+          p.images && p.images.length > 0
+            ? [...p.images]
+            : p.imgBase64 || p.img
+              ? [p.imgBase64 || `../${p.img}`]
+              : [];
+        renderImageGrid();
 
         formTitle.textContent = "Edit Product";
         productModalInstance.show();
@@ -1103,47 +1111,65 @@ function initProducts(role) {
     });
   }
 
-  /* ---- Image drag-and-drop (replaces the old image-path text field) ----
-     Resizes client-side via the shared resizeImageToDataUrl (same approach
-     as avatar uploads) and stores as `imgBase64` on the product doc. No
-     Firebase Storage needed — consistent with the rest of the app. */
+  /* ---- Image drag-and-drop, up to 4 photos (images[]) ----
+     Resizes each client-side via the shared resizeImageToDataUrl (same
+     approach as avatar uploads) and stores the array as `images` on the
+     product doc, mirroring the first photo into the older `imgBase64`
+     field so every other page (cards, cart, checkout, admin table) that
+     still reads a single image keeps working unchanged. No Firebase
+     Storage needed — consistent with the rest of the app. Mobile's
+     gallery already reads `images[]` if present (see ProductDetail.tsx),
+     so this is the write side of a schema mobile was already built for. */
+  const MAX_PRODUCT_IMAGES = 4;
   const dropZone = document.getElementById("imageDropZone");
   const fileInput = document.getElementById("imageFileInput");
-  const previewWrap = document.getElementById("imagePreviewWrap");
-  const previewImg = document.getElementById("imagePreview");
-  const removeImageBtn = document.getElementById("removeImageBtn");
+  const gridPreview = document.getElementById("imageGridPreview");
   const pImgBase64Field = document.getElementById("pImgBase64");
+  let currentImages = []; // array of data URLs (or a legacy `../path` string on first load)
 
-  function setImagePreview(src) {
-    if (src) {
-      previewImg.src = src;
-      previewWrap.classList.remove("d-none");
-      dropZone.classList.add("d-none");
-    } else {
-      previewImg.src = "";
-      previewWrap.classList.add("d-none");
-      dropZone.classList.remove("d-none");
-    }
+  function renderImageGrid() {
+    gridPreview.innerHTML = currentImages
+      .map(
+        (src, i) => `
+        <div class="image-grid-item${i === 0 ? " is-cover" : ""}">
+          <img src="${src}" alt="" />
+          ${i === 0 ? '<span class="image-grid-cover-tag">Cover</span>' : ""}
+          <button type="button" class="remove-image-btn" data-index="${i}" title="Remove photo">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>`,
+      )
+      .join("");
+    dropZone.classList.toggle("d-none", currentImages.length >= MAX_PRODUCT_IMAGES);
   }
 
-  async function handleImageFile(file) {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      showToast("Please choose an image file.");
-      return;
+  async function handleImageFiles(fileList) {
+    const files = Array.from(fileList || []);
+    const room = MAX_PRODUCT_IMAGES - currentImages.length;
+    if (files.length > room) {
+      showToast(
+        room > 0
+          ? `Only ${room} more photo${room === 1 ? "" : "s"} allowed (max ${MAX_PRODUCT_IMAGES}).`
+          : `Maximum ${MAX_PRODUCT_IMAGES} photos per product.`,
+      );
     }
-    if (file.size > 8 * 1024 * 1024) {
-      showToast("Image is too large (max 8MB before resizing).");
-      return;
+    for (const file of files.slice(0, room)) {
+      if (!file.type.startsWith("image/")) {
+        showToast("Please choose an image file.");
+        continue;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        showToast("Image is too large (max 8MB before resizing).");
+        continue;
+      }
+      try {
+        const dataUrl = await resizeImageToDataUrl(file, 500, 0.75);
+        currentImages.push(dataUrl);
+      } catch (err) {
+        showToast(err.message || "Couldn't read that image.");
+      }
     }
-    try {
-      const dataUrl = await resizeImageToDataUrl(file, 500, 0.75);
-      pImgBase64Field.value = dataUrl;
-      document.getElementById("pImg").value = ""; // new upload replaces any old path reference
-      setImagePreview(dataUrl);
-    } catch (err) {
-      showToast(err.message || "Couldn't read that image.");
-    }
+    renderImageGrid();
   }
 
   if (dropZone) {
@@ -1158,22 +1184,20 @@ function initProducts(role) {
     dropZone.addEventListener("drop", (e) => {
       e.preventDefault();
       dropZone.classList.remove("dragover");
-      handleImageFile(e.dataTransfer.files[0]);
+      handleImageFiles(e.dataTransfer.files);
     });
-    fileInput.addEventListener("change", (e) =>
-      handleImageFile(e.target.files[0]),
-    );
+    fileInput.addEventListener("change", (e) => {
+      handleImageFiles(e.target.files);
+      fileInput.value = ""; // allow re-selecting the same file later
+    });
   }
 
-  if (removeImageBtn) {
-    removeImageBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      pImgBase64Field.value = "";
-      document.getElementById("pImg").value = "";
-      fileInput.value = "";
-      setImagePreview("");
-    });
-  }
+  gridPreview.addEventListener("click", (e) => {
+    const btn = e.target.closest(".remove-image-btn");
+    if (!btn) return;
+    currentImages.splice(Number(btn.dataset.index), 1);
+    renderImageGrid();
+  });
 
   /* ---- Adjust Stock, triggered from inside the edit modal ----
      Stacks on top of the product modal: hide this one, open the stock
@@ -1199,23 +1223,37 @@ function initProducts(role) {
     editingIdField.value = "";
     document.getElementById("pStock").disabled = false;
     document.getElementById("stockInlineAdjustWrap").classList.add("d-none");
-    pImgBase64Field.value = "";
+    currentImages = [];
     fileInput.value = "";
-    setImagePreview("");
+    renderImageGrid();
     formTitle.textContent = "Add Product";
   });
 
   if (form) {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+      // "../assets/..." is only how a legacy path-based image is prefixed
+      // to display correctly from inside /admin/ — it must never be saved
+      // back to Firestore that way, since every other page (products.js,
+      // cart, checkout) resolves `img` relative to the site root instead.
+      const canonicalImages = currentImages.map((src) =>
+        src.startsWith("../") ? src.slice(3) : src,
+      );
+      // Cover image (index 0) also mirrors into the older img/imgBase64
+      // fields so every page that predates the images[] array — product
+      // cards, cart, checkout, the admin table — keeps showing a photo
+      // without needing its own update.
+      const cover = canonicalImages[0] || "";
       const data = {
         name: document.getElementById("pName").value.trim(),
         category: document.getElementById("pCategory").value,
         subcategory: document.getElementById("pSubcategory").value.trim(),
+        description: document.getElementById("pDescription").value.trim(),
         price: Number(document.getElementById("pPrice").value),
         stock: Number(document.getElementById("pStock").value) || 0,
-        img: document.getElementById("pImg").value.trim(),
-        imgBase64: pImgBase64Field.value || null,
+        images: canonicalImages,
+        img: cover.startsWith("data:") ? "" : cover,
+        imgBase64: cover.startsWith("data:") ? cover : null,
         updatedAt: serverTimestamp(),
       };
 
