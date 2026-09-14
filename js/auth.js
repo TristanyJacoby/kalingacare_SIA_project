@@ -118,7 +118,9 @@ signupForm.addEventListener("submit", async (e) => {
   const fullName = document.getElementById("signupName").value.trim();
   const email = document.getElementById("signupEmail").value.trim();
   const password = document.getElementById("signupPassword").value;
-  const confirmPassword = document.getElementById("signupConfirmPassword").value;
+  const confirmPassword = document.getElementById(
+    "signupConfirmPassword",
+  ).value;
   const submitBtn = signupForm.querySelector(".btn-auth");
 
   if (password !== confirmPassword) {
@@ -168,7 +170,8 @@ if (switchLink) {
     // Preserve ?redirect=... across the switch, so someone who arrived at
     // login.html?redirect=products.html and clicks over to "Create Account"
     // still gets sent back to Products after signing up, not the homepage.
-    const destination = switchLink.getAttribute("href") + window.location.search;
+    const destination =
+      switchLink.getAttribute("href") + window.location.search;
     toggleMode();
     setTimeout(() => {
       window.location.href = destination;
@@ -210,16 +213,23 @@ async function handleGoogleSignIn(button) {
   } catch (err) {
     // auth/popup-closed-by-user just means they backed out — no error needed.
     if (err.code !== "auth/popup-closed-by-user") {
-      const errorEl = document.getElementById("loginError") || document.getElementById("signupError");
-      if (errorEl) showError(errorEl, "Couldn't sign in with Google. Please try again.");
+      const errorEl =
+        document.getElementById("loginError") ||
+        document.getElementById("signupError");
+      if (errorEl)
+        showError(errorEl, "Couldn't sign in with Google. Please try again.");
     }
     button.disabled = false;
     button.innerHTML = originalText;
   }
 }
 
-document.getElementById("googleSignInBtn")?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
-document.getElementById("googleSignUpBtn")?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
+document
+  .getElementById("googleSignInBtn")
+  ?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
+document
+  .getElementById("googleSignUpBtn")
+  ?.addEventListener("click", (e) => handleGoogleSignIn(e.currentTarget));
 
 function friendlyAuthError(code) {
   switch (code) {

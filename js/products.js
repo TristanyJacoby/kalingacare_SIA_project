@@ -22,7 +22,13 @@ const grid = document.getElementById("productsGrid");
 const loadingEl = document.getElementById("productsLoading");
 const emptyEl = document.getElementById("productsEmpty");
 const searchInput = document.getElementById("searchInput");
-const categoryButtons = document.querySelectorAll(".category-btn");
+const countEl = document.getElementById("productsCount");
+const sortSelect = document.getElementById("sortSelect");
+const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+const categoryCheckboxes = document.querySelectorAll(
+  ".category-filter-checkbox",
+);
+const priceRadios = document.querySelectorAll('input[name="priceRange"]');
 
 const CATEGORY_LABELS = {
   mobility: "Mobility",
@@ -55,24 +61,49 @@ function peso(amount) {
   return "\u20B1" + amount.toLocaleString("en-PH");
 }
 
-function renderProducts() {
-  const activeFilter =
-    document.querySelector(".category-btn.btn-success")?.dataset.filter ||
-    "all";
-  const keyword = (searchInput.value || "").toLowerCase();
+function matchesPriceRange(price, range) {
+  const [minStr, maxStr] = range.split("-");
+  const min = Number(minStr);
+  const max = maxStr === "" ? Infinity : Number(maxStr);
+  return price >= min && price < max;
+}
 
-  const visible = allProducts.filter((p) => {
-    const matchesFilter = activeFilter === "all" || p.category === activeFilter;
+function renderProducts() {
+  const activeCategories = Array.from(categoryCheckboxes)
+    .filter((cb) => cb.checked)
+    .map((cb) => cb.value);
+  const activePriceRange = document.querySelector(
+    'input[name="priceRange"]:checked',
+  )?.value;
+  const keyword = (searchInput.value || "").toLowerCase();
+  const sortBy = sortSelect?.value || "name-asc";
+
+  let visible = allProducts.filter((p) => {
+    const matchesCategory =
+      activeCategories.length === 0 || activeCategories.includes(p.category);
+    const matchesPrice =
+      !activePriceRange || matchesPriceRange(p.price, activePriceRange);
     const matchesKeyword = p.name.toLowerCase().includes(keyword);
-    return matchesFilter && matchesKeyword;
+    return matchesCategory && matchesPrice && matchesKeyword;
+  });
+
+  visible = visible.sort((a, b) => {
+    if (sortBy === "price-asc") return a.price - b.price;
+    if (sortBy === "price-desc") return b.price - a.price;
+    return a.name.localeCompare(b.name);
   });
 
   if (allProducts.length === 0) {
     grid.innerHTML = "";
     emptyEl.classList.remove("d-none");
+    if (countEl) countEl.textContent = "Showing 0 products";
     return;
   }
   emptyEl.classList.add("d-none");
+
+  if (countEl) {
+    countEl.textContent = `Showing ${visible.length} of ${allProducts.length} product${allProducts.length === 1 ? "" : "s"}`;
+  }
 
   if (visible.length === 0) {
     grid.innerHTML = `<div class="col-12 text-center text-muted py-5">No products match your search.</div>`;
@@ -82,14 +113,14 @@ function renderProducts() {
   grid.innerHTML = visible
     .map(
       (p) => `
-    <div class="col-lg-4 col-md-6 product-item" data-category="${p.category}">
+    <div class="col-lg-3 col-md-4 col-6 product-item" data-category="${p.category}">
       <div class="card product-card h-100">
         <img src="${p.imgBase64 || p.img || "assets/images/products/placeholder.jpg"}" class="card-img-top" alt="${p.name}" />
         <div class="card-body">
           <span class="badge ${CATEGORY_BADGE_CLASS[p.category] || "bg-secondary"} mb-2">${CATEGORY_LABELS[p.category] || p.category}</span>
-          <h5>${p.name}</h5>
-          ${p.subcategory ? `<p class="text-muted mb-1" style="font-size:0.8rem;">${p.subcategory}</p>` : ""}
-          <h4 class="text-success">${peso(p.price)}</h4>
+          <h3 class="product-card-title" title="${p.name}">${p.name}</h3>
+          ${p.subcategory ? `<p class="text-muted mb-1 product-card-subcategory">${p.subcategory}</p>` : ""}
+          <p class="text-success product-card-price">${peso(p.price)}</p>
           <button class="btn btn-success w-100 add-to-cart-btn" data-id="${p.id}">
             <i class="bi bi-cart-plus"></i> Add to Cart
           </button>
@@ -109,17 +140,20 @@ onSnapshot(query(collection(db, "products"), orderBy("name")), (snap) => {
 });
 
 searchInput.addEventListener("input", renderProducts);
-
-categoryButtons.forEach((button) =>
-  button.addEventListener("click", () => {
-    categoryButtons.forEach((btn) => {
-      btn.classList.remove("btn-success");
-      btn.classList.add("btn-outline-success");
-    });
-    button.classList.replace("btn-outline-success", "btn-success");
-    renderProducts();
-  }),
+sortSelect?.addEventListener("change", renderProducts);
+categoryCheckboxes.forEach((cb) =>
+  cb.addEventListener("change", renderProducts),
 );
+priceRadios.forEach((radio) =>
+  radio.addEventListener("change", renderProducts),
+);
+
+clearFiltersBtn?.addEventListener("click", () => {
+  categoryCheckboxes.forEach((cb) => (cb.checked = false));
+  priceRadios.forEach((radio) => (radio.checked = false));
+  searchInput.value = "";
+  renderProducts();
+});
 
 // Event delegation for Add to Cart, since cards are re-rendered on every
 // Firestore update — listeners attached directly to buttons would be lost.

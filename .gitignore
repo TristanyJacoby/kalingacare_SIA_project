@@ -1,1 +1,8 @@
 .DS_Store
+
+# impeccable (AI agent skill, project-scoped, not part of the app)
+.claude/
+.agents/
+.codex/
+.gemini/
+.impeccable/

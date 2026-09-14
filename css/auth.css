@@ -122,8 +122,9 @@ body {
   padding: 14px;
   border: none;
   border-radius: 10px;
+  /* Ink-Text Rule: white on solid Sky Blue is only 1.9:1. */
   background: var(--primary);
-  color: #fff;
+  color: var(--dark);
   font-family: "Poppins", sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
