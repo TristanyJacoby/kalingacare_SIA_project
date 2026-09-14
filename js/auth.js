@@ -16,6 +16,7 @@ import {
   setDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
 
 const stage = document.getElementById("stage");
 const loginSection = document.getElementById("loginSection");
@@ -111,12 +112,16 @@ loginForm.addEventListener("submit", async (e) => {
 const signupForm = document.getElementById("signupForm");
 const signupError = document.getElementById("signupError");
 
+const signupCountrySelect = document.getElementById("signupCountry");
+if (signupCountrySelect) populateCountrySelect(signupCountrySelect);
+
 signupForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   clearError(signupError);
 
   const fullName = document.getElementById("signupName").value.trim();
   const email = document.getElementById("signupEmail").value.trim();
+  const country = signupCountrySelect ? signupCountrySelect.value : "";
   const password = document.getElementById("signupPassword").value;
   const confirmPassword = document.getElementById(
     "signupConfirmPassword",
@@ -143,6 +148,8 @@ signupForm.addEventListener("submit", async (e) => {
     await setDoc(doc(db, "users", cred.user.uid), {
       fullName,
       email,
+      country,
+      currency: COUNTRY_CURRENCY[country] || "PHP",
       role: "user",
       createdAt: serverTimestamp(),
     });
@@ -200,10 +207,15 @@ async function handleGoogleSignIn(button) {
 
     if (!existing.exists()) {
       // First time this Google account has signed in — create the same
-      // Firestore profile the email/password signup flow creates.
+      // Firestore profile the email/password signup flow creates. There's
+      // no form here to ask for a country (Google's popup skips straight
+      // to an authenticated result), so it starts unset — Settings lets
+      // them fill it in afterward, which also (re)derives `currency`.
       await setDoc(userDocRef, {
         fullName: user.displayName || "",
         email: user.email || "",
+        country: "",
+        currency: "PHP",
         role: "user",
         createdAt: serverTimestamp(),
       });

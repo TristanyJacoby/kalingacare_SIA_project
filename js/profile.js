@@ -114,6 +114,7 @@ onAuthStateChanged(auth, async (user) => {
 
   document.getElementById("displayName").textContent = fullName || "—";
   document.getElementById("displayEmail").textContent = user.email || "—";
+  document.getElementById("displayCountry").textContent = userData.country || "—";
   renderAvatar(fullName, userData.photoBase64);
   renderAddress(userData.savedAddress);
 
