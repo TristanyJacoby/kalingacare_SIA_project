@@ -6,3 +6,6 @@
 .codex/
 .gemini/
 .impeccable/
+
+# Claude Code project context (local only)
+CLAUDE.md
