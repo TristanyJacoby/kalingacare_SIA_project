@@ -6,3 +6,12 @@
 .codex/
 .gemini/
 .impeccable/
+
+# Claude Code project context (local only)
+CLAUDE.md
+
+# Local env / Vercel
+.env
+.env.*
+.vercel/
+node_modules/
