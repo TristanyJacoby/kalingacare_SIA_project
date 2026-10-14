@@ -1385,6 +1385,13 @@ const PAYMENT_LABELS = {
   card: "Card",
   paypal: "PayPal",
 };
+// Orders store a short code ("cod", "card", ...). Mobile orders placed
+// before Oct 14, 2026 stored the label "Cash on Delivery" instead, so map
+// that back to its code for both the Payment column and the filter.
+function paymentCode(order) {
+  const method = order.shippingInfo?.paymentMethod;
+  return method === "Cash on Delivery" ? "cod" : method;
+}
 // Matches the customer-side rule in profile.js exactly (CANCELLABLE = ["new","pending","processing"]) —
 // once an order is Shipped or Delivered, neither the customer nor an admin can cancel it here.
 const CANCELLABLE_STATUSES = ["New", "Pending", "Processing"];
@@ -1450,7 +1457,7 @@ function initOrders() {
       return false;
     if (
       paymentFilterValue !== "all" &&
-      o.shippingInfo?.paymentMethod !== paymentFilterValue
+      paymentCode(o) !== paymentFilterValue
     )
       return false;
     if (searchTerm) {
@@ -1515,7 +1522,7 @@ function initOrders() {
           ? o.createdAt.toDate().toLocaleDateString("en-PH")
           : "—";
         const status = o.status || "Pending";
-        const payment = PAYMENT_LABELS[o.shippingInfo?.paymentMethod] || "—";
+        const payment = PAYMENT_LABELS[paymentCode(o)] || "—";
         const options = statuses
           .map(
             (s) =>
