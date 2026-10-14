@@ -3,10 +3,7 @@
 
 import { auth, db } from "./firebase.js";
 import { loadCart, clearCart, SHIPPING_FEE } from "./site.js";
-import {
-  onAuthStateChanged,
-  sendEmailVerification,
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   collection,
   addDoc,
@@ -16,12 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getRates, convertAndFormat, populateCurrencySelect } from "./currency.js";
 import { startOnlinePayment } from "./payments.js";
-
-// Where the email-verification link returns to. Firebase only accepts
-// authorized domains, so preview deployments fall back to the live site.
-const VERIFY_RETURN_URL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.origin)
-  ? `${window.location.origin}/email-verified.html`
-  : "https://kalingacare-drab.vercel.app/email-verified.html";
+import { sendVerificationEmail, TooSoonError } from "./verification.js";
 
 const authGate = document.getElementById("authGate");
 const staffGate = document.getElementById("staffGate");
@@ -208,14 +200,12 @@ document.getElementById("verifyResendBtn").addEventListener("click", async () =>
   verifyInfo.classList.remove("show");
   btn.disabled = true;
   try {
-    await sendEmailVerification(auth.currentUser, {
-      url: VERIFY_RETURN_URL,
-    });
+    await sendVerificationEmail(auth.currentUser);
     verifyInfo.textContent = `New link sent to ${auth.currentUser.email}.`;
     verifyInfo.classList.add("show");
   } catch (err) {
     verifyError.textContent =
-      err.code === "auth/too-many-requests"
+      err instanceof TooSoonError || err.code === "auth/too-many-requests"
         ? "A link was sent recently. Please wait a minute before asking for another."
         : "Couldn't send the email right now. Please try again.";
     verifyError.classList.add("show");

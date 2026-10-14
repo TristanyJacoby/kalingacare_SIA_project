@@ -9,7 +9,6 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
-  sendEmailVerification,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   doc,
@@ -18,12 +17,7 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
-
-// Where the email-verification link returns to. Firebase only accepts
-// authorized domains, so preview deployments fall back to the live site.
-const VERIFY_RETURN_URL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.origin)
-  ? `${window.location.origin}/email-verified.html`
-  : "https://kalingacare-drab.vercel.app/email-verified.html";
+import { sendVerificationEmail } from "./verification.js";
 
 const stage = document.getElementById("stage");
 const loginSection = document.getElementById("loginSection");
@@ -168,9 +162,7 @@ signupForm.addEventListener("submit", async (e) => {
     // the link right away. The link comes back to the login page.
     let sent = true;
     try {
-      await sendEmailVerification(cred.user, {
-        url: VERIFY_RETURN_URL,
-      });
+      await sendVerificationEmail(cred.user);
     } catch (err) {
       sent = false; // checkout offers "Resend" if this didn't go out
     }

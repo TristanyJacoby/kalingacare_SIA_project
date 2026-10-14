@@ -2,8 +2,11 @@
   "name": "kalingacare-web",
   "private": true,
   "description": "Static site; dependencies are only for the Vercel functions in api/.",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
-    "firebase-admin": "^13.0.0"
+    "firebase-admin": "^13.0.0",
+    "nodemailer": "^7.0.13"
   }
 }
