@@ -153,8 +153,7 @@
           </p>
           <a
             href="login.html"
-            class="hero-btn-primary"
-            style="text-decoration: none; display: inline-flex"
+            class="pill-btn pill-btn-primary"
             >Log In</a
           >
         </div>
@@ -171,8 +170,7 @@
           </p>
           <a
             href="admin/admin-dashboard.html"
-            class="hero-btn-primary"
-            style="text-decoration: none; display: inline-flex"
+            class="pill-btn pill-btn-primary"
             >Back to Admin</a
           >
         </div>
@@ -181,25 +179,27 @@
       <!-- Shown until the customer's email is verified. Firestore rules
            refuse orders from unverified accounts, so this isn't optional. -->
       <div class="container" id="verifyGate" style="display: none">
-        <div class="auth-gate">
-          <i class="bi bi-envelope-check" aria-hidden="true"></i>
-          <h2>Verify your email to place an order</h2>
-          <p class="text-muted">
+        <section class="status-card" aria-labelledby="verifyTitle">
+          <div class="status-card-icon" aria-hidden="true">
+            <i class="bi bi-envelope-paper"></i>
+          </div>
+          <h2 id="verifyTitle">Verify your email to place an order</h2>
+          <p class="status-card-text">
             We sent a verification link to <strong id="verifyEmail"></strong>.
-            Open it, then come back here. Can't find it? Check your spam
-            folder or send a new link.
+            Open it, then come back here. Can't find it? Check your spam folder
+            or send a new link.
           </p>
           <div class="auth-error" id="verifyError"></div>
-          <p class="text-success small" id="verifyInfo" role="status"></p>
-          <div class="d-flex gap-2 justify-content-center flex-wrap">
-            <button type="button" class="btn-auth" id="verifyCheckBtn" style="width: auto">
+          <p class="auth-notice" id="verifyInfo" role="status"></p>
+          <div class="status-card-actions">
+            <button type="button" class="pill-btn pill-btn-primary" id="verifyCheckBtn">
               I've verified my email
             </button>
-            <button type="button" class="hero-btn-primary" id="verifyResendBtn">
+            <button type="button" class="pill-btn pill-btn-outline" id="verifyResendBtn">
               Resend link
             </button>
           </div>
-        </div>
+        </section>
       </div>
 
       <!-- Shown if cart is empty (but logged in) -->
@@ -209,8 +209,7 @@
           <h2>Your cart is empty</h2>
           <a
             href="products.html"
-            class="hero-btn-primary"
-            style="text-decoration: none; display: inline-flex"
+            class="pill-btn pill-btn-primary"
             >Browse Products</a
           >
         </div>
@@ -226,8 +225,7 @@
           </p>
           <a
             href="index.html"
-            class="hero-btn-primary"
-            style="text-decoration: none; display: inline-flex"
+            class="pill-btn pill-btn-primary"
             >Back to Home</a
           >
         </div>

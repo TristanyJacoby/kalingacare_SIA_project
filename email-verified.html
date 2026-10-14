@@ -145,28 +145,28 @@
 
 
     <main>
-      <div class="container product-detail-page" style="max-width: 640px">
+      <div class="container">
         <!-- Where the signup verification email's link lands (after
              Firebase's own "verified" step). -->
-        <div class="auth-gate" aria-live="polite">
-          <i class="bi bi-envelope-check" aria-hidden="true"></i>
-          <h1>Your email is verified</h1>
-          <p class="text-muted" id="evMessage">
-            Thanks for confirming your email address. You can now place orders.
-          </p>
-          <div class="d-flex gap-2 justify-content-center flex-wrap">
-            <a href="login.html" class="btn-auth" id="evPrimary" style="width: auto; text-decoration: none; display: inline-flex">
-              Log in
-            </a>
-            <a href="products.html" class="hero-btn-primary" id="evSecondary" style="text-decoration: none; display: inline-flex">
-              Browse products
-            </a>
+        <section class="status-card" aria-labelledby="evTitle">
+          <div class="status-card-icon success" aria-hidden="true">
+            <i class="bi bi-envelope-check"></i>
           </div>
-          <p class="text-muted small mt-3">
-            Signed up in the KalingaCare app? Go back to the app and tap
-            "I've verified my email" at checkout.
+          <h1 id="evTitle">Your email is verified</h1>
+          <p class="status-card-text">
+            Thanks for confirming your email address. You can now place orders
+            for your loved ones.
           </p>
-        </div>
+          <div class="status-card-actions">
+            <a href="login.html" class="pill-btn pill-btn-primary" id="evPrimary">Log in</a>
+            <a href="products.html" class="pill-btn pill-btn-outline" id="evSecondary">Browse products</a>
+          </div>
+          <p class="status-card-note">
+            <i class="bi bi-phone" aria-hidden="true"></i>
+            Signed up in the KalingaCare app? Go back to the app and tap
+            <strong>I've verified my email</strong> at checkout.
+          </p>
+        </section>
       </div>
     </main>
 

@@ -461,6 +461,19 @@
 .auth-error.show {
   display: block;
 }
+/* Success counterpart of .auth-error (same as auth.css's copy) */
+.auth-notice {
+  background: #e7f6ec;
+  color: #1e6b3a;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  display: none;
+}
+.auth-notice.show {
+  display: block;
+}
 
 .map-search-input {
   width: 100%;
@@ -649,4 +662,69 @@
 .payment-pill.cod {
   background: #e2e8f0;
   color: #1e293b;
+}
+
+/* =====================================================
+   Status card: email verified, payment result, verify step
+===================================================== */
+.status-card {
+  max-width: 560px;
+  margin: 56px auto;
+  padding: 40px 32px 32px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-soft);
+  text-align: center;
+}
+.status-card-icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: #0b5e83;
+  font-size: 2rem;
+}
+.status-card-icon.success {
+  background: #dcfce7;
+  color: #166534;
+}
+.status-card-icon.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+.status-card h1,
+.status-card h2 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.status-card-text {
+  color: var(--gray);
+  margin-bottom: 24px;
+}
+.status-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+.status-card-note {
+  margin: 24px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--gray);
+  font-size: 0.85rem;
+}
+@media (max-width: 576px) {
+  .status-card {
+    margin: 32px auto;
+    padding: 32px 20px 24px;
+  }
+  .status-card-actions .pill-btn {
+    width: 100%;
+  }
 }

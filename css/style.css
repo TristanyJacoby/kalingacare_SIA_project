@@ -551,3 +551,57 @@ footer h3 {
 footer h4 {
   font-size: 1.25rem;
 }
+
+/* =====================================================
+   Pill buttons for standalone pages (status cards, empty
+   states, "log in" gates). Follows DESIGN.md: solid Sky Blue
+   with Ink text (Ink-Text Rule), outline secondary, pill shape.
+   The gradient .hero-btn-primary stays reserved for the home
+   hero and CTA banner (Gradient Reserve Rule).
+===================================================== */
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 28px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+.pill-btn-primary {
+  background: var(--primary);
+  color: var(--dark);
+}
+.pill-btn-primary:hover {
+  background: var(--primary-dark);
+  color: var(--dark);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.3);
+}
+.pill-btn-outline {
+  background: transparent;
+  border-color: var(--primary);
+  color: var(--dark);
+}
+.pill-btn-outline:hover {
+  background: var(--primary-light);
+  color: #1e293b;
+}
+.pill-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.pill-btn:focus-visible {
+  outline: 3px solid rgba(var(--primary-rgb), 0.5);
+  outline-offset: 2px;
+}

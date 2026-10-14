@@ -181,6 +181,7 @@ document.getElementById("verifyCheckBtn").addEventListener("click", async () => 
   const btn = document.getElementById("verifyCheckBtn");
   verifyError.classList.remove("show");
   verifyInfo.textContent = "";
+  verifyInfo.classList.remove("show");
   btn.disabled = true;
   try {
     await auth.currentUser.reload();
@@ -204,12 +205,14 @@ document.getElementById("verifyResendBtn").addEventListener("click", async () =>
   const btn = document.getElementById("verifyResendBtn");
   verifyError.classList.remove("show");
   verifyInfo.textContent = "";
+  verifyInfo.classList.remove("show");
   btn.disabled = true;
   try {
     await sendEmailVerification(auth.currentUser, {
       url: VERIFY_RETURN_URL,
     });
     verifyInfo.textContent = `New link sent to ${auth.currentUser.email}.`;
+    verifyInfo.classList.add("show");
   } catch (err) {
     verifyError.textContent =
       err.code === "auth/too-many-requests"
