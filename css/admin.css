@@ -1463,3 +1463,21 @@ body.admin-body {
   background: var(--primary);
   color: var(--dark);
 }
+
+/* Admin Orders: PayMongo payment state under the "Online" label */
+.payment-state {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.payment-state.paid {
+  background: #dcfce7;
+  color: #166534;
+}
+.payment-state.pending {
+  background: #fef3c7;
+  color: #92400e;
+}

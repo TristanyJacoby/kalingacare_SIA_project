@@ -12,6 +12,7 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getRates, convertAndFormat, populateCurrencySelect } from "./currency.js";
+import { startOnlinePayment } from "./payments.js";
 
 const authGate = document.getElementById("authGate");
 const staffGate = document.getElementById("staffGate");
@@ -147,6 +148,13 @@ onAuthStateChanged(auth, async (user) => {
   });
 });
 
+// Shows the PayMongo / test-mode note only when paying online.
+const paymentSelect = document.getElementById("ckPayment");
+const paymentNote = document.getElementById("ckPaymentNote");
+paymentSelect.addEventListener("change", () => {
+  paymentNote.hidden = paymentSelect.value !== "online";
+});
+
 document
   .getElementById("checkoutForm")
   .addEventListener("submit", async (e) => {
@@ -170,9 +178,13 @@ document
     // #ckConvertedRow in checkout.html: this is a display conversion,
     // not a real multi-currency charge).
     const displayCurrency = document.getElementById("ckCurrency").value;
+    const paymentMethod = document.getElementById("ckPayment").value;
+    const payOnline = paymentMethod === "online";
+    let orderRef = null;
+    let leavingPage = false;
 
     try {
-      await addDoc(collection(db, "orders"), {
+      orderRef = await addDoc(collection(db, "orders"), {
         userId: currentUser.uid,
         items: cart,
         subtotal,
@@ -186,23 +198,42 @@ document
           recipient: document.getElementById("ckRecipient").value.trim(),
           address: document.getElementById("ckAddress").value.trim(),
           phone: document.getElementById("ckPhone").value.trim(),
-          paymentMethod: document.getElementById("ckPayment").value,
+          paymentMethod,
           lat: savedAddressCoords.lat,
           lng: savedAddressCoords.lng,
         },
+        // Online orders start unpaid; only the server marks them "paid"
+        // after PayMongo confirms the payment.
+        ...(payOnline ? { paymentStatus: "pending" } : {}),
         createdAt: serverTimestamp(),
       });
 
       clearCart();
 
+      if (payOnline) {
+        submitBtn.textContent = "Opening secure payment...";
+        leavingPage = true;
+        await startOnlinePayment(orderRef.id);
+        return; // the browser is leaving for PayMongo's page
+      }
+
       hideAllGates();
       successGate.style.display = "block";
     } catch (err) {
+      if (orderRef && payOnline) {
+        // The order exists but the payment page couldn't open. It stays
+        // "Payment pending" and can be paid from My Orders.
+        leavingPage = true;
+        window.location.href = `payment-return.html?order=${orderRef.id}&failed=1`;
+        return;
+      }
       errorBox.textContent =
         "Something went wrong placing your order. Please try again.";
       errorBox.classList.add("show");
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Place Order";
+      if (!leavingPage) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Place Order";
+      }
     }
   });

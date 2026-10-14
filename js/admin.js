@@ -1382,9 +1382,18 @@ function wireStockModal() {
 ===================================================== */
 const PAYMENT_LABELS = {
   cod: "Cash on Delivery",
-  card: "Card",
-  paypal: "PayPal",
+  online: "Online (PayMongo)",
+  // Older web orders, from before online payments were real
+  card: "Card (not processed)",
+  paypal: "PayPal (not processed)",
 };
+// Orders store a short code ("cod", "card", ...). Mobile orders placed
+// before Oct 14, 2026 stored the label "Cash on Delivery" instead, so map
+// that back to its code for both the Payment column and the filter.
+function paymentCode(order) {
+  const method = order.shippingInfo?.paymentMethod;
+  return method === "Cash on Delivery" ? "cod" : method;
+}
 // Matches the customer-side rule in profile.js exactly (CANCELLABLE = ["new","pending","processing"]) —
 // once an order is Shipped or Delivered, neither the customer nor an admin can cancel it here.
 const CANCELLABLE_STATUSES = ["New", "Pending", "Processing"];
@@ -1450,7 +1459,7 @@ function initOrders() {
       return false;
     if (
       paymentFilterValue !== "all" &&
-      o.shippingInfo?.paymentMethod !== paymentFilterValue
+      paymentCode(o) !== paymentFilterValue
     )
       return false;
     if (searchTerm) {
@@ -1515,7 +1524,13 @@ function initOrders() {
           ? o.createdAt.toDate().toLocaleDateString("en-PH")
           : "—";
         const status = o.status || "Pending";
-        const payment = PAYMENT_LABELS[o.shippingInfo?.paymentMethod] || "—";
+        const code = paymentCode(o);
+        // Online orders show whether PayMongo confirmed the payment, so
+        // staff don't ship an unpaid order.
+        const payment =
+          code === "online"
+            ? `${PAYMENT_LABELS.online}<br><span class="payment-state ${o.paymentStatus === "paid" ? "paid" : "pending"}">${o.paymentStatus === "paid" ? "Paid" : "Awaiting payment"}</span>`
+            : PAYMENT_LABELS[code] || "—";
         const options = statuses
           .map(
             (s) =>
