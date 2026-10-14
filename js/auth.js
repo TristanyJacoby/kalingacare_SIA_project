@@ -9,6 +9,7 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
+  sendEmailVerification,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   doc,
@@ -17,6 +18,12 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
+
+// Where the email-verification link returns to. Firebase only accepts
+// authorized domains, so preview deployments fall back to the live site.
+const VERIFY_RETURN_URL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.origin)
+  ? `${window.location.origin}/login.html?verified=1`
+  : "https://kalingacare-drab.vercel.app/login.html?verified=1";
 
 const stage = document.getElementById("stage");
 const loginSection = document.getElementById("loginSection");
@@ -157,7 +164,25 @@ signupForm.addEventListener("submit", async (e) => {
       createdAt: serverTimestamp(),
     });
 
-    window.location.href = getRedirectDestination();
+    // Orders require a verified email (Firestore rules check it), so send
+    // the link right away. The link comes back to the login page.
+    let sent = true;
+    try {
+      await sendEmailVerification(cred.user, {
+        url: VERIFY_RETURN_URL,
+      });
+    } catch (err) {
+      sent = false; // checkout offers "Resend" if this didn't go out
+    }
+
+    signupForm.hidden = true;
+    const destination = getRedirectDestination();
+    const notice = document.getElementById("signupNotice");
+    notice.innerHTML = sent
+      ? `Account created! We sent a verification link to <strong></strong>. Open it to confirm your email; you'll need to before placing an order. <a href="${destination}">Continue to KalingaCare</a>`
+      : `Account created, but we couldn't send the verification email right now. You can resend it at checkout. <a href="${destination}">Continue to KalingaCare</a>`;
+    if (sent) notice.querySelector("strong").textContent = email;
+    notice.classList.add("show");
   } catch (err) {
     showError(signupError, friendlyAuthError(err.code));
   } finally {
@@ -165,6 +190,14 @@ signupForm.addEventListener("submit", async (e) => {
     submitBtn.textContent = "Sign Up";
   }
 });
+
+// Landing here from the verification email's link.
+if (new URLSearchParams(window.location.search).has("verified")) {
+  const notice = document.getElementById("loginNotice");
+  notice.textContent =
+    "Your email is verified. Log in to continue, or go back to the KalingaCare tab you already have open.";
+  notice.classList.add("show");
+}
 
 /* ===== Slide-then-navigate between login.html and register.html =====
    The in-form "Create Account" / "Sign In" links just call toggleMode()

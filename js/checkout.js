@@ -3,7 +3,10 @@
 
 import { auth, db } from "./firebase.js";
 import { loadCart, clearCart, SHIPPING_FEE } from "./site.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+  onAuthStateChanged,
+  sendEmailVerification,
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   collection,
   addDoc,
@@ -14,9 +17,16 @@ import {
 import { getRates, convertAndFormat, populateCurrencySelect } from "./currency.js";
 import { startOnlinePayment } from "./payments.js";
 
+// Where the email-verification link returns to. Firebase only accepts
+// authorized domains, so preview deployments fall back to the live site.
+const VERIFY_RETURN_URL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.origin)
+  ? `${window.location.origin}/login.html?verified=1`
+  : "https://kalingacare-drab.vercel.app/login.html?verified=1";
+
 const authGate = document.getElementById("authGate");
 const staffGate = document.getElementById("staffGate");
 const emptyGate = document.getElementById("emptyGate");
+const verifyGate = document.getElementById("verifyGate");
 const successGate = document.getElementById("successGate");
 const checkoutContent = document.getElementById("checkoutContent");
 
@@ -28,6 +38,7 @@ function hideAllGates() {
   authGate.style.display = "none";
   staffGate.style.display = "none";
   emptyGate.style.display = "none";
+  verifyGate.style.display = "none";
   successGate.style.display = "none";
   checkoutContent.style.display = "none";
 }
@@ -119,6 +130,20 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  // The link may have been opened in another tab since this page's
+  // session started, so refresh before deciding.
+  if (!user.emailVerified) {
+    await user.reload().catch(() => {});
+    // Just verified: get a fresh ID token so the Firestore rule that checks
+    // email_verified sees it when the order is written.
+    if (auth.currentUser.emailVerified) await auth.currentUser.getIdToken(true).catch(() => {});
+  }
+  if (!auth.currentUser.emailVerified) {
+    document.getElementById("verifyEmail").textContent = user.email || "your email";
+    verifyGate.style.display = "block";
+    return;
+  }
+
   checkoutContent.style.display = "block";
 
   // Default the "show total in" picker to the buyer's own currency (set at
@@ -146,6 +171,53 @@ onAuthStateChanged(auth, async (user) => {
       };
     }
   });
+});
+
+/* ===== Email verification gate ===== */
+const verifyError = document.getElementById("verifyError");
+const verifyInfo = document.getElementById("verifyInfo");
+
+document.getElementById("verifyCheckBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("verifyCheckBtn");
+  verifyError.classList.remove("show");
+  verifyInfo.textContent = "";
+  btn.disabled = true;
+  try {
+    await auth.currentUser.reload();
+    if (auth.currentUser.emailVerified) {
+      // New ID token, so Firestore rules see email_verified = true.
+      await auth.currentUser.getIdToken(true);
+      window.location.reload();
+      return;
+    }
+    verifyError.textContent =
+      "Your email isn't verified yet. Open the link in the email we sent, then try again.";
+    verifyError.classList.add("show");
+  } catch {
+    verifyError.textContent = "Couldn't check right now. Please try again.";
+    verifyError.classList.add("show");
+  }
+  btn.disabled = false;
+});
+
+document.getElementById("verifyResendBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("verifyResendBtn");
+  verifyError.classList.remove("show");
+  verifyInfo.textContent = "";
+  btn.disabled = true;
+  try {
+    await sendEmailVerification(auth.currentUser, {
+      url: VERIFY_RETURN_URL,
+    });
+    verifyInfo.textContent = `New link sent to ${auth.currentUser.email}.`;
+  } catch (err) {
+    verifyError.textContent =
+      err.code === "auth/too-many-requests"
+        ? "A link was sent recently. Please wait a minute before asking for another."
+        : "Couldn't send the email right now. Please try again.";
+    verifyError.classList.add("show");
+  }
+  btn.disabled = false;
 });
 
 // Shows the PayMongo / test-mode note only when paying online.

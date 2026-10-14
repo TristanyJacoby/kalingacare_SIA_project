@@ -178,6 +178,30 @@
         </div>
       </div>
 
+      <!-- Shown until the customer's email is verified. Firestore rules
+           refuse orders from unverified accounts, so this isn't optional. -->
+      <div class="container" id="verifyGate" style="display: none">
+        <div class="auth-gate">
+          <i class="bi bi-envelope-check" aria-hidden="true"></i>
+          <h2>Verify your email to place an order</h2>
+          <p class="text-muted">
+            We sent a verification link to <strong id="verifyEmail"></strong>.
+            Open it, then come back here. Can't find it? Check your spam
+            folder or send a new link.
+          </p>
+          <div class="auth-error" id="verifyError"></div>
+          <p class="text-success small" id="verifyInfo" role="status"></p>
+          <div class="d-flex gap-2 justify-content-center flex-wrap">
+            <button type="button" class="btn-auth" id="verifyCheckBtn" style="width: auto">
+              I've verified my email
+            </button>
+            <button type="button" class="hero-btn-primary" id="verifyResendBtn">
+              Resend link
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Shown if cart is empty (but logged in) -->
       <div class="container" id="emptyGate" style="display: none">
         <div class="empty-state">
