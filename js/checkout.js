@@ -20,8 +20,8 @@ import { startOnlinePayment } from "./payments.js";
 // Where the email-verification link returns to. Firebase only accepts
 // authorized domains, so preview deployments fall back to the live site.
 const VERIFY_RETURN_URL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.origin)
-  ? `${window.location.origin}/login.html?verified=1`
-  : "https://kalingacare-drab.vercel.app/login.html?verified=1";
+  ? `${window.location.origin}/email-verified.html`
+  : "https://kalingacare-drab.vercel.app/email-verified.html";
 
 const authGate = document.getElementById("authGate");
 const staffGate = document.getElementById("staffGate");
