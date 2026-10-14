@@ -17,6 +17,7 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
+import { sendVerificationEmail } from "./verification.js";
 
 const stage = document.getElementById("stage");
 const loginSection = document.getElementById("loginSection");
@@ -157,7 +158,23 @@ signupForm.addEventListener("submit", async (e) => {
       createdAt: serverTimestamp(),
     });
 
-    window.location.href = getRedirectDestination();
+    // Orders require a verified email (Firestore rules check it), so send
+    // the link right away. The link comes back to the login page.
+    let sent = true;
+    try {
+      await sendVerificationEmail(cred.user);
+    } catch (err) {
+      sent = false; // checkout offers "Resend" if this didn't go out
+    }
+
+    signupForm.hidden = true;
+    const destination = getRedirectDestination();
+    const notice = document.getElementById("signupNotice");
+    notice.innerHTML = sent
+      ? `Account created! We sent a verification link to <strong></strong>. Open it to confirm your email; you'll need to before placing an order. <a href="${destination}">Continue to KalingaCare</a>`
+      : `Account created, but we couldn't send the verification email right now. You can resend it at checkout. <a href="${destination}">Continue to KalingaCare</a>`;
+    if (sent) notice.querySelector("strong").textContent = email;
+    notice.classList.add("show");
   } catch (err) {
     showError(signupError, friendlyAuthError(err.code));
   } finally {
@@ -165,6 +182,7 @@ signupForm.addEventListener("submit", async (e) => {
     submitBtn.textContent = "Sign Up";
   }
 });
+
 
 /* ===== Slide-then-navigate between login.html and register.html =====
    The in-form "Create Account" / "Sign In" links just call toggleMode()

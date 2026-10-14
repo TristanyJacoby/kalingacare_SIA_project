@@ -57,7 +57,11 @@ service cloud.firestore {
       // D: payment fields: a customer may only start an online order as
       // "pending". Only the server (PayMongo functions, Admin SDK) can
       // record a payment.
+      // E: only accounts with a verified email can order (Google sign-ins
+      // count as verified; email/password accounts verify via the link
+      // sent at signup).
       allow create: if isSignedIn()
+                    && request.auth.token.email_verified == true
                     && request.resource.data.userId == request.auth.uid
                     && request.resource.data.status == "New"
                     && request.resource.data.total is number

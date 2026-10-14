@@ -17,10 +17,11 @@ const fromApp = params.has("app");
 
 const $ = (id) => document.getElementById(id);
 
-function show({ icon, title, message, pill, pillClass, canPay }) {
+function show({ icon, title, message, pill, pillClass, canPay, tone }) {
   $("prChecking").classList.add("d-none");
   $("prResult").classList.remove("d-none");
   $("prIcon").className = `bi ${icon}`;
+  $("prIconWrap").className = `status-card-icon ${tone || ""}`;
   $("prTitle").textContent = title;
   $("prMessage").textContent = message;
   $("prOrderId").textContent = orderId ? `#${orderId.slice(0, 8).toUpperCase()}` : "";
@@ -38,6 +39,7 @@ function showPaid(order) {
     message: `Thank you! Your order is paid${channel ? ` by ${channel}` : ""} and we'll start preparing it.`,
     pill: "Paid",
     pillClass: "paid",
+    tone: "success",
   });
 }
 
@@ -57,6 +59,7 @@ function showPending() {
     pill: "Payment pending",
     pillClass: "pending",
     canPay: true,
+    tone: "warning",
   });
 }
 

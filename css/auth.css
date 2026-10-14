@@ -227,6 +227,24 @@ body {
   display: block;
 }
 
+/* Success / info message, e.g. "check your email to verify" */
+.auth-notice {
+  background: #e7f6ec;
+  color: #1e6b3a;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  display: none;
+}
+.auth-notice.show {
+  display: block;
+}
+.auth-notice a {
+  color: inherit;
+  font-weight: 600;
+}
+
 @media (max-width: 850px) {
   body {
     height: auto;

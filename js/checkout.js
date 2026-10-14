@@ -13,10 +13,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getRates, convertAndFormat, populateCurrencySelect } from "./currency.js";
 import { startOnlinePayment } from "./payments.js";
+import { sendVerificationEmail, TooSoonError } from "./verification.js";
 
 const authGate = document.getElementById("authGate");
 const staffGate = document.getElementById("staffGate");
 const emptyGate = document.getElementById("emptyGate");
+const verifyGate = document.getElementById("verifyGate");
 const successGate = document.getElementById("successGate");
 const checkoutContent = document.getElementById("checkoutContent");
 
@@ -28,6 +30,7 @@ function hideAllGates() {
   authGate.style.display = "none";
   staffGate.style.display = "none";
   emptyGate.style.display = "none";
+  verifyGate.style.display = "none";
   successGate.style.display = "none";
   checkoutContent.style.display = "none";
 }
@@ -119,6 +122,20 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  // The link may have been opened in another tab since this page's
+  // session started, so refresh before deciding.
+  if (!user.emailVerified) {
+    await user.reload().catch(() => {});
+    // Just verified: get a fresh ID token so the Firestore rule that checks
+    // email_verified sees it when the order is written.
+    if (auth.currentUser.emailVerified) await auth.currentUser.getIdToken(true).catch(() => {});
+  }
+  if (!auth.currentUser.emailVerified) {
+    document.getElementById("verifyEmail").textContent = user.email || "your email";
+    verifyGate.style.display = "block";
+    return;
+  }
+
   checkoutContent.style.display = "block";
 
   // Default the "show total in" picker to the buyer's own currency (set at
@@ -146,6 +163,54 @@ onAuthStateChanged(auth, async (user) => {
       };
     }
   });
+});
+
+/* ===== Email verification gate ===== */
+const verifyError = document.getElementById("verifyError");
+const verifyInfo = document.getElementById("verifyInfo");
+
+document.getElementById("verifyCheckBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("verifyCheckBtn");
+  verifyError.classList.remove("show");
+  verifyInfo.textContent = "";
+  verifyInfo.classList.remove("show");
+  btn.disabled = true;
+  try {
+    await auth.currentUser.reload();
+    if (auth.currentUser.emailVerified) {
+      // New ID token, so Firestore rules see email_verified = true.
+      await auth.currentUser.getIdToken(true);
+      window.location.reload();
+      return;
+    }
+    verifyError.textContent =
+      "Your email isn't verified yet. Open the link in the email we sent, then try again.";
+    verifyError.classList.add("show");
+  } catch {
+    verifyError.textContent = "Couldn't check right now. Please try again.";
+    verifyError.classList.add("show");
+  }
+  btn.disabled = false;
+});
+
+document.getElementById("verifyResendBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("verifyResendBtn");
+  verifyError.classList.remove("show");
+  verifyInfo.textContent = "";
+  verifyInfo.classList.remove("show");
+  btn.disabled = true;
+  try {
+    await sendVerificationEmail(auth.currentUser);
+    verifyInfo.textContent = `New link sent to ${auth.currentUser.email}.`;
+    verifyInfo.classList.add("show");
+  } catch (err) {
+    verifyError.textContent =
+      err instanceof TooSoonError || err.code === "auth/too-many-requests"
+        ? "A link was sent recently. Please wait a minute before asking for another."
+        : "Couldn't send the email right now. Please try again.";
+    verifyError.classList.add("show");
+  }
+  btn.disabled = false;
 });
 
 // Shows the PayMongo / test-mode note only when paying online.
