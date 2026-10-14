@@ -5,6 +5,7 @@
 // js/settings.js.
 
 import { auth, db } from "./firebase.js";
+import { startOnlinePayment, PAYMENT_CHANNEL_LABELS } from "./payments.js";
 import {
   onAuthStateChanged,
   signOut,
@@ -182,7 +183,20 @@ async function loadOrderHistory(uid) {
           ? order.createdAt.toDate().toLocaleDateString("en-PH")
           : "";
         const statusClass = (order.status || "Pending").toLowerCase();
-        const canCancel = CANCELLABLE.includes(statusClass);
+        // Online orders: unpaid ones can be paid from here; paid ones can't
+        // be self-cancelled, since refunds go through the store.
+        const isOnline = order.shippingInfo?.paymentMethod === "online";
+        const isPaid = isOnline && order.paymentStatus === "paid";
+        const canCancel = CANCELLABLE.includes(statusClass) && !isPaid;
+        const canPay = isOnline && !isPaid && statusClass !== "cancelled";
+        const channel = PAYMENT_CHANNEL_LABELS[order.payment?.channel];
+        const paymentPill = !isOnline
+          ? `<span class="payment-pill cod">Cash on Delivery</span>`
+          : isPaid
+            ? `<span class="payment-pill paid">Paid${channel ? ` · ${channel}` : ""}</span>`
+            : statusClass === "cancelled"
+              ? `<span class="payment-pill cod">Not paid</span>`
+              : `<span class="payment-pill pending">Payment pending</span>`;
         // Customers see "Pending" even when the real status is "New" —
         // that distinction is purely about whether staff has opened the
         // order yet, which isn't something a customer needs to know.
@@ -224,8 +238,9 @@ async function loadOrderHistory(uid) {
                 <span class="status-badge status-${displayClass}">${displayStatus}</span>
               </div>
               <p class="text-muted mb-1" style="font-size:0.85rem;">${date} &middot; ${order.items.length} item${order.items.length > 1 ? "s" : ""}</p>
-              <p class="cart-item-price mb-0">${peso(order.total)}</p>
-              <div class="d-flex gap-3 mt-2">
+              <p class="cart-item-price mb-0">${peso(order.total)} ${paymentPill}</p>
+              <div class="d-flex gap-3 mt-2 flex-wrap">
+                ${canPay ? `<button type="button" class="remove-item pay-order-btn" data-id="${order.id}" style="color: var(--dark); font-weight: 600;"><i class="bi bi-credit-card"></i> Pay now</button>` : ""}
                 <button type="button" class="remove-item track-order-btn" data-id="${order.id}" style="color: var(--primary);">
                   <i class="bi bi-truck"></i> Track Order
                 </button>
@@ -377,6 +392,20 @@ document
       } else {
         panel.classList.add("d-none");
         trackBtn.innerHTML = '<i class="bi bi-truck"></i> Track Order';
+      }
+      return;
+    }
+
+    const payBtn = e.target.closest(".pay-order-btn");
+    if (payBtn) {
+      payBtn.disabled = true;
+      payBtn.textContent = "Opening secure payment...";
+      try {
+        await startOnlinePayment(payBtn.dataset.id);
+      } catch (err) {
+        alert(err.message);
+        payBtn.disabled = false;
+        payBtn.innerHTML = '<i class="bi bi-credit-card"></i> Pay now';
       }
       return;
     }

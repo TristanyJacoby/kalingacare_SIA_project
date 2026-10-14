@@ -258,13 +258,21 @@
                   />
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">Payment Method</label>
-                  <select class="form-control" id="ckPayment">
+                  <label class="form-label" for="ckPayment">Payment Method</label>
+                  <select class="form-control" id="ckPayment" aria-describedby="ckPaymentNote">
                     <option value="cod">Cash on Delivery</option>
-                    <option value="card">Credit / Debit Card</option>
-                    <option value="paypal">PayPal</option>
+                    <option value="online">Pay online: card, GCash or Maya</option>
                   </select>
                 </div>
+                <!-- Online payments go through PayMongo's own payment page.
+                     The store's PayMongo account is in test mode, so this
+                     note must stay until real payments are activated. -->
+                <p class="payment-note" id="ckPaymentNote" hidden>
+                  <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                  You'll pay on PayMongo's secure page, then come back here.
+                  <strong>Test mode:</strong> no real money is charged. Use a
+                  PayMongo test card such as 4343&nbsp;4343&nbsp;4343&nbsp;4345.
+                </p>
               </div>
               <div class="auth-error" id="checkoutError"></div>
               <button type="submit" class="btn-auth" id="placeOrderBtn">
@@ -289,8 +297,8 @@
                 <span>Total</span>
                 <span id="ckTotal">&#8369;0</span>
               </div>
-              <!-- Display-only conversion: KalingaCare charges in PHP via
-                   Cash on Delivery regardless of what's picked here — this
+              <!-- Display-only conversion: KalingaCare charges in PHP
+                   (Cash on Delivery or online) regardless of what's picked here — this
                    just shows an OFW buyer roughly what that PHP total is
                    in their own currency. Defaults from the buyer's Country
                    (Settings/registration) but can be changed for this
