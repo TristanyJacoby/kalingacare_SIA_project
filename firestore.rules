@@ -1,0 +1,114 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------- helpers ---------- */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function myRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isStaffUp() {
+      return isSignedIn() && myRole() in ["staff", "admin", "superadmin"];
+    }
+
+    function isAdminUp() {
+      return isSignedIn() && myRole() in ["admin", "superadmin"];
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && myRole() == "superadmin";
+    }
+
+    /* ---------- users ---------- */
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isStaffUp();
+
+      allow create: if isOwner(userId)
+                    && request.resource.data.role == "user";
+
+      allow update: if isSuperAdmin()
+                    || (isOwner(userId)
+                        && request.resource.data.role == resource.data.role);
+
+      allow delete: if false;
+    }
+
+    /* ---------- products ---------- */
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdminUp();
+    }
+
+    /* ---------- orders ---------- */
+    match /orders/{orderId} {
+      allow read: if isSignedIn()
+                  && (resource.data.userId == request.auth.uid || isStaffUp());
+
+      // A: new orders must start as "New", with a sane total
+      // and at least one item.
+      // D: payment fields: a customer may only start an online order as
+      // "pending". Only the server (PayMongo functions, Admin SDK) can
+      // record a payment.
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.status == "New"
+                    && request.resource.data.total is number
+                    && request.resource.data.total >= 0
+                    && request.resource.data.items is list
+                    && request.resource.data.items.size() > 0
+                    && (!("paymentStatus" in request.resource.data)
+                        || request.resource.data.paymentStatus == "pending")
+                    && !request.resource.data.keys().hasAny(["payment", "paymentSessionId"]);
+
+      allow update: if (
+                      isStaffUp()
+                      && resource.data.status != "Cancelled"
+                      // D: staff manage the order, never its payment record.
+                      && !request.resource.data.diff(resource.data).affectedKeys()
+                            .hasAny(["paymentStatus", "payment", "paymentSessionId"])
+                    )
+                    || (
+                      // C: owner can only cancel an order that is still
+                      // New/Pending/Processing, and only the status field
+                      // may change. D: not once it's been paid online
+                      // (refunds go through the store).
+                      isSignedIn()
+                      && resource.data.userId == request.auth.uid
+                      && resource.data.status in ["New", "Pending", "Processing"]
+                      && resource.data.get("paymentStatus", "") != "paid"
+                      && request.resource.data.status == "Cancelled"
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"])
+                    );
+
+      allow delete: if false;
+    }
+
+    /* ---------- reviews ---------- */
+    match /reviews/{reviewId} {
+      allow read: if true;
+
+      // B: rating 1-5, text <= 1000 chars, photo capped.
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.rating is number
+                    && request.resource.data.rating >= 1
+                    && request.resource.data.rating <= 5
+                    && (!("text" in request.resource.data)
+                        || (request.resource.data.text is string
+                            && request.resource.data.text.size() <= 1000))
+                    && (!("photoBase64" in request.resource.data)
+                        || (request.resource.data.photoBase64 is string
+                            && request.resource.data.photoBase64.size() <= 700000));
+
+      allow update, delete: if false;
+    }
+  }
+}
