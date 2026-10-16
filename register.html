@@ -187,6 +187,11 @@
                   <i class="bi bi-eye"></i>
                 </button>
               </div>
+              <div class="forgot-wrap">
+                <button type="button" class="link-btn" id="forgotPasswordLink">
+                  Forgot password?
+                </button>
+              </div>
               <button type="submit" class="btn-auth">Sign In</button>
             </form>
             <div class="auth-divider"><span>or</span></div>
@@ -198,6 +203,38 @@
                 Don't have an account?
                 <a onclick="toggleMode()">Create Account</a>
               </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forgot password: Firebase emails a reset link. Shown in place
+             of the Sign In form (js/auth.js). -->
+        <div id="resetSection" class="form-container hidden">
+          <div class="form-box">
+            <h2>Reset Password</h2>
+            <p class="form-intro">
+              Enter the email you use for KalingaCare and we'll send you a link
+              to set a new password. This also works if you signed up with
+              Google and want a password for email sign-in.
+            </p>
+            <div class="auth-error" id="resetError"></div>
+            <div class="auth-notice" id="resetNotice" role="status"></div>
+            <form id="resetForm">
+              <div class="form-field">
+                <i class="bi bi-envelope"></i>
+                <input
+                  type="email"
+                  id="resetEmail"
+                  class="field-input"
+                  placeholder="Email Address"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+              <button type="submit" class="btn-auth">Send Reset Link</button>
+            </form>
+            <div class="form-links">
+              <p><button type="button" class="link-btn" id="backToSignIn">Back to Sign In</button></p>
             </div>
           </div>
         </div>

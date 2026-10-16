@@ -202,6 +202,39 @@ body {
   cursor: pointer;
 }
 
+/* Text-style buttons ("Forgot password?", "Back to Sign In"). Real
+   <button>s so they work from the keyboard. */
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--primary-text);
+  cursor: pointer;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+.forgot-wrap {
+  text-align: right;
+  margin: -6px 0 16px;
+  font-size: 0.85rem;
+}
+.form-intro {
+  color: var(--gray);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: -6px 0 18px;
+}
+/* "Select the country you live in" placeholder looks like other placeholders. */
+select.field-input:invalid {
+  color: var(--gray);
+}
+select.field-input option {
+  color: var(--dark);
+}
+
 .form-container {
   position: absolute;
   width: 100%;
@@ -267,4 +300,19 @@ body {
     order: 2;
     padding: 40px 20px;
   }
+}
+
+/* .form-field is display:flex, which would override the hidden attribute. */
+.form-field[hidden] {
+  display: none;
+}
+/* Settings: "Forgot your current password? Email me a reset link" */
+.password-forgot {
+  margin: 14px 0 0;
+  font-size: 0.85rem;
+  color: var(--gray);
+  text-align: center;
+}
+.password-forgot[hidden] {
+  display: none;
 }

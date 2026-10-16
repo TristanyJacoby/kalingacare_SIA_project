@@ -150,6 +150,8 @@ export function convertAndFormat(phpAmount, currencyCode, rates) {
 
 // Populates a <select> with one <option> per country, sorted so the most
 // common OFW destinations aren't buried alphabetically under "Australia".
+const OTHER_COUNTRY = "Other / Not Listed";
+
 const PRIORITY_COUNTRIES = [
   "Saudi Arabia",
   "United Arab Emirates",
@@ -161,18 +163,23 @@ const PRIORITY_COUNTRIES = [
   "Philippines",
 ];
 
-export function populateCountrySelect(selectEl, selectedValue = "") {
+// `placeholder` adds an empty first option (e.g. "Country you live in") so
+// signup forms make the buyer actually pick one instead of silently
+// defaulting to the first country.
+export function populateCountrySelect(selectEl, selectedValue = "", placeholder = "") {
   const countries = Object.keys(COUNTRY_CURRENCY);
   const ordered = [
     ...PRIORITY_COUNTRIES,
     ...countries
-      .filter((c) => !PRIORITY_COUNTRIES.includes(c))
+      .filter((c) => !PRIORITY_COUNTRIES.includes(c) && c !== OTHER_COUNTRY)
       .sort((a, b) => a.localeCompare(b)),
+    // Always last, after the alphabetical list.
+    OTHER_COUNTRY,
   ];
 
-  selectEl.innerHTML = ordered
-    .map((country) => `<option value="${country}">${country}</option>`)
-    .join("");
+  selectEl.innerHTML =
+    (placeholder ? `<option value="" disabled selected>${placeholder}</option>` : "") +
+    ordered.map((country) => `<option value="${country}">${country}</option>`).join("");
 
   if (selectedValue && countries.includes(selectedValue)) {
     selectEl.value = selectedValue;
