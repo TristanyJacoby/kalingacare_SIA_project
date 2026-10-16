@@ -34,15 +34,15 @@ function buildEmail(name, link) {
   const html = `<!doctype html>
 <html>
   <head><meta charset="utf-8"></head>
-  <body style="margin:0;padding:0;background:#f4f9fc;font-family:Poppins,Arial,Helvetica,sans-serif;color:#1e293b;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f9fc;padding:32px 12px;">
+  <body style="margin:0;padding:0;background:#f2f9ff;font-family:Poppins,Arial,Helvetica,sans-serif;color:#1e293b;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f9ff;padding:32px 12px;">
       <tr>
         <td align="center">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #dce8f0;border-radius:18px;">
             <tr>
               <td align="center" style="padding:32px 32px 8px;">
                 <img src="${PUBLIC_SITE_URL}/assets/images/logo.png" width="56" height="56" alt="" style="display:block;border:0;">
-                <div style="margin-top:8px;font-size:22px;font-weight:bold;color:#0b5e83;">KalingaCare</div>
+                <div style="margin-top:8px;font-size:22px;font-weight:bold;color:#1778ad;">KalingaCare</div>
                 <div style="font-size:13px;color:#5c6b7f;">Care Beyond Borders</div>
               </td>
             </tr>
@@ -54,7 +54,7 @@ function buildEmail(name, link) {
             </tr>
             <tr>
               <td align="center" style="padding:8px 32px 24px;">
-                <a href="${safeLink}" style="display:inline-block;background:#67c8f7;color:#1e293b;font-size:16px;font-weight:bold;text-decoration:none;padding:14px 34px;border-radius:999px;">Verify my email</a>
+                <a href="${safeLink}" style="display:inline-block;background:#1778ad;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none;padding:14px 34px;border-radius:999px;">Verify my email</a>
               </td>
             </tr>
             <tr>
@@ -66,7 +66,7 @@ function buildEmail(name, link) {
             </tr>
           </table>
           <div style="max-width:520px;padding:16px 12px;font-size:12px;color:#5c6b7f;text-align:center;">
-            KalingaCare &middot; Senior wellness and OFW support &middot; Manila, Philippines
+            KalingaCare &middot; Senior wellness and OFW support &middot; Cubao, Quezon City, Philippines
           </div>
         </td>
       </tr>

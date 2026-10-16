@@ -83,7 +83,7 @@
   color: var(--dark);
 }
 .filters-sidebar-title i {
-  color: var(--primary);
+  color: var(--primary-text);
   margin-right: 6px;
 }
 
@@ -133,7 +133,7 @@
 }
 .products-sort-select:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--primary-text);
 }
 
 @media (max-width: 991px) {
@@ -152,11 +152,23 @@
   }
   .products-search {
     max-width: none;
-    flex: 1;
+    flex: 1 1 220px;
+    min-width: 0;
   }
   .products-search-sort {
     width: 100%;
+    flex-wrap: wrap;
   }
+  .products-sort-select {
+    flex: 1 1 180px;
+  }
+}
+/* Keep the search button beside its field instead of wrapping under it. */
+.products-search {
+  flex-wrap: nowrap;
+}
+.products-search .form-control {
+  min-width: 0;
 }
 
 .product-card {
@@ -178,9 +190,7 @@
 }
 
 /* Overlaid on the card's top-right corner, above the product image.
-   Blossom Pink on click/active — the system's only other named hue,
-   reserved for exactly this kind of small accent moment (see DESIGN.md),
-   never sitting unfilled/gray like a disabled control. */
+   Red heart on click/active, the same #e0475f the mobile app uses. */
 .favorite-btn {
   position: absolute;
   top: 10px;
@@ -204,7 +214,7 @@
   transform: scale(1.1);
 }
 .favorite-btn.active {
-  color: var(--pink);
+  color: var(--heart);
 }
 .product-card .text-success {
   /* Ink-Text Rule: raw Sky Blue fails contrast on the white card
@@ -272,21 +282,23 @@
 
 .badge.bg-success {
   background: var(--primary) !important;
-  color: #0b3550 !important;
+  color: #fff !important;
 }
 .badge.bg-primary {
   background: var(--primary-light) !important;
   color: #0b3550 !important;
 }
 .badge.bg-warning {
-  background: var(--pink-light) !important;
-  color: #8d4c7b !important;
+  background: #fff2cc !important;
+  color: #916f00 !important;
 }
 
 /* ===== Cart & Checkout (share shop.css — no dedicated file in the plan) ===== */
 
 .page-heading {
-  padding: 3rem 0 1rem;
+  /* Top/bottom only, so Bootstrap's .container keeps its side gutters. */
+  padding-top: 3rem;
+  padding-bottom: 1rem;
 }
 .page-heading h1 {
   font-size: clamp(1.8rem, 3.6vw, 2.6rem);
@@ -325,8 +337,27 @@
   color: #0b5e83;
   font-weight: 700;
 }
+.cart-item-price-wrap {
+  margin-bottom: 0.6rem;
+}
+/* PHP reference line under a local-currency price (cart rows). */
+.cart-price-php {
+  display: block;
+  color: var(--gray);
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+.cart-line-total {
+  text-align: right;
+}
+.summary-rate-note {
+  color: var(--gray);
+  font-size: 0.75rem;
+  margin: -4px 0 0;
+}
 .qty-stepper {
   display: flex;
+  width: fit-content;
   align-items: center;
   gap: 10px;
   border: 1.5px solid var(--line);
@@ -420,7 +451,7 @@
   padding: 0.7rem 1rem;
 }
 .checkout-form .form-control:focus {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
 }
 
@@ -429,9 +460,8 @@
   padding: 14px;
   border: none;
   border-radius: 10px;
-  /* Ink-Text Rule: white on solid Sky Blue is only 1.9:1. */
   background: var(--primary);
-  color: var(--dark);
+  color: #fff;
   font-family: "Poppins", sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
@@ -488,7 +518,7 @@
 }
 .map-search-input:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--primary-text);
 }
 .address-map {
   width: 100%;
@@ -592,7 +622,7 @@
 }
 .auth-gate i {
   font-size: 3rem;
-  color: var(--primary);
+  color: var(--primary-text);
   margin-bottom: 1rem;
   display: block;
 }
@@ -727,4 +757,52 @@
   .status-card-actions .pill-btn {
     width: 100%;
   }
+}
+
+/* Cart rows on phones (after the base .cart-item rules so it wins). */
+@media (max-width: 576px) {
+  /* Phone: image + details side by side, line total on its own row,
+     so long product names get the full width instead of a sliver. */
+  .cart-item {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .cart-item img {
+    width: 72px;
+    height: 72px;
+  }
+  .cart-item-info h5 {
+    font-size: 1rem;
+  }
+  .cart-item > .fw-bold {
+    width: 100%;
+    text-align: right;
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+  }
+}
+
+/* Checkout: map pin picker above the delivery address */
+.checkout-map-hint {
+  color: var(--gray);
+  font-size: 0.82rem;
+  margin: -2px 0 10px;
+}
+/* Order summary dropdowns (e.g. "Show total in" currency). */
+.summary-select {
+  display: block;
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.92rem;
+  color: var(--dark);
+  background-color: var(--input-bg);
+  cursor: pointer;
+}
+.summary-select:focus {
+  outline: none;
+  border-color: var(--primary-text);
 }

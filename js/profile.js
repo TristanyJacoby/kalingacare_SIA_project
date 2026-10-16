@@ -222,7 +222,7 @@ async function loadOrderHistory(uid) {
                     ${
                       reviewed
                         ? `<span class="text-muted"><i class="bi bi-check-circle"></i> Reviewed</span>`
-                        : `<a href="review.html?orderId=${order.id}&productId=${item.id}" style="color: var(--primary); font-weight: 600; text-decoration: none;">Leave a Review</a>`
+                        : `<a href="review.html?orderId=${order.id}&productId=${item.id}" style="color: var(--primary-text); font-weight: 600; text-decoration: none;">Leave a Review</a>`
                     }
                   </div>`;
                 })
@@ -241,7 +241,7 @@ async function loadOrderHistory(uid) {
               <p class="cart-item-price mb-0">${peso(order.total)} ${paymentPill}</p>
               <div class="d-flex gap-3 mt-2 flex-wrap">
                 ${canPay ? `<button type="button" class="remove-item pay-order-btn" data-id="${order.id}" style="color: var(--dark); font-weight: 600;"><i class="bi bi-credit-card"></i> Pay now</button>` : ""}
-                <button type="button" class="remove-item track-order-btn" data-id="${order.id}" style="color: var(--primary);">
+                <button type="button" class="remove-item track-order-btn" data-id="${order.id}" style="color: var(--primary-text);">
                   <i class="bi bi-truck"></i> Track Order
                 </button>
                 ${canCancel ? `<button type="button" class="remove-item cancel-order-btn" data-id="${order.id}"><i class="bi bi-x-circle"></i> Cancel Order</button>` : ""}

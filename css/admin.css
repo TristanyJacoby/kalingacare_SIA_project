@@ -63,7 +63,7 @@ body.admin-body {
 .admin-nav a.active {
   background: #f0faff;
   color: var(--dark);
-  border-left-color: var(--primary);
+  border-left-color: var(--primary-text);
   font-weight: 600;
 }
 
@@ -223,7 +223,7 @@ body.admin-body {
   padding: 4px 6px;
 }
 .icon-btn:hover {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 .icon-btn.danger:hover {
   color: #c0392b;
@@ -338,7 +338,7 @@ body.admin-body {
 
 /* ===========================
    Admin redesign — topbar tools, filter tabs, status badges, filters panel
-   Reuses the existing palette (--primary/--pink/--line/--gray) and the same
+   Reuses the existing palette (--primary/--line/--gray) and the same
    soft-background + saturated-text language already used by .role-badge,
    so nothing here introduces a new color outside the site's theme.
 =========================== */
@@ -399,14 +399,14 @@ body.admin-body {
   white-space: nowrap;
 }
 .filters-btn:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   /* Ink-Text Rule: Sky Blue Deep is only 2.7:1 — the border already
      signals hover/active. */
   color: var(--dark);
 }
 .filters-btn.active {
   background: var(--primary-light);
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   color: var(--dark);
 }
 
@@ -430,15 +430,15 @@ body.admin-body {
   transition: 0.2s;
 }
 .filter-tab:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   color: var(--dark);
 }
 .filter-tab.active {
   /* Ink-Text Rule: white on solid Sky Blue is only 1.9:1 — same fix as
      .signup-btn/.btn-success. */
   background: var(--primary);
-  border-color: var(--primary);
-  color: var(--dark);
+  border-color: var(--primary-text);
+  color: #fff;
 }
 
 /* Status badges — same visual language as .role-badge (soft bg, saturated text) */
@@ -477,8 +477,8 @@ body.admin-body {
   color: #0b5e83;
 }
 .status-badge.status-shipped {
-  background: var(--pink-light);
-  color: #8d4c7b;
+  background: #d9f3fd;
+  color: #0b5e83;
 }
 .status-badge.status-delivered {
   background: #e6f4ea;
@@ -520,8 +520,8 @@ body.admin-body {
   color: #0b5e83;
 }
 .status-select.status-shipped {
-  background-color: var(--pink-light);
-  color: #8d4c7b;
+  background-color: #d9f3fd;
+  color: #0b5e83;
 }
 .status-select.status-delivered {
   background-color: #e6f4ea;
@@ -586,7 +586,7 @@ body.admin-body {
   border: none;
   /* Ink-Text Rule: white on solid Sky Blue is only 1.9:1. */
   background: var(--primary);
-  color: var(--dark);
+  color: #fff;
 }
 .filters-apply-btn:hover {
   background: var(--primary-dark);
@@ -642,7 +642,7 @@ body.admin-body {
   transition: 0.2s;
 }
 .icon-btn-round:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   color: var(--primary-dark);
 }
 
@@ -747,7 +747,7 @@ body.admin-body {
   transition: 0.2s;
 }
 .header-user-btn:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
 }
 .header-user-btn > i {
   color: var(--gray);
@@ -925,7 +925,7 @@ body.admin-body {
   font-weight: 600;
 }
 .toolbar-dropdown-btn:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
 }
 .toolbar-dropdown-btn i {
   font-size: 0.7rem;
@@ -1005,7 +1005,7 @@ body.admin-body {
 .orders-table input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: var(--primary);
+  accent-color: var(--primary-text);
   cursor: pointer;
 }
 .order-customer-cell {
@@ -1266,7 +1266,7 @@ body.admin-body {
   border: none;
   /* Ink-Text Rule: white on solid Sky Blue is only 1.9:1. */
   background: var(--primary);
-  color: var(--dark);
+  color: #fff;
   border-radius: var(--radius-pill);
   padding: 9px 20px;
   font-weight: 600;
@@ -1361,12 +1361,12 @@ body.admin-body {
 }
 .image-drop-zone:hover,
 .image-drop-zone.dragover {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   background: var(--primary-light);
 }
 .image-drop-zone i {
   font-size: 1.6rem;
-  color: var(--primary);
+  color: var(--primary-text);
   margin-bottom: 6px;
   display: block;
 }
@@ -1404,7 +1404,7 @@ body.admin-body {
   border: 1px solid var(--line);
 }
 .image-grid-item.is-cover img {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   border-width: 2px;
 }
 .image-grid-cover-tag {
@@ -1412,7 +1412,7 @@ body.admin-body {
   bottom: 4px;
   left: 4px;
   background: var(--primary);
-  color: var(--dark);
+  color: #fff;
   font-size: 0.62rem;
   font-weight: 700;
   padding: 2px 6px;
@@ -1461,7 +1461,7 @@ body.admin-body {
 }
 .stock-inline-adjust-btn:hover {
   background: var(--primary);
-  color: var(--dark);
+  color: #fff;
 }
 
 /* Admin Orders: PayMongo payment state under the "Online" label */

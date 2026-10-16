@@ -13,17 +13,23 @@
 html {
   scroll-behavior: smooth;
   height: 100%;
+  /* Anchor jumps (#about, #contact) land below the fixed navbar. */
+  scroll-padding-top: 84px;
 }
 
 :root {
-  --primary: #67c8f7;
-  --primary-rgb: 103, 200, 247;
-  --primary-light: #beebff;
-  --primary-dark: #3fa8e0;
-
-  --pink: #f8b4d9;
-  --pink-rgb: 248, 180, 217;
-  --pink-light: #ffe5f2;
+  /* Same palette as the mobile app: deep blue accent with white text,
+     a pale blue page, navy ink. #1778ad passes WCAG AA both as text on
+     white (4.9:1) and under white text, so one blue does every job. */
+  --primary: #1778ad;
+  --primary-rgb: 23, 120, 173;
+  --primary-light: #e2f2fb;
+  --primary-dark: #12628f;
+  /* Text in the brand blue. Separate token so dark mode can lighten it. */
+  --primary-text: #1778ad;
+  --sky: #67c8f7;
+  --page-bg: #f2f9ff;
+  --heart: #e0475f;
 
   --dark: #1e293b;
   /* Slightly darker than a plain slate-500 (#64748b): the body's soft
@@ -33,7 +39,9 @@ html {
   --white: #ffffff;
   --line: #dce8f0;
 
-  --gradient: linear-gradient(135deg, #7dd3fc 0%, #a5f3fc 45%, #f8b4d9 100%);
+  /* Kept as a token name for the few hero moments, but solid now:
+     the mobile app uses flat colors, no gradients. */
+  --gradient: #1778ad;
 
   --radius-pill: 999px;
   --shadow-soft: 0 8px 24px rgba(50, 116, 153, 0.08);
@@ -46,17 +54,20 @@ html {
      text color for dark mode. */
   --surface: #ffffff;
   --input-bg: #fafeff;
-  --navbar-bg: rgba(255, 255, 255, 0.92);
+  --navbar-bg: #ffffff;
   --footer-bg: #1e293b;
 }
 
 [data-theme="dark"] {
+  --primary-text: #67c8f7;
+  --primary-light: #16324a;
+  --page-bg: #0f172a;
   --dark: #e2e8f0;
   --gray: #94a3b8;
   --line: #2a3441;
   --surface: #1e293b;
   --input-bg: #16223a;
-  --navbar-bg: rgba(15, 23, 42, 0.92);
+  --navbar-bg: #0f172a;
   --footer-bg: #0b1220;
 
   /* Bootstrap 5.3 cards/headings/inputs use their OWN color system
@@ -72,11 +83,7 @@ html {
 }
 
 [data-theme="dark"] body {
-  background:
-    radial-gradient(circle at 15% 20%, rgba(103, 200, 247, 0.12), transparent 35%),
-    radial-gradient(circle at 85% 80%, rgba(248, 180, 217, 0.1), transparent 35%),
-    linear-gradient(180deg, #0f172a, #111827);
-  background-attachment: fixed;
+  background: var(--page-bg);
 }
 
 [data-theme="dark"] .form-control,
@@ -99,20 +106,8 @@ body {
   color: var(--dark);
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(circle at 15% 20%, rgba(125, 211, 252, 0.22), transparent 35%),
-    radial-gradient(circle at 85% 80%, rgba(248, 180, 217, 0.2), transparent 35%),
-    linear-gradient(180deg, #ffffff, #fbfeff);
-  background-attachment: fixed;
-}
-
-/* background-attachment: fixed is unreliable on iOS Safari (janky repaint
-   on scroll), so touch devices fall back to the normal scrolling background
-   instead — the seam is far less noticeable on a small screen anyway. */
-@media (hover: none) and (pointer: coarse) {
-  body {
-    background-attachment: scroll;
-  }
+  /* Flat pale blue, like the mobile app's screens. */
+  background: var(--page-bg);
 }
 
 a {
@@ -132,8 +127,14 @@ main {
 }
 
 /* ============ NAVBAR (shared) ============ */
+/* The navbar stays pinned while scrolling. Bootstrap's .sticky-top on the
+   <nav> alone does nothing here: a sticky element only sticks inside its
+   parent, and <header> is exactly as tall as the nav. So the header sticks. */
 header {
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
 }
 
 .navbar {
@@ -147,7 +148,7 @@ header {
 .navbar-brand {
   font-size: 1.7rem;
   font-weight: 700;
-  color: var(--primary) !important;
+  color: var(--primary-text) !important;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -239,9 +240,8 @@ header {
   padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3vw, 34px);
   border-radius: var(--radius-pill);
   background: var(--primary) !important;
-  /* White text on Sky Blue is only 1.9:1 — fails WCAG AA's 4.5:1 for body
-     text. Ink on Sky Blue is 7.8:1, comfortably passing in both themes. */
-  color: var(--dark) !important;
+  /* White on #1778ad is 4.9:1, passing WCAG AA (same as mobile). */
+  color: #fff !important;
   font-weight: 600;
   transition: 0.3s ease;
 }
@@ -280,7 +280,7 @@ header {
 }
 .account-menu-btn:hover,
 .account-menu-btn:focus {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 .account-menu-btn::after {
   display: none; /* hide Bootstrap's default caret — icon-only trigger */
@@ -312,8 +312,10 @@ header {
 
 .navbar .badge,
 .badge.bg-danger {
-  background: var(--pink) !important;
-  color: #12283a !important;
+  /* Navy, so the count stands out against the blue Cart button. */
+  background: #12283a !important;
+  color: #fff !important;
+  border: 2px solid #fff;
 }
 
 @media (max-width: 991px) {
@@ -321,11 +323,34 @@ header {
     text-align: center;
     margin: 20px 0;
   }
-  .d-flex {
+  /* Scoped to the collapsed navbar menu. This used to be a bare .d-flex,
+     which stacked every Bootstrap flex row on the site below 992px. */
+  .navbar-collapse .d-flex {
     flex-direction: column;
     align-items: center;
     gap: 15px;
   }
+  .navbar-collapse {
+    padding-bottom: 16px;
+    max-height: calc(100vh - 70px);
+    overflow-y: auto;
+  }
+}
+
+/* Between Bootstrap's lg breakpoint and a full desktop the expanded navbar
+   is tight: shrink link spacing so nothing wraps onto two lines. */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .nav-link {
+    margin: 0 4px;
+  }
+  .navbar .login-btn {
+    padding: 10px 10px;
+  }
+}
+.navbar .signup-btn,
+.navbar .login-btn,
+.navbar .btn-success {
+  white-space: nowrap;
 }
 
 /* Toast notifications (see site.js showToast) */
@@ -345,7 +370,8 @@ header {
   opacity: 0;
   transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: none;
-  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  text-align: center;
 }
 .site-toast.show {
   opacity: 1;
@@ -431,7 +457,7 @@ header {
 .filter-checkbox-row input[type="radio"] {
   width: 16px;
   height: 16px;
-  accent-color: var(--primary);
+  accent-color: var(--primary-text);
   cursor: pointer;
 }
 
@@ -517,7 +543,7 @@ header {
 }
 .role-badge.role-user { background: #e6f4ea; color: #1e7e34; }
 .role-badge.role-staff { background: var(--primary-light); color: #0b5e83; }
-.role-badge.role-admin { background: var(--pink-light); color: #8d4c7b; }
+.role-badge.role-admin { background: #ede9fe; color: #5b3fa8; }
 .role-badge.role-superadmin { background: #fff2cc; color: #916f00; }
 
 /* ============ FOOTER (shared) ============
@@ -551,11 +577,27 @@ footer h3 {
 footer h4 {
   font-size: 1.25rem;
 }
+.footer-links li + li {
+  margin-top: 4px;
+}
+.footer-contact li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.footer-contact i {
+  color: var(--sky);
+  margin-top: 2px;
+}
+.footer-contact a {
+  overflow-wrap: anywhere;
+}
 
 /* =====================================================
    Pill buttons for standalone pages (status cards, empty
-   states, "log in" gates). Follows DESIGN.md: solid Sky Blue
-   with Ink text (Ink-Text Rule), outline secondary, pill shape.
+   states, "log in" gates). Solid brand blue with white text
+   (same as the mobile app), outline secondary, pill shape.
    The gradient .hero-btn-primary stays reserved for the home
    hero and CTA banner (Gradient Reserve Rule).
 ===================================================== */
@@ -578,22 +620,22 @@ footer h4 {
 }
 .pill-btn-primary {
   background: var(--primary);
-  color: var(--dark);
+  color: #fff;
 }
 .pill-btn-primary:hover {
   background: var(--primary-dark);
-  color: var(--dark);
+  color: #fff;
   transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.3);
 }
 .pill-btn-outline {
   background: transparent;
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   color: var(--dark);
 }
 .pill-btn-outline:hover {
   background: var(--primary-light);
-  color: #1e293b;
+  color: var(--dark);
 }
 .pill-btn:disabled {
   opacity: 0.6;

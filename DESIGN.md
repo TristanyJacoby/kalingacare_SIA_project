@@ -2,13 +2,13 @@
 name: KalingaCare
 description: Care Beyond Borders — an online store for OFWs buying senior wellness products for family in the Philippines
 colors:
-  sky-blue: "#67c8f7"
-  sky-blue-light: "#beebff"
-  sky-blue-deep: "#3fa8e0"
+  brand-blue: "#1778ad"
+  blue-tint: "#e2f2fb"
+  blue-deep: "#12628f"
+  sky: "#67c8f7"
   sky-blue-text: "#0b5e83"
-  blossom-pink: "#f8b4d9"
-  blossom-pink-light: "#ffe5f2"
-  plum-text: "#8d4c7b"
+  page: "#f2f9ff"
+  heart: "#e0475f"
   amber-bg: "#fff2cc"
   amber-text: "#916f00"
   cyan-bg: "#d9f3fd"
@@ -22,7 +22,6 @@ colors:
   paper: "#ffffff"
   mist: "#fafeff"
   harbor-navy: "#1e293b"
-  gradient-handoff: "linear-gradient(135deg, #7dd3fc 0%, #a5f3fc 45%, #f8b4d9 100%)"
 typography:
   display:
     fontFamily: "Poppins, sans-serif"
@@ -57,20 +56,14 @@ rounded:
   xs: "8px"
 components:
   button-primary:
-    backgroundColor: "{colors.sky-blue}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{colors.brand-blue}"
+    textColor: "{colors.paper}"
     rounded: "{rounded.pill}"
     padding: "14px 34px"
   button-primary-hover:
-    backgroundColor: "{colors.sky-blue-deep}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.pill}"
-  button-gradient:
-    backgroundColor: "{colors.gradient-handoff}"
+    backgroundColor: "{colors.blue-deep}"
     textColor: "{colors.paper}"
     rounded: "{rounded.pill}"
-    padding: "0 35px"
-    height: "58px"
   button-outline:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
@@ -104,14 +97,14 @@ components:
 
 **Creative North Star: "The Clear Sky Handoff"**
 
-The system reads as an open sky-blue horizon warming into pink at the edges — a visual handoff, fitting a product whose entire premise is one person caring for another across a distance. The mood is warm and reassuring, never clinical or corporate: rounded pill shapes, soft blue-tinted shadows instead of hard black ones, and a single signature gradient reserved for a handful of "hero" moments (the main hero CTA, the closing CTA banner, avatars, KPI icons) rather than sprinkled everywhere. Component feel throughout is soft and approachable — low-friction rounded surfaces, gentle hover lifts, nothing sharp or severe.
+The system matches the mobile app: a flat pale-blue page, white cards and one deep brand blue (`#1778ad`) for every action. The mood is warm and reassuring, never clinical or corporate: rounded pill shapes and soft blue-tinted shadows instead of hard black ones. (Until Oct 16, 2026 the web used a sky-to-pink gradient; it was removed to match mobile.) Component feel throughout is soft and approachable — low-friction rounded surfaces, gentle hover lifts, nothing sharp or severe.
 
-Admin surfaces share the same token vocabulary but dial the warmth down: flat bordered panels, no hover choreography, denser tables — the same sky/pink language speaking in a calmer, task-focused register (see Modes note under Components).
+Admin surfaces share the same token vocabulary but dial the warmth down: flat bordered panels, no hover choreography, denser tables — the same blue language speaking in a calmer, task-focused register (see Modes note under Components).
 
-Dark mode exists and is real (not a mobile-only aspiration): `[data-theme="dark"]` on the root swaps the neutral surface/text tokens while keeping `--primary` (sky-blue) and `--pink` identical in both themes, so the brand accent never shifts, only the canvas around it does.
+Dark mode exists and is real (not a mobile-only aspiration): `[data-theme="dark"]` on the root swaps the neutral surface/text tokens while keeping `--primary` identical in both themes; only `--primary-text` lightens so blue text stays readable on dark surfaces.
 
 **Key Characteristics:**
-- One signature gradient (sky blue → cyan → pink), used sparingly as a deliberate highlight, never as the default button style
+- Flat colors only, no gradients (same as the mobile app); one deep blue for every primary action, with white text
 - Pill-shaped (999px) interactive elements everywhere: buttons, search bars, status badges, quantity steppers
 - Soft, blue-tinted ambient shadows (never pure black) that appear mainly on hover, not at rest
 - Single typeface (Poppins) carrying every role from hero display text down to uppercase micro-labels
@@ -119,45 +112,40 @@ Dark mode exists and is real (not a mobile-only aspiration): `[data-theme="dark"
 
 ## Colors
 
-Two-color brand palette (sky blue + blossom pink) plus a warm neutral scale, with a small fixed semantic vocabulary for order status and user role badges layered on top.
+**Changed Oct 16, 2026 (professor's feedback):** the web now uses the mobile app's palette. The pink and the sky-to-pink gradient are gone; one deep blue does every brand job, on a flat pale-blue page.
 
 ### Primary
-- **Sky Blue** (`#67c8f7`): the brand color. Active nav state, primary button fills, form-field icons, focus rings. Identical value in light and dark mode — the one constant across themes. No shade of Sky Blue (including Sky Blue Deep) reaches 4.5:1 against white or near-white — use it for backgrounds, borders, and icons freely, but set button/link *text* in Ink, never in a Sky Blue shade, wherever the surface behind it is light. Price text specifically uses Sky Blue Text (`#0b5e83`), not raw Sky Blue — see the Ink-Text Rule.
-- **Sky Blue Light** (`#beebff`): tints and hover backgrounds (outline-button hover, badge backgrounds, section tags).
-- **Sky Blue Deep** (`#3fa8e0`): hover/pressed state for solid sky-blue buttons (background only — see the contrast note above).
+- **Brand Blue** (`#1778ad`, token `--primary`): the brand color, same as the mobile app. Solid buttons (white text), the cart button, active states, step icons, the CTA banner, avatars and KPI icons. Passes WCAG AA both ways: as text on white (4.9:1) and under white text (4.9:1), so there is no separate "text blue" in light mode.
+- **Brand Blue Text** (`--primary-text`): `#1778ad` in light mode, `#67c8f7` in dark mode. Use this, not `--primary`, for any text or icon colored in the brand blue, so dark mode stays readable.
+- **Blue Tint** (`#e2f2fb`, token `--primary-light`; `#16324a` in dark mode): hover backgrounds, section tags, status/role badge backgrounds.
+- **Blue Deep** (`#12628f`, token `--primary-dark`): hover/pressed fill for solid blue buttons.
+- **Sky** (`#67c8f7`, token `--sky`): decorative accents only (footer icons, chart series, dark-mode text blue). Not used as a button fill anymore.
+- **Sky Blue Text** (`#0b5e83`): kept for price text and blue badge text on tints.
 
-### Secondary
-- **Blossom Pink** (`#f8b4d9`): the gradient's warm end and the system's only other named hue. Appears in the signature gradient, admin-role badges, and small accent moments — never as a standalone button fill.
-- **Blossom Pink Light** (`#ffe5f2`): tint background for pink-toned badges (e.g. the "digital" product badge, admin role).
-
-### Neutral
-- **Ink** (`#1e293b` light / `#e2e8f0` dark): primary text color; flips per theme via `--dark`.
-- **Slate** (`#5c6b7f` light / `#94a3b8` dark): secondary/muted text via `--gray`. The light-mode value is deliberately a touch darker than a plain slate-500 — the body's soft radial-gradient wash lightens the effective background enough in places that the more obvious `#64748b` dropped to 4.2:1, just under WCAG AA.
-- **Cloud Line** (`#dce8f0` light / `#2a3441` dark): borders and dividers via `--line`.
-- **Paper** (`#ffffff` light / `#1e293b` dark): card and surface background via `--surface`.
-- **Mist** (`#fafeff` light / `#16223a` dark): input field background via `--input-bg`.
-- **Harbor Navy** (`#1e293b` light / `#0b1220` dark): footer background via `--footer-bg` — deliberately its own token, not an alias of Ink, specifically so the footer can stay a fixed dark navy in both themes without being dragged along when Ink flips to a light color for dark mode.
+### Page & Neutral
+- **Page** (`#f2f9ff` light / `#0f172a` dark, token `--page-bg`): flat page background, same as the mobile screens. No radial washes.
+- **Ink** (`#1e293b` light / `#e2e8f0` dark): primary text via `--dark`. Navy `#12283a` is used for the cart count badge.
+- **Slate** (`#5c6b7f` light / `#94a3b8` dark): secondary text via `--gray`.
+- **Cloud Line** (`#dce8f0` light / `#2a3441` dark): borders via `--line` (same as mobile).
+- **Paper** (`#ffffff` light / `#1e293b` dark): cards and the navbar (solid, not translucent, since it stays pinned while scrolling).
+- **Mist** (`#fafeff` light / `#16223a` dark): input background via `--input-bg`.
+- **Harbor Navy** (`#1e293b` light / `#0b1220` dark): footer via `--footer-bg`.
+- **Heart** (`#e0475f`, token `--heart`): active favorite hearts, same red as mobile.
 
 ### Semantic (Status & Role)
-Fixed background/text pairs, reused verbatim across order-status badges (profile + admin) and user-role badges:
-- **Amber** (bg `#fff2cc` / text `#916f00`): Pending status; Superadmin role.
-- **Cyan** (bg `#d9f3fd` / text `#0b5e83`): Shipped status. The original `#218bc2` text was only 3.3:1 on this background (fails WCAG AA); Shipped now reuses the same Sky Blue Text token as Processing/Staff rather than introducing a second, separately-tuned dark blue.
-- **Green** (bg `#e6f4ea` / text `#1e7e34`): Delivered status; User role.
-- **Red** (bg `#fde8e6` / text `#c0392b`): Cancelled status; form/auth error banners.
-- Processing status and the Staff role both reuse Sky Blue Light / Sky Blue Text (`#0b5e83`) rather than a distinct hue.
+- **Amber** (bg `#fff2cc` / text `#916f00`): Pending status; Superadmin role; warning badges.
+- **Cyan** (bg `#d9f3fd` / text `#0b5e83`): Shipped status.
+- **Green** (bg `#e6f4ea` / text `#1e7e34`): Delivered status; User role; Digital Health product badge.
+- **Red** (bg `#fde8e6` / text `#c0392b`): Cancelled status; errors.
+- **Violet** (bg `#ede9fe` / text `#5b3fa8`): Admin role (replaced the old pink).
+- Processing status and the Staff role use Blue Tint / Sky Blue Text.
 
 ### Named Rules
-**The Gradient Reserve Rule.** The signature sky-to-pink gradient is a highlight, not a default. It appears only on the hero CTA, the closing CTA banner, avatars, and KPI icons — every other button, including every other primary action, is a solid Sky Blue fill. Diluting this to "gradient = important button" anywhere else breaks the rule's whole point: rarity is what makes it read as a deliberate signature rather than decoration.
+**The No-Gradient Rule.** Flat colors only, like the mobile app. `--gradient` still exists as a token name but holds solid `#1778ad`; don't reintroduce a multi-color gradient.
 
-**The Footer Independence Rule.** `--footer-bg` never reads from `--dark`/`--ink`, even though they hold the same hex value today. The footer is allowed to keep a fixed dark-navy identity in both light and dark mode; only the two theme-flipping neutral tokens (`--dark`, `--surface`) are allowed to swap.
+**The Footer Independence Rule.** `--footer-bg` never reads from `--dark`/`--ink`, so the footer keeps its dark navy in both themes.
 
-**The Ink-Text Rule.** No shade of Sky Blue passes 4.5:1 as text on a white or near-white surface (`#67c8f7` is 1.9:1, `#3fa8e0` is only 2.7:1). Use Ink for any text or icon color that sits on a light background, and reserve Sky Blue itself for fills, borders, and icons on non-text elements — unless the text specifically needs to keep a blue brand identity (e.g. price text), in which case use Sky Blue Text (`#0b5e83`, the same accessible dark-blue token used for Processing/Shipped status text) instead of dropping to Ink.
-
-Fixed under this rule (home/products/navbar/profile pass): `.signup-btn`/`.btn-success`, `.hero-btn-secondary`, and `.btn-outline-success` (→ Ink; the border/background carries the brand color instead of the text); `.nav-link.active`, `.login-btn:hover` (→ Ink, with the underline/pill-background hover treatment carrying the interactive feedback instead of a text-color change), and `.dropdown-item:hover`/`:focus` (→ Ink, background tint carries the feedback); `.filters-panel-reset` ("Clear All", shared between products.html and admin filter panels — was Sky Blue Deep at 2.66:1, → Ink); `.team-role` on the home page's team cards (→ Ink); `.mini-product-card p` (home page Featured Products price) and `.product-card .text-success` (products page price, all 45 cards) — both were raw Sky Blue at 1.88:1, → Sky Blue Text (`#0b5e83`) to keep price's blue accent while passing contrast.
-
-Fixed under this rule (checkout/cart/admin pass): `.btn-auth` — the checkout "Place Order" button, login/register submit, and settings' Save buttons — existed as **two separate copies** of the same class in `shop.css` and `auth.css` that had drifted into an identical bug (white text on solid Sky Blue, 1.9:1); both fixed to Ink. `.cart-item-price` (cart page) — same raw-Sky-Blue price bug as the home/products cards, → Sky Blue Text. Across `admin.css`: `.admin-nav a:hover`/`.active` (sidebar nav text → Ink, background tint/left border already signal state), `.filters-btn:hover`/`.active` and `.filter-tab:hover` (→ Ink), `.filter-tab.active` and `.filters-apply-btn` and `.add-product-btn` (white-on-solid-Sky-Blue → Ink, same pattern as `.signup-btn`), `.notif-view-all` (→ Ink), `.tdm-item.active` and `.bulk-action-bar` (Sky Blue Deep on Sky Blue Light → Ink), and `.stock-inline-adjust-btn` (both its resting and `:hover` states → Ink).
-
-A live browser contrast scan of the home and products pages (computed color vs. computed background on every text node) found zero remaining failures after the first pass. Checkout and admin required a different verification method since both gate on real Firebase auth this session had no credentials for: admin fixes were confirmed with an isolated HTML harness loading the actual `admin.css`/`style.css` against reconstructed markup for each fixed class (all render correctly); checkout/login/cart fixes were confirmed by adding a real item to cart and screenshotting login.html directly (both publicly reachable without auth). The scan/harness method also doesn't catch a class duplicated verbatim across two stylesheets that both need the same fix — `.btn-auth` in `shop.css` and `auth.css` is a real example of this from this pass — so a future contrast sweep should grep for the fixed selector across *all* CSS files, not just the one the current page happens to load.
+**The Brand-Text Rule** (replaces the old Ink-Text Rule). Text on a solid `--primary` fill is white. Brand-blue text uses `--primary-text`. The old rule (never put text in a sky-blue shade) still holds for `#67c8f7` on light backgrounds.
 
 ## Typography
 
@@ -201,19 +189,19 @@ Flat at rest, soft glow on interaction. Storefront cards (`.product-card`, `.rev
 
 ## Components
 
-Modes note: storefront/auth components (Persuade-adjacent — driving signup, purchase, trust) lean into hover motion and the gradient signature; admin components (Operate mode) are calmer and denser, favoring flat borders and information density over expression.
+Modes note: storefront/auth components (Persuade-adjacent — driving signup, purchase, trust) lean into hover motion; admin components (Operate mode) are calmer and denser, favoring flat borders and information density over expression.
 
 ### Buttons
 - **Shape:** pill (`border-radius: 999px`) for every button variant without exception.
-- **Primary (`.signup-btn`, `.btn-success`, `.add-product-btn`, `.btn-auth`, `.filters-apply-btn`, `.filter-tab.active`):** solid Sky Blue fill, Ink text (fixed under the Ink-Text Rule — white text here is only 1.9:1), `font-weight: 600`; hover deepens to Sky Blue Deep with a `translateY(-2px)` lift and a Sky-Blue-tinted glow.
-- **Gradient / Hero (`.hero-btn-primary`, CTA banner button):** the reserved gradient fill (see The Gradient Reserve Rule), larger footprint (`height: clamp(46px, 7vh, 58px)`), white text, hover lifts `-4px` with a stronger glow.
-- **Outline / Secondary (`.hero-btn-secondary`, `.btn-outline-success`):** transparent background, 1.5–2px Sky Blue border, Ink text — both were originally Sky Blue text and fixed under the Ink-Text Rule (`.btn-outline-success`, used on profile.html, was the last one caught); hover fills with Sky Blue Light.
+- **Primary (`.signup-btn`, `.btn-success`, `.add-product-btn`, `.btn-auth`, `.filters-apply-btn`, `.filter-tab.active`):** solid Brand Blue fill, white text (4.9:1), `font-weight: 600`; hover deepens to Blue Deep with a `translateY(-2px)` lift and a blue-tinted glow.
+- **Hero (`.hero-btn-primary`, CTA banner button):** solid brand blue (white on the CTA banner), larger footprint (`height: clamp(46px, 7vh, 58px)`), white text, hover lifts `-4px` with a stronger glow.
+- **Outline / Secondary (`.hero-btn-secondary`, `.btn-outline-success`):** transparent background, 1.5–2px Brand Blue border, Ink text; hover fills with Blue Tint.
 - **Icon-only (`.icon-btn`, `.row-action-btn`):** no border/background at rest, Slate icon color, turns Sky Blue on hover (or Red for destructive `.icon-btn.danger`).
 
 ### Chips / Badges
 - **Status badges (`.status-badge`):** pill shape, `3px 10px` padding, `700` weight, `0.75rem` — background/text drawn from the fixed Semantic palette above, one pair per order status.
 - **Role badges (`.role-badge`):** same pill shape, uppercase with `0.4px` letter-spacing, reusing the same Semantic colors keyed to role rather than status.
-- **Category badges (`.badge-mobility`/`.badge-wellness`/`.badge-digital`):** pill, smaller (`0.72rem`), same Semantic color logic — note the admin dashboard's category legend uses a *third*, distinct amber hex (`#f6b93b`) for the "digital" category that the storefront's `.badge-digital` does not share (it uses Blossom Pink Light instead); this is an existing inconsistency in the codebase, not a documented rule — don't propagate it into new work without reconciling which hex is canonical.
+- **Category badges (`.badge-mobility`/`.badge-wellness`/`.badge-digital`):** pill, smaller (`0.72rem`), same Semantic color logic — note the admin dashboard's category legend uses a *third*, distinct amber hex (`#f6b93b`) for the "digital" category that the storefront's `.badge-digital` does not share (it uses the Green pair instead); this is an existing inconsistency, not a documented rule.
 
 ### Cards / Containers
 - **Corner style:** `18px` for storefront content cards, `16px` for admin KPI/panel cards.
@@ -239,12 +227,12 @@ A right-edge slide-over (`400px`, `right: -420px → 0` on `.open`) used in Admi
 ### Do:
 - **Do** keep every interactive control (buttons, badges, search bars, steppers) fully pilled at `999px`.
 - **Do** tint every shadow toward the brand blue (`rgba(50, 116, 153, ...)`); never use a neutral gray or pure-black shadow on a card.
-- **Do** reserve the sky-to-pink gradient for hero-tier moments (main hero CTA, CTA banner, avatars, KPI icons) — one or two per screen at most.
+- **Do** keep colors flat and use the brand blue `#1778ad` with white text for primary actions, matching the mobile app.
 - **Do** keep `--footer-bg` independent from `--dark`/Ink even where the hex values currently coincide, so dark mode can't accidentally lighten the footer.
 - **Do** carry the same Sky Blue value unchanged between light and dark mode; only neutral surface/text tokens are allowed to flip.
 
 ### Don't:
-- **Don't** use the gradient as a default/frequent button fill — that's what Sky Blue solid is for.
+- **Don't** bring back pink or multi-color gradients.
 - **Don't** introduce a second typeface; Poppins carries every role from hero to micro-label today.
 - **Don't** give admin/Operate-mode cards a hover lift — that motion is a storefront/Persuade-mode signature, and admin panels stay deliberately flat and calm.
 - **Don't** invent a new status or role color pair without checking the existing Semantic set first — five status colors and four role colors already exist and are reused verbatim across web and (via shared Firestore data) mobile.

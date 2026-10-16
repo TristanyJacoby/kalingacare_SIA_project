@@ -260,8 +260,8 @@ const CATEGORY_LABELS = {
   digital: "Digital Health",
 };
 const CATEGORY_COLORS = {
-  mobility: "#67c8f7",
-  wellness: "#f8b4d9",
+  mobility: "#1778ad",
+  wellness: "#67c8f7",
   digital: "#f6b93b",
 };
 const MONTH_LABELS = [
@@ -633,7 +633,7 @@ function renderDashboardCharts(orders, products, productCategoryOf) {
       datasets: [
         {
           data: monthCounts,
-          backgroundColor: "#67c8f7",
+          backgroundColor: "#1778ad",
           borderRadius: 8,
           maxBarThickness: 38,
         },
@@ -666,7 +666,7 @@ function renderDashboardCharts(orders, products, productCategoryOf) {
       datasets: [
         {
           data: dowCounts,
-          backgroundColor: "#f8b4d9",
+          backgroundColor: "#67c8f7",
           borderRadius: 8,
           maxBarThickness: 38,
         },

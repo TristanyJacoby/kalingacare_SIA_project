@@ -14,6 +14,7 @@ import {
 import { getRates, convertAndFormat, populateCurrencySelect } from "./currency.js";
 import { startOnlinePayment } from "./payments.js";
 import { sendVerificationEmail, TooSoonError } from "./verification.js";
+import { initAddressPicker } from "./address-map.js";
 
 const authGate = document.getElementById("authGate");
 const staffGate = document.getElementById("staffGate");
@@ -93,7 +94,9 @@ document
   .addEventListener("change", updateConvertedDisplay);
 
 let currentUser = null;
-let savedAddressCoords = { lat: null, lng: null };
+// Exact delivery pin for this order: starts from the saved address and
+// changes whenever the buyer moves the pin on the checkout map.
+let deliveryCoords = { lat: null, lng: null };
 
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
@@ -149,19 +152,28 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById("ckName").value = user.displayName || "";
   document.getElementById("ckEmail").value = user.email || "";
 
-  // Pre-fill from the saved delivery address on the user's profile, if any.
-  getDoc(doc(db, "users", user.uid)).then((snap) => {
-    const savedAddress = snap.exists() ? snap.data().savedAddress : null;
-    if (savedAddress) {
-      document.getElementById("ckRecipient").value =
-        savedAddress.recipient || "";
-      document.getElementById("ckAddress").value = savedAddress.address || "";
-      document.getElementById("ckPhone").value = savedAddress.phone || "";
-      savedAddressCoords = {
-        lat: savedAddress.lat ?? null,
-        lng: savedAddress.lng ?? null,
-      };
-    }
+  // Pre-fill from the saved delivery address (Settings), if any. Editing
+  // it here changes only this order, not the saved address.
+  const savedAddress = userData.savedAddress;
+  if (savedAddress) {
+    document.getElementById("ckRecipient").value = savedAddress.recipient || "";
+    document.getElementById("ckAddress").value = savedAddress.address || "";
+    document.getElementById("ckPhone").value = savedAddress.phone || "";
+    deliveryCoords = {
+      lat: savedAddress.lat ?? null,
+      lng: savedAddress.lng ?? null,
+    };
+  }
+
+  initAddressPicker({
+    mapEl: document.getElementById("ckAddressMap"),
+    searchContainer: document.getElementById("ckAddressSearch"),
+    addressInput: document.getElementById("ckAddress"),
+    lat: deliveryCoords.lat,
+    lng: deliveryCoords.lng,
+    onChange: (pos) => {
+      deliveryCoords = pos;
+    },
   });
 });
 
@@ -264,8 +276,8 @@ document
           address: document.getElementById("ckAddress").value.trim(),
           phone: document.getElementById("ckPhone").value.trim(),
           paymentMethod,
-          lat: savedAddressCoords.lat,
-          lng: savedAddressCoords.lng,
+          lat: deliveryCoords.lat,
+          lng: deliveryCoords.lng,
         },
         // Online orders start unpaid; only the server marks them "paid"
         // after PayMongo confirms the payment.

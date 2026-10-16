@@ -10,7 +10,7 @@ import {
   EmailAuthProvider,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { loadGoogleMaps, GOOGLE_MAPS_API_KEY, DEMO_MAP_ID } from "./site.js";
+import { initAddressPicker } from "./address-map.js";
 import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
 
 const authGate = document.getElementById("authGate");
@@ -23,137 +23,10 @@ function showMsg(el, message, isError = true) {
   if (!isError) setTimeout(() => el.classList.remove("show"), 3000);
 }
 
-// AdvancedMarkerElement's .position can come back as either a plain
-// {lat, lng} literal or a google.maps.LatLng-style object with lat()/lng()
-// methods, depending on how it was set — this normalizes either shape.
-function toLatLngLiteral(pos) {
-  if (typeof pos.lat === "function") return { lat: pos.lat(), lng: pos.lng() };
-  return { lat: pos.lat, lng: pos.lng };
-}
-
-/* ===== Address map picker =====
-   Drag the marker or click anywhere on the map to set the exact delivery
-   location; a search box on top uses the Places Autocomplete widget to
-   jump straight to an address. Either action reverse-geocodes the pin's
-   position into the address textarea and updates currentLat/currentLng,
-   which get saved alongside the text address when the form is submitted.
-
-   Uses AdvancedMarkerElement + PlaceAutocompleteElement (Google's current,
-   non-deprecated APIs as of this writing) rather than the older Marker/
-   Autocomplete classes — see the "marker" library import and Map ID below,
-   both of which AdvancedMarkerElement specifically requires and the older
-   Marker class didn't. */
+/* ===== Address map picker (js/address-map.js) =====
+   The pin's coordinates are saved alongside the text address. */
 let currentLat = null;
 let currentLng = null;
-let map = null;
-let marker = null;
-let geocoder = null;
-
-async function initAddressMap(savedLat, savedLng) {
-  const mapEl = document.getElementById("addressMap");
-
-  if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === "YOUR_GOOGLE_MAPS_API_KEY") {
-    mapEl.innerHTML = `
-      <div class="map-placeholder">
-        <i class="bi bi-map" style="font-size:1.8rem; margin-bottom:8px;"></i>
-        Map picker needs a Google Maps API key.<br />
-        Add one in <code>js/site.js</code> (GOOGLE_MAPS_API_KEY) to enable it.
-      </div>`;
-    return;
-  }
-
-  let googleMaps, AdvancedMarkerElement, PlaceAutocompleteElement, Geocoder;
-  try {
-    googleMaps = await loadGoogleMaps();
-    ({ AdvancedMarkerElement } = await googleMaps.importLibrary("marker"));
-    ({ PlaceAutocompleteElement } = await googleMaps.importLibrary("places"));
-    ({ Geocoder } = await googleMaps.importLibrary("geocoding"));
-  } catch (err) {
-    console.error("KalingaCare Maps error:", err);
-    mapEl.innerHTML = `<div class="map-placeholder">Couldn't load the map right now.</div>`;
-    return;
-  }
-
-  // Default center: the saved pin if there is one, otherwise Metro Manila.
-  const center = {
-    lat: savedLat ?? 14.5995,
-    lng: savedLng ?? 120.9842,
-  };
-  currentLat = savedLat ?? null;
-  currentLng = savedLng ?? null;
-
-  map = new googleMaps.Map(mapEl, {
-    center,
-    zoom: savedLat ? 16 : 11,
-    mapId: DEMO_MAP_ID, // required for AdvancedMarkerElement to render at all
-    streetViewControl: false,
-    mapTypeControl: false,
-  });
-
-  marker = new AdvancedMarkerElement({
-    position: center,
-    map,
-    gmpDraggable: true,
-    title: "Drag to set the exact delivery location",
-  });
-
-  geocoder = new Geocoder();
-
-  async function updateFromPosition(latLngLiteral) {
-    currentLat = latLngLiteral.lat;
-    currentLng = latLngLiteral.lng;
-    try {
-      const result = await geocoder.geocode({ location: latLngLiteral });
-      if (result.results[0]) {
-        document.getElementById("addrAddress").value = result.results[0].formatted_address;
-      }
-    } catch {
-      // Reverse geocoding failing isn't critical — the pin position is
-      // still saved even if we can't turn it into text.
-    }
-  }
-
-  marker.addListener("dragend", () => updateFromPosition(toLatLngLiteral(marker.position)));
-
-  map.addListener("click", (e) => {
-    const pos = toLatLngLiteral(e.latLng);
-    marker.position = pos;
-    updateFromPosition(pos);
-  });
-
-  // Places Autocomplete widget — this is a custom <gmp-place-autocomplete>
-  // element (not a plain <input> the old Autocomplete class attached to),
-  // so it replaces the placeholder container in the HTML rather than
-  // binding to an existing input.
-  const placeAutocomplete = new PlaceAutocompleteElement({
-    includedRegionCodes: ["ph"],
-  });
-  placeAutocomplete.id = "addressSearchBox";
-  placeAutocomplete.className = "map-search-input";
-  const searchContainer = document.getElementById("addressSearchBoxContainer");
-  searchContainer.innerHTML = "";
-  searchContainer.appendChild(placeAutocomplete);
-
-  placeAutocomplete.addEventListener("gmp-select", async ({ placePrediction }) => {
-    try {
-      const place = placePrediction.toPlace();
-      await place.fetchFields({ fields: ["location", "formattedAddress"] });
-      if (!place.location) return;
-      const pos = toLatLngLiteral(place.location);
-      map.setCenter(pos);
-      map.setZoom(16);
-      marker.position = pos;
-      currentLat = pos.lat;
-      currentLng = pos.lng;
-      if (place.formattedAddress) {
-        document.getElementById("addrAddress").value = place.formattedAddress;
-      }
-    } catch {
-      // If fetching the selected place's details fails, the map/marker
-      // stay wherever they were — the user can still drag/click manually.
-    }
-  });
-}
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -183,7 +56,19 @@ onAuthStateChanged(auth, async (user) => {
     savedLat = userData.savedAddress.lat ?? null;
     savedLng = userData.savedAddress.lng ?? null;
   }
-  initAddressMap(savedLat, savedLng);
+  currentLat = savedLat;
+  currentLng = savedLng;
+  initAddressPicker({
+    mapEl: document.getElementById("addressMap"),
+    searchContainer: document.getElementById("addressSearchBoxContainer"),
+    addressInput: document.getElementById("addrAddress"),
+    lat: savedLat,
+    lng: savedLng,
+    onChange: (pos) => {
+      currentLat = pos.lat;
+      currentLng = pos.lng;
+    },
+  });
 
   // Notification preferences (default: email on, promos off)
   const prefs = userData.preferences || {};

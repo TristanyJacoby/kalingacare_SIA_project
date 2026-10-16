@@ -261,7 +261,14 @@
                 />
               </div>
               <div class="mb-3">
-                <label class="form-label">Delivery Address</label>
+                <label class="form-label" for="ckAddress">Delivery Address</label>
+                <p class="checkout-map-hint" id="ckMapHint">
+                  Search for the address, or drag the pin / tap the map to mark
+                  the exact spot. The address below fills in automatically, and
+                  you can still edit it (add a unit number, landmark, etc.).
+                </p>
+                <div id="ckAddressSearch"></div>
+                <div id="ckAddressMap" class="address-map" aria-describedby="ckMapHint"></div>
                 <textarea
                   class="form-control"
                   id="ckAddress"
@@ -338,7 +345,7 @@
                 <label class="form-label" for="ckCurrency">
                   Show total in
                 </label>
-                <select class="form-control" id="ckCurrency">
+                <select class="summary-select" id="ckCurrency">
                   <!-- Populated from js/currency.js's COUNTRY_CURRENCY. -->
                 </select>
                 <p class="text-muted mt-1 mb-0" style="font-size: 0.78rem">
@@ -354,6 +361,48 @@
 
     <footer>
       <div class="container">
+        <div class="row gy-4">
+          <div class="col-lg-4">
+            <h3 class="fw-bold">KalingaCare</h3>
+            <p>Care Beyond Borders</p>
+            <p>
+              Helping Overseas Filipino Workers care for their loved ones
+              through trusted healthcare products.
+            </p>
+          </div>
+          <div class="col-sm-6 col-lg-4">
+            <h4>Quick Links</h4>
+            <ul class="list-unstyled footer-links">
+              <li><a href="index.html">Home</a></li>
+              <li><a href="products.html">Products</a></li>
+              <li><a href="index.html#history">Our Story</a></li>
+              <li><a href="index.html#team">Meet the Team</a></li>
+              <li><a href="index.html#contact">Contact</a></li>
+            </ul>
+          </div>
+          <div class="col-sm-6 col-lg-4">
+            <h4>Contact Us</h4>
+            <ul class="list-unstyled footer-contact">
+              <li>
+                <i class="bi bi-envelope-fill" aria-hidden="true"></i>
+                <a href="mailto:kalingacaresupport@gmail.com">kalingacaresupport@gmail.com</a>
+              </li>
+              <li>
+                <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                <span>938 Aurora Blvd, Cubao, Quezon City, Metro Manila, Philippines</span>
+              </li>
+              <li>
+                <i class="bi bi-clock-fill" aria-hidden="true"></i>
+                <span>Mon&ndash;Sat, 9:00 AM &ndash; 6:00 PM (PH time)</span>
+              </li>
+              <li>
+                <i class="bi bi-chat-dots-fill" aria-hidden="true"></i>
+                <a href="index.html#contact">Send us a message</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <hr class="border-light" />
         <div class="text-center">
           <p class="mb-0">&copy; 2026 KalingaCare. All Rights Reserved.</p>
         </div>

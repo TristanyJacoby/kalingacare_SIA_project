@@ -4,7 +4,9 @@
 =========================== */
 
 .hero h1 {
-  font-size: clamp(1rem, 4.45vw, 4rem);
+  /* Floor raised from 1rem: at phone widths 4.45vw was ~16px, smaller
+     than the paragraph under it. */
+  font-size: clamp(2rem, 4.45vw, 4rem);
   font-weight: 700;
   line-height: 1.1;
   color: var(--dark);
@@ -12,7 +14,7 @@
   margin-top: 20px;
 }
 .hero h1 span {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 .hero p {
   max-width: 500px;
@@ -78,7 +80,7 @@
 .hero-rating-value {
   font-size: 1.75rem;
   font-weight: 500;
-  color: var(--primary);
+  color: var(--primary-text);
   margin: 0;
 }
 
@@ -186,7 +188,7 @@ h2 {
   gap: 12px;
 }
 .about-list i {
-  color: var(--primary);
+  color: var(--primary-text);
   margin-right: 8px;
 }
 .about-stats {
@@ -206,7 +208,7 @@ h2 {
   display: block;
   font-size: 2rem;
   font-weight: 800;
-  color: var(--primary);
+  color: var(--primary-text);
   margin: 0;
 }
 .stat-card p {
@@ -359,9 +361,7 @@ h2 {
   }
 }
 
-/* Services — no background override here on purpose: letting the body's
-   soft gradient wash show through avoids a hard color seam when scrolling
-   past this section. */
+/* Services — no background override: the page's flat pale blue shows through. */
 .steps-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -372,15 +372,8 @@ h2 {
   text-align: center;
   padding: 30px 20px;
   border-radius: 18px;
-  background:
-    radial-gradient(circle at 20% 0%, rgba(125, 211, 252, 0.15), transparent 60%),
-    #fafeff;
+  background: var(--surface);
   border: 1px solid var(--line);
-}
-[data-theme="dark"] .step-card {
-  background:
-    radial-gradient(circle at 20% 0%, rgba(103, 200, 247, 0.1), transparent 60%),
-    var(--surface);
 }
 .step-icon {
   width: 62px;
@@ -463,18 +456,24 @@ h2 {
 }
 .badge-mobility { background: var(--primary-light); color: #0b5e83; }
 .badge-wellness { background: #d9f3fd; color: #0b5e83; }
-.badge-digital { background: var(--pink-light); color: #8d4c7b; }
+.badge-digital { background: #e6f4ea; color: #1e7e34; }
 
-/* CTA */
+/* CTA — solid brand blue, sitting flush against the footer (no white
+   band between them; see the footer override below). */
 .cta-banner {
-  background: var(--gradient);
-  color: #12283a;
+  background: var(--primary);
+  color: #fff;
 }
-.cta-banner h2 { color: #12283a; }
-.cta-banner p { color: #1e3a4f; margin-bottom: 1.5rem; }
+.cta-banner h2 { color: #fff; }
+.cta-banner p { color: #e2f2fb; margin-bottom: 1.5rem; }
 .cta-banner .hero-btn-primary {
   background: #fff;
-  color: #1e293b;
+  color: var(--primary);
+}
+/* home.css only loads on index.html, where the CTA banner is the last
+   thing before the footer. */
+footer {
+  margin-top: 0;
 }
 .cta-banner .hero-btn-primary:hover {
   box-shadow: 0 12px 30px rgba(0,0,0,0.15);
@@ -525,8 +524,217 @@ h2 {
     object-fit: cover;
     border-radius: 20px;
     filter: drop-shadow(0 20px 40px rgba(var(--primary-rgb), 0.2))
-      drop-shadow(0 15px 30px rgba(var(--pink-rgb), 0.18));
+      drop-shadow(0 15px 30px rgba(var(--primary-rgb), 0.12));
     -webkit-mask-image: none;
     mask-image: none;
+  }
+}
+
+/* ============ COMPANY HISTORY (Our Story) ============ */
+.history-subtitle {
+  max-width: 640px;
+  margin: 0.75rem auto 0;
+  color: var(--gray);
+}
+.history-timeline {
+  list-style: none;
+  margin: 2.5rem auto 0;
+  padding: 0;
+  max-width: 820px;
+  position: relative;
+}
+/* The vertical line behind the year markers. */
+.history-timeline::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 44px;
+  width: 2px;
+  background: var(--line);
+}
+.history-item {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 20px;
+  align-items: start;
+  position: relative;
+}
+.history-item + .history-item {
+  margin-top: 20px;
+}
+.history-year {
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  margin-top: 14px;
+}
+.history-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px 22px;
+}
+.history-card h3 {
+  font-size: 1.1rem;
+  color: var(--dark);
+  margin-bottom: 6px;
+}
+.history-card p {
+  color: var(--gray);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .history-timeline::before {
+    left: 30px;
+  }
+  .history-item {
+    grid-template-columns: 62px 1fr;
+    gap: 12px;
+  }
+  .history-year {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+  }
+}
+
+/* ============ CONTACT ============ */
+.contact-section .section-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: start;
+}
+.contact-intro h2 {
+  margin: 0.75rem 0;
+}
+.contact-intro > p {
+  color: var(--gray);
+  max-width: 460px;
+}
+.contact-details {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  display: grid;
+  gap: 16px;
+}
+.contact-details li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  color: var(--dark);
+  font-size: 0.92rem;
+}
+.contact-details i {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-light);
+  color: var(--primary-text);
+}
+.contact-details span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+.contact-details a {
+  color: var(--primary-text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.contact-form {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: clamp(20px, 3vw, 32px);
+  display: grid;
+  gap: 16px;
+}
+.contact-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.contact-field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: 6px;
+}
+.contact-optional {
+  font-weight: 400;
+  color: var(--gray);
+}
+.contact-field input,
+.contact-field textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: var(--dark);
+  background: var(--input-bg);
+}
+.contact-field textarea {
+  resize: vertical;
+  min-height: 130px;
+}
+.contact-field input:focus,
+.contact-field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
+}
+.contact-hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.contact-status {
+  margin: 0;
+  font-size: 0.88rem;
+  min-height: 1.2em;
+}
+.contact-status:empty {
+  display: none;
+}
+.contact-status.is-success { color: #1e7e34; }
+.contact-status.is-error { color: #c0392b; }
+.contact-form .pill-btn {
+  justify-self: start;
+}
+
+@media (max-width: 900px) {
+  .contact-section .section-container {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .contact-row {
+    grid-template-columns: 1fr;
+  }
+  .contact-form .pill-btn {
+    justify-self: stretch;
   }
 }
