@@ -9,6 +9,7 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
+  sendPasswordResetEmail,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   doc,
@@ -55,6 +56,7 @@ const COPY = {
 // Toggle between the login and signup panels (used on both pages so a user
 // can switch modes without a full page reload).
 window.toggleMode = function () {
+  showReset(false);
   stage.classList.toggle("signup-active");
 
   setTimeout(() => {
@@ -112,12 +114,93 @@ loginForm.addEventListener("submit", async (e) => {
   }
 });
 
+/* ===== FORGOT PASSWORD =====
+   Firebase emails a link to its own reset page; after choosing a new
+   password the user is sent back to the login page. For a Google-only
+   account this adds a password, so they can also sign in with email.
+   The message is the same whether or not the email has an account, so
+   the form can't be used to find out who is registered. */
+const resetSection = document.getElementById("resetSection");
+const resetForm = document.getElementById("resetForm");
+const resetError = document.getElementById("resetError");
+const resetNotice = document.getElementById("resetNotice");
+
+// Firebase only accepts authorized domains as the return address, so
+// previews fall back to the live site; local development keeps localhost.
+const RESET_RETURN_URL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.origin)
+  ? `${window.location.origin}/login.html`
+  : "https://kalingacare-drab.vercel.app/login.html";
+
+function showReset(show) {
+  if (!resetSection) return;
+  resetSection.classList.toggle("hidden", !show);
+  loginSection.classList.toggle("hidden", show);
+  if (show) {
+    clearError(resetError);
+    resetNotice.classList.remove("show");
+    resetForm.hidden = false;
+    document.getElementById("resetEmail").value =
+      document.getElementById("loginEmail").value.trim();
+    document.getElementById("resetEmail").focus();
+  }
+}
+
+document.getElementById("forgotPasswordLink")?.addEventListener("click", () => {
+  if (stage.classList.contains("signup-active")) {
+    toggleMode();
+    setTimeout(() => showReset(true), 400);
+  } else {
+    showReset(true);
+  }
+});
+document.getElementById("backToSignIn")?.addEventListener("click", () => {
+  showReset(false);
+  document.getElementById("loginEmail").focus();
+});
+
+resetForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  clearError(resetError);
+  const email = document.getElementById("resetEmail").value.trim();
+  const submitBtn = resetForm.querySelector(".btn-auth");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Sending...";
+  try {
+    await sendPasswordResetEmail(auth, email, { url: RESET_RETURN_URL });
+    resetForm.hidden = true;
+    resetNotice.textContent = "";
+    resetNotice.append(
+      "If an account exists for ",
+      Object.assign(document.createElement("strong"), { textContent: email }),
+      ", a reset link is on its way. Check your inbox (and spam folder), then come back and sign in with your new password.",
+    );
+    resetNotice.classList.add("show");
+  } catch (err) {
+    // auth/user-not-found only appears if email enumeration protection
+    // is off; show the same message as success so it reveals nothing.
+    if (err.code === "auth/user-not-found") {
+      resetForm.hidden = true;
+      resetNotice.textContent = `If an account exists for ${email}, a reset link is on its way.`;
+      resetNotice.classList.add("show");
+    } else if (err.code === "auth/too-many-requests") {
+      showError(resetError, "Too many attempts. Please wait a few minutes and try again.");
+    } else {
+      showError(resetError, friendlyAuthError(err.code));
+    }
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Send Reset Link";
+  }
+});
+
 /* ===== REGISTER ===== */
 const signupForm = document.getElementById("signupForm");
 const signupError = document.getElementById("signupError");
 
 const signupCountrySelect = document.getElementById("signupCountry");
-if (signupCountrySelect) populateCountrySelect(signupCountrySelect);
+if (signupCountrySelect) {
+  populateCountrySelect(signupCountrySelect, "", "Country you live in");
+}
 
 signupForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -126,6 +209,10 @@ signupForm.addEventListener("submit", async (e) => {
   const fullName = document.getElementById("signupName").value.trim();
   const email = document.getElementById("signupEmail").value.trim();
   const country = signupCountrySelect ? signupCountrySelect.value : "";
+  if (signupCountrySelect && !country) {
+    showError(signupError, "Please choose the country you live in.");
+    return;
+  }
   const password = document.getElementById("signupPassword").value;
   const confirmPassword = document.getElementById(
     "signupConfirmPassword",
@@ -271,7 +358,7 @@ function friendlyAuthError(code) {
     case "auth/user-not-found":
     case "auth/wrong-password":
     case "auth/invalid-credential":
-      return "Incorrect email or password.";
+      return "Incorrect email or password. If you signed up with Google, use Continue with Google, or choose \"Forgot password?\" to set a password.";
     case "auth/email-already-in-use":
       return "An account already exists with this email.";
     case "auth/weak-password":

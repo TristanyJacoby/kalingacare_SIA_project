@@ -7,7 +7,11 @@ import {
   updateProfile,
   updatePassword,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  linkWithCredential,
+  sendPasswordResetEmail,
   EmailAuthProvider,
+  GoogleAuthProvider,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { initAddressPicker } from "./address-map.js";
@@ -124,10 +128,32 @@ document.getElementById("addressForm").addEventListener("submit", async (e) => {
   }
 });
 
-/* ===== Change password =====
-   Firebase requires a "recent" login for sensitive account changes, so we
-   re-authenticate with the current password first before updatePassword()
-   is allowed to succeed. */
+/* ===== Change password / Set a password =====
+   Accounts created with Google have no password. For them the card turns
+   into "Set a Password": the new password is linked to the same account,
+   so they can sign in with Google OR email + password afterwards.
+   Everyone else changes it the usual way. Firebase requires a recent
+   login for both, so we re-authenticate first (current password, or the
+   Google popup for Google-only accounts). */
+function hasPassword(user) {
+  return user.providerData.some((p) => p.providerId === "password");
+}
+
+function setPasswordMode(user) {
+  const setMode = !hasPassword(user);
+  document.getElementById("passwordTitle").textContent = setMode ? "Set a Password" : "Change Password";
+  document.getElementById("setPasswordIntro").hidden = !setMode;
+  document.getElementById("currentPasswordField").hidden = setMode;
+  document.getElementById("currentPassword").required = !setMode;
+  document.getElementById("passwordForgotRow").hidden = setMode;
+  document.getElementById("passwordSubmit").textContent = setMode ? "Set Password" : "Update Password";
+  return setMode;
+}
+
+onAuthStateChanged(auth, (user) => {
+  if (user) setPasswordMode(user);
+});
+
 document.getElementById("passwordForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errorEl = document.getElementById("passwordError");
@@ -135,11 +161,14 @@ document.getElementById("passwordForm").addEventListener("submit", async (e) => 
   errorEl.classList.remove("show");
   successEl.classList.remove("show");
 
+  const user = auth.currentUser;
+  const setMode = !hasPassword(user);
   const currentPassword = document.getElementById("currentPassword").value;
   const newPassword = document.getElementById("newPassword").value;
   const confirmNewPassword = document.getElementById("confirmNewPassword").value;
   const form = e.target;
-  const submitBtn = form.querySelector(".btn-auth");
+  const submitBtn = document.getElementById("passwordSubmit");
+  const idleText = submitBtn.textContent;
 
   if (newPassword !== confirmNewPassword) {
     showMsg(errorEl, "New passwords don't match.");
@@ -147,25 +176,71 @@ document.getElementById("passwordForm").addEventListener("submit", async (e) => 
   }
 
   submitBtn.disabled = true;
-  submitBtn.textContent = "Updating...";
+  submitBtn.textContent = setMode ? "Setting..." : "Updating...";
 
   try {
-    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
-    await reauthenticateWithCredential(auth.currentUser, credential);
-    await updatePassword(auth.currentUser, newPassword);
-    form.reset();
-    showMsg(successEl, "Password updated.", false);
+    if (setMode) {
+      const credential = EmailAuthProvider.credential(user.email, newPassword);
+      try {
+        await linkWithCredential(user, credential);
+      } catch (err) {
+        if (err.code !== "auth/requires-recent-login") throw err;
+        // Signed in a while ago: confirm with Google, then try again.
+        await reauthenticateWithPopup(user, new GoogleAuthProvider());
+        await linkWithCredential(user, credential);
+      }
+      form.reset();
+      setPasswordMode(auth.currentUser);
+      showMsg(successEl, "Password set. You can now sign in with your email and this password, or with Google.", false);
+    } else {
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      form.reset();
+      showMsg(successEl, "Password updated.", false);
+    }
   } catch (err) {
     if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
       showMsg(errorEl, "Current password is incorrect.");
     } else if (err.code === "auth/weak-password") {
       showMsg(errorEl, "New password should be at least 6 characters.");
+    } else if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
+      showMsg(errorEl, "Please confirm with Google to set your password.");
+    } else if (err.code === "auth/provider-already-linked" || err.code === "auth/credential-already-in-use") {
+      setPasswordMode(auth.currentUser);
+      showMsg(errorEl, "This account already has a password. Use Change Password instead.");
     } else {
-      showMsg(errorEl, "Couldn't update password. Please try again.");
+      showMsg(errorEl, "Couldn't save the password. Please try again.");
     }
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = "Update Password";
+    submitBtn.textContent = idleText;
+  }
+});
+
+// Forgot the current password while signed in: email a reset link.
+document.getElementById("sendResetLinkBtn").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  const errorEl = document.getElementById("passwordError");
+  const successEl = document.getElementById("passwordSuccess");
+  errorEl.classList.remove("show");
+  successEl.classList.remove("show");
+  btn.disabled = true;
+  try {
+    const returnUrl = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(window.location.origin)
+      ? `${window.location.origin}/login.html`
+      : "https://kalingacare-drab.vercel.app/login.html";
+    await sendPasswordResetEmail(auth, auth.currentUser.email, { url: returnUrl });
+    showMsg(successEl, `Reset link sent to ${auth.currentUser.email}.`, false);
+  } catch (err) {
+    showMsg(
+      errorEl,
+      err.code === "auth/too-many-requests"
+        ? "Too many attempts. Please wait a few minutes and try again."
+        : "Couldn't send the reset link. Please try again.",
+    );
+  } finally {
+    btn.disabled = false;
   }
 });
 
