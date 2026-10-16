@@ -136,8 +136,14 @@ function mount() {
   const root = document.createElement("div");
   root.className = "kali-root";
   root.innerHTML = `
-    <button type="button" class="kali-fab" aria-label="Chat with Kali, the shopping assistant" aria-expanded="false" aria-controls="kaliPanel">
+    <div class="kali-hint" id="kaliHint" hidden>
+      <strong>Hi! I'm Kali.</strong>
+      Ask me about products, ordering or delivery.
+      <button type="button" class="kali-hint-close" aria-label="Dismiss"><i class="bi bi-x" aria-hidden="true"></i></button>
+    </div>
+    <button type="button" class="kali-fab" aria-label="Ask Kali, the AI shopping assistant" aria-expanded="false" aria-controls="kaliPanel">
       <i class="bi bi-chat-heart-fill" aria-hidden="true"></i>
+      <span class="kali-fab-label" aria-hidden="true">Ask Kali</span>
     </button>
     <section class="kali-panel" id="kaliPanel" role="dialog" aria-label="Kali shopping assistant" hidden>
       <header class="kali-header">
@@ -171,7 +177,48 @@ function mount() {
     starters.appendChild(b);
   });
 
+  // First visit only: a short hint so people know the button is an AI
+  // helper. Remembered per browser; storage failing just means it shows again.
+  const HINT_KEY = "kalingacare_kali_hint_seen";
+  const hint = root.querySelector(".kali-hint");
+  function hideHint() {
+    hint.hidden = true;
+    try {
+      localStorage.setItem(HINT_KEY, "1");
+    } catch {}
+  }
+  let hintSeen = false;
+  try {
+    hintSeen = localStorage.getItem(HINT_KEY) === "1";
+  } catch {}
+  if (!hintSeen) {
+    setTimeout(() => {
+      if (!panel.hidden) return;
+      hint.hidden = false;
+      setTimeout(hideHint, 9000);
+    }, 2000);
+  }
+  hint.addEventListener("click", (e) => {
+    hideHint();
+    if (!e.target.closest(".kali-hint-close")) setOpen(true);
+  });
+
+  // Phones: tuck the button aside while scrolling (see chatbot.css).
+  let scrollTimer = null;
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!panel.hidden) return;
+      root.classList.add("kali-tucked");
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => root.classList.remove("kali-tucked"), 700);
+    },
+    { passive: true },
+  );
+
   function setOpen(open) {
+    if (open) hideHint();
+    root.classList.remove("kali-tucked");
     panel.hidden = !open;
     fab.setAttribute("aria-expanded", String(open));
     if (open) input.focus();

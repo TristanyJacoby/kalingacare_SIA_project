@@ -91,7 +91,7 @@ body {
   margin-bottom: 16px;
 }
 .form-field i {
-  color: var(--primary);
+  color: var(--primary-text);
   width: 16px;
   text-align: center;
 }
@@ -114,7 +114,7 @@ body {
   align-items: center;
 }
 .toggle-password:hover {
-  color: var(--primary);
+  color: var(--primary-text);
 }
 
 .btn-auth {
@@ -122,9 +122,8 @@ body {
   padding: 14px;
   border: none;
   border-radius: 10px;
-  /* Ink-Text Rule: white on solid Sky Blue is only 1.9:1. */
   background: var(--primary);
-  color: var(--dark);
+  color: #fff;
   font-family: "Poppins", sans-serif;
   font-weight: 600;
   font-size: 0.95rem;
@@ -182,7 +181,7 @@ body {
   font-size: 1.1rem;
 }
 .btn-google:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   background: var(--input-bg);
 }
 .btn-google:disabled {
@@ -197,7 +196,7 @@ body {
   color: var(--gray);
 }
 .form-links a {
-  color: var(--primary);
+  color: var(--primary-text);
   text-decoration: none;
   font-weight: 600;
   cursor: pointer;

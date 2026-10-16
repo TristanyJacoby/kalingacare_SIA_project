@@ -6,7 +6,8 @@
 
 .product-detail-page {
   max-width: 1200px;
-  padding: 2.5rem 0 4rem;
+  padding-top: 2.5rem;
+  padding-bottom: 4rem;
 }
 
 .back-to-products {
@@ -219,7 +220,7 @@
   cursor: pointer;
 }
 .pd-review-photo-btn:hover {
-  border-color: var(--primary);
+  border-color: var(--primary-text);
   color: var(--dark);
 }
 .pd-review-photo-preview {

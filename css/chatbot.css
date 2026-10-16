@@ -1,12 +1,39 @@
-/* KalingaCare — Kali chat widget. Ink text on light surfaces (Ink-Text Rule):
-   Sky Blue is only ever used as a fill here, never as text. */
+/* KalingaCare — Kali chat widget. Sky blue is only ever a fill here,
+   never text on a light surface. */
 .kali-root { position: fixed; right: 20px; bottom: 20px; z-index: 1080; font-family: inherit; }
 .kali-fab {
-  width: 56px; height: 56px; border: 0; border-radius: 50%; cursor: pointer;
-  background: var(--primary, #67c8f7); color: var(--dark, #1e293b); font-size: 1.5rem;
-  box-shadow: 0 6px 18px rgba(30, 41, 59, 0.25); display: grid; place-items: center;
+  /* Its own look on purpose: light sky blue with navy text and a white
+     ring, so it never blends in with the deep-blue buttons and banners
+     around it. Navy on #67c8f7 is about 7.6:1. */
+  height: 56px; padding: 0 22px 0 18px; border: 3px solid #fff; border-radius: 999px; cursor: pointer;
+  background: #67c8f7; color: #12283a; font-family: inherit; font-weight: 700; font-size: 0.95rem;
+  display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: 0 10px 28px rgba(18, 40, 58, 0.32), 0 2px 6px rgba(18, 40, 58, 0.18);
+  transition: transform 0.25s ease, opacity 0.25s ease, background 0.2s ease;
 }
-.kali-fab:hover { background: var(--primary-dark, #3fa8e0); }
+.kali-fab i { font-size: 1.35rem; line-height: 1; }
+.kali-fab:hover { background: #8fd6f9; }
+.kali-fab[aria-expanded="true"] .kali-fab-label { display: none; }
+.kali-fab[aria-expanded="true"] { padding: 0; width: 56px; justify-content: center; }
+
+/* One-time "Hi, I'm Kali" hint next to the button. */
+.kali-hint {
+  position: absolute; right: 0; bottom: 70px; width: max-content; max-width: min(260px, calc(100vw - 32px));
+  background: #fff; color: var(--dark, #1e293b); border: 1px solid var(--line, #dce8f0);
+  border-radius: 14px; padding: 10px 34px 10px 14px; font-size: 0.85rem; line-height: 1.4;
+  box-shadow: 0 10px 28px rgba(18, 40, 58, 0.18); cursor: pointer;
+}
+.kali-hint[hidden] { display: none; }
+.kali-hint strong { display: block; color: #12283a; }
+.kali-hint::after {
+  content: ""; position: absolute; right: 26px; bottom: -7px; width: 12px; height: 12px;
+  background: #fff; border-right: 1px solid var(--line, #dce8f0); border-bottom: 1px solid var(--line, #dce8f0);
+  transform: rotate(45deg);
+}
+.kali-hint-close {
+  position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; border: 0; border-radius: 50%;
+  background: none; color: var(--gray, #5c6b7f); cursor: pointer;
+}
 .kali-fab:focus-visible, .kali-send:focus-visible, .kali-close:focus-visible,
 .kali-starter:focus-visible, .kali-input:focus-visible { outline: 3px solid var(--dark, #1e293b); outline-offset: 2px; }
 .kali-panel {
@@ -16,7 +43,7 @@
 }
 .kali-panel[hidden] { display: none; }
 .kali-header {
-  background: var(--primary, #67c8f7); color: var(--dark, #1e293b);
+  background: var(--primary, #1778ad); color: #fff;
   padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;
 }
 .kali-header div { display: flex; flex-direction: column; line-height: 1.2; }
@@ -25,20 +52,30 @@
 .kali-log { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; }
 .kali-msg { max-width: 85%; padding: 8px 12px; border-radius: 14px; font-size: 0.92rem; line-height: 1.4; color: var(--dark, #1e293b); overflow-wrap: anywhere; }
 .kali-msg-bot { background: #fff; border: 1px solid #e2e8f0; align-self: flex-start; }
-.kali-msg-user { background: var(--primary-light, #beebff); align-self: flex-end; }
+.kali-msg-user { background: var(--primary-light, #e2f2fb); align-self: flex-end; }
 .kali-msg a { color: var(--dark, #1e293b); text-decoration: underline; font-weight: 600; }
 .kali-typing { opacity: 0.6; }
 .kali-starters { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; background: #f8fafc; }
 .kali-starters[hidden] { display: none; }
 .kali-starter {
-  border: 1px solid var(--primary-dark, #3fa8e0); background: #fff; color: var(--dark, #1e293b);
+  border: 1px solid var(--primary-dark, #12628f); background: #fff; color: var(--dark, #1e293b);
   border-radius: 999px; padding: 5px 10px; font-size: 0.8rem; cursor: pointer;
 }
 .kali-form { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid #e2e8f0; }
 .kali-input { flex: 1; border: 1px solid #cbd5e1; border-radius: 999px; padding: 8px 14px; font-size: 0.92rem; min-width: 0; }
-.kali-send { border: 0; border-radius: 50%; width: 38px; height: 38px; background: var(--primary, #67c8f7); color: var(--dark, #1e293b); cursor: pointer; }
+.kali-send { border: 0; border-radius: 50%; width: 38px; height: 38px; background: var(--primary, #1778ad); color: #fff; cursor: pointer; }
 .kali-send:disabled { opacity: 0.5; cursor: default; }
 .kali-note { margin: 0; padding: 0 12px 8px; font-size: 0.72rem; color: #475569; text-align: center; }
-@media (max-width: 480px) { .kali-root { right: 12px; bottom: 12px; } }
-@media (prefers-reduced-motion: no-preference) { .kali-panel { animation: kali-pop 0.15s ease-out; } }
+/* Phones: icon-only circle, and it slides mostly out of the way while the
+   page scrolls so it doesn't sit on top of prices and buttons. */
+@media (max-width: 576px) {
+  .kali-root { right: 12px; bottom: 12px; }
+  .kali-fab { width: 54px; height: 54px; padding: 0; justify-content: center; }
+  .kali-fab-label { display: none; }
+  .kali-root.kali-tucked .kali-fab { transform: translateX(38px); opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) { .kali-fab { transition: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .kali-panel, .kali-hint { animation: kali-pop 0.15s ease-out; }
+}
 @keyframes kali-pop { from { opacity: 0; transform: translateY(8px); } }

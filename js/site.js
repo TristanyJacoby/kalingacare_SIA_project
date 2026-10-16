@@ -134,7 +134,8 @@ export function updateNavCartBadge() {
   const cartCountEl = document.getElementById("navCartCount");
   if (!cartCountEl) return;
   const cart = loadCart();
-  cartCountEl.textContent = cart.reduce((sum, item) => sum + item.qty, 0);
+  // Number of different products in the cart, not the total quantity.
+  cartCountEl.textContent = cart.length;
 }
 
 onAuthStateChanged(auth, async (user) => {
