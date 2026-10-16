@@ -516,6 +516,15 @@
   background: var(--input-bg);
   color: var(--dark);
 }
+/* Google's <gmp-place-autocomplete> follows the OS dark mode by default,
+   which made its suggestion list dark-on-dark on our light pages. Tie it
+   to the site's own theme instead. */
+.map-search-input {
+  color-scheme: light;
+}
+[data-theme="dark"] .map-search-input {
+  color-scheme: dark;
+}
 .map-search-input:focus {
   outline: none;
   border-color: var(--primary-text);
