@@ -237,6 +237,8 @@ function sendError(res, err) {
 }
 
 module.exports = {
+  SHIPPING_FEE,
+  PROMO_CODES,
   HttpError,
   getAdmin,
   handleCors,

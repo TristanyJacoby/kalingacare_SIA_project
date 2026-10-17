@@ -52,25 +52,12 @@ service cloud.firestore {
       allow read: if isSignedIn()
                   && (resource.data.userId == request.auth.uid || isStaffUp());
 
-      // A: new orders must start as "New", with a sane total
-      // and at least one item.
-      // D: payment fields: a customer may only start an online order as
-      // "pending". Only the server (PayMongo functions, Admin SDK) can
-      // record a payment.
-      // E: only accounts with a verified email can order (Google sign-ins
-      // count as verified; email/password accounts verify via the link
-      // sent at signup).
-      allow create: if isSignedIn()
-                    && request.auth.token.email_verified == true
-                    && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.status == "New"
-                    && request.resource.data.total is number
-                    && request.resource.data.total >= 0
-                    && request.resource.data.items is list
-                    && request.resource.data.items.size() > 0
-                    && (!("paymentStatus" in request.resource.data)
-                        || request.resource.data.paymentStatus == "pending")
-                    && !request.resource.data.keys().hasAny(["payment", "paymentSessionId"]);
+      // A/D/E: orders are created only by the server (api/place-order.js,
+      // Admin SDK), which prices them from the product records, applies
+      // promo codes, requires a verified email and starts online orders as
+      // "pending". Clients can't create orders directly, so totals can't
+      // be tampered with.
+      allow create: if false;
 
       allow update: if (
                       isStaffUp()

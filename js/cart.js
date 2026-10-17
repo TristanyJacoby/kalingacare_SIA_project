@@ -2,7 +2,7 @@
 // KalingaCare — Cart page: render, update quantity, remove, live totals.
 
 import { auth, db } from "./firebase.js";
-import { loadCart, saveCart, SHIPPING_FEE } from "./site.js";
+import { loadCart, saveCart, SHIPPING_FEE, CART_CHANGED_EVENT } from "./site.js";
 import { getRates, formatCurrency } from "./currency.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -132,3 +132,6 @@ itemsList?.addEventListener("click", (e) => {
 });
 
 render();
+
+// The cart is shared with the mobile app: redraw when it changes elsewhere.
+window.addEventListener(CART_CHANGED_EVENT, render);
