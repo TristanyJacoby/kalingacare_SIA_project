@@ -1592,6 +1592,8 @@ function initOrders() {
         try {
           await updateDoc(doc(db, "orders", select.dataset.id), {
             status: newStatus,
+            // When it changed: the mobile app's order notifications show it.
+            statusUpdatedAt: serverTimestamp(),
           });
         } catch (err) {
           console.error(err);
@@ -1628,6 +1630,7 @@ function initOrders() {
         try {
           await updateDoc(doc(db, "orders", btn.dataset.id), {
             status: "Cancelled",
+            statusUpdatedAt: serverTimestamp(),
           });
           showToast("Order cancelled.");
         } catch (err) {
@@ -1737,7 +1740,10 @@ function initOrders() {
       try {
         await Promise.all(
           cancellable.map((o) =>
-            updateDoc(doc(db, "orders", o.id), { status: "Cancelled" }),
+            updateDoc(doc(db, "orders", o.id), {
+              status: "Cancelled",
+              statusUpdatedAt: serverTimestamp(),
+            }),
           ),
         );
         selectedIds.clear();
@@ -1872,6 +1878,7 @@ function initOrders() {
       try {
         await updateDoc(doc(db, "orders", e.target.dataset.id), {
           status: newStatus,
+          statusUpdatedAt: serverTimestamp(),
         });
         const badge = document.getElementById("odStatusBadge");
         badge.textContent = newStatus;
@@ -1904,6 +1911,7 @@ function initOrders() {
       try {
         await updateDoc(doc(db, "orders", e.target.dataset.id), {
           status: "Cancelled",
+          statusUpdatedAt: serverTimestamp(),
         });
         showToast("Order cancelled.");
         closeOrderDetail();
