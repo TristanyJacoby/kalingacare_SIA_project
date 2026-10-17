@@ -1651,6 +1651,20 @@ function initOrders() {
           if (m !== menu) m.classList.add("d-none");
         });
         menu.classList.toggle("d-none");
+        // Fixed to the window, under the button, so the table panel's
+        // sideways scrolling can't cut the menu off.
+        if (!menu.classList.contains("d-none")) {
+          const r = btn.getBoundingClientRect();
+          menu.style.position = "fixed";
+          menu.style.top = `${r.bottom + 4}px`;
+          menu.style.right = `${window.innerWidth - r.right}px`;
+          menu.style.left = "auto";
+          // Open upward if it would run past the bottom of the window.
+          const h = menu.offsetHeight;
+          if (r.bottom + 4 + h > window.innerHeight) {
+            menu.style.top = `${Math.max(8, r.top - 4 - h)}px`;
+          }
+        }
       });
     });
 
@@ -1701,11 +1715,15 @@ function initOrders() {
 
   // Close any open row action menu on outside click (button clicks stopPropagation, so this
   // only fires for genuine "elsewhere" clicks).
-  document.addEventListener("click", () => {
+  const closeRowMenus = () =>
     document
       .querySelectorAll(".row-action-menu")
       .forEach((m) => m.classList.add("d-none"));
-  });
+  document.addEventListener("click", closeRowMenus);
+  // A fixed-position menu would drift away from its row on scroll/resize.
+  document.querySelector(".admin-main")?.addEventListener("scroll", closeRowMenus, { passive: true });
+  document.querySelector("#adminOrdersTable")?.closest(".admin-panel")?.addEventListener("scroll", closeRowMenus, { passive: true });
+  window.addEventListener("resize", closeRowMenus);
 
   /* ---- Search ---- */
   const searchInput = document.getElementById("orderSearch");
@@ -2028,9 +2046,34 @@ function initMessages() {
           <h2 class="message-subject">${escapeHtml(m.subject)}</h2>
           <p class="message-body">${escapeHtml(m.message)}</p>
           ${m.emailSent === false ? '<p class="message-warning"><i class="bi bi-exclamation-triangle"></i> This one could not be emailed to the support inbox; it is only here.</p>' : ""}
-          <div class="message-actions">
-            <a class="msg-btn msg-btn-primary" href="${mailto}" data-reply="${m.id}">
-              <i class="bi bi-reply"></i> Reply by email
+          ${(m.replies || [])
+            .map(
+              (r) => `
+          <div class="message-reply">
+            <div class="message-reply-head">
+              <i class="bi bi-reply-fill"></i> ${escapeHtml(r.byName || "Staff")} replied
+              <span>${r.at?.toDate ? r.at.toDate().toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""}</span>
+            </div>
+            <p>${escapeHtml(r.text)}</p>
+          </div>`,
+            )
+            .join("")}
+          <form class="message-reply-form d-none" data-reply-form="${m.id}">
+            <label class="visually-hidden" for="reply-${m.id}">Reply to ${escapeHtml(m.name)}</label>
+            <textarea id="reply-${m.id}" rows="4" maxlength="4000" placeholder="Write your reply to ${escapeHtml(m.name)}…" required></textarea>
+            <p class="message-reply-note">Sent by email to ${escapeHtml(m.email)} from the KalingaCare account. Their answer comes back to kalingacaresupport@gmail.com.</p>
+            <p class="message-reply-error d-none" role="alert"></p>
+            <div class="message-actions">
+              <button type="submit" class="msg-btn msg-btn-primary"><i class="bi bi-send"></i> Send reply</button>
+              <button type="button" class="msg-btn" data-reply-cancel="${m.id}">Cancel</button>
+            </div>
+          </form>
+          <div class="message-actions" data-actions="${m.id}">
+            <button type="button" class="msg-btn msg-btn-primary" data-reply-open="${m.id}">
+              <i class="bi bi-reply"></i> ${(m.replies || []).length ? "Reply again" : "Reply"}
+            </button>
+            <a class="msg-btn" href="${mailto}" data-reply="${m.id}" title="Open in your email app instead">
+              <i class="bi bi-envelope"></i> Email app
             </a>
             <button type="button" class="msg-btn" data-toggle-read="${m.id}">
               <i class="bi ${m.read ? "bi-envelope" : "bi-envelope-open"}"></i>
@@ -2040,6 +2083,24 @@ function initMessages() {
         </article>`;
       })
       .join("");
+  }
+
+  // Live updates re-render the list; keep any reply being typed.
+  function renderKeepingDrafts() {
+    const drafts = {};
+    openReplies.forEach((id) => {
+      const t = listEl.querySelector(`[data-reply-form="${id}"] textarea`);
+      if (t) drafts[id] = t.value;
+    });
+    render();
+    openReplies.forEach((id) => {
+      const form = listEl.querySelector(`[data-reply-form="${id}"]`);
+      const actions = listEl.querySelector(`[data-actions="${id}"]`);
+      if (!form || !actions) return;
+      form.classList.remove("d-none");
+      actions.classList.add("d-none");
+      form.querySelector("textarea").value = drafts[id] || "";
+    });
   }
 
   async function setRead(id, read) {
@@ -2055,7 +2116,72 @@ function initMessages() {
     }
   }
 
+  // Inline reply: emailed to the customer by api/reply-message.js.
+  const openReplies = new Set();
+  function showReplyForm(id, show) {
+    const form = listEl.querySelector(`[data-reply-form="${id}"]`);
+    const actions = listEl.querySelector(`[data-actions="${id}"]`);
+    if (!form || !actions) return;
+    form.classList.toggle("d-none", !show);
+    actions.classList.toggle("d-none", show);
+    if (show) {
+      openReplies.add(id);
+      form.querySelector("textarea").focus();
+    } else {
+      openReplies.delete(id);
+    }
+  }
+
+  listEl.addEventListener("submit", async (e) => {
+    const form = e.target.closest("[data-reply-form]");
+    if (!form) return;
+    e.preventDefault();
+    const id = form.dataset.replyForm;
+    const textarea = form.querySelector("textarea");
+    const errorEl = form.querySelector(".message-reply-error");
+    const sendBtn = form.querySelector('button[type="submit"]');
+    const reply = textarea.value.trim();
+    errorEl.classList.add("d-none");
+    if (reply.length < 2) {
+      errorEl.textContent = "Please write a reply.";
+      errorEl.classList.remove("d-none");
+      return;
+    }
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<i class="bi bi-send"></i> Sending...';
+    try {
+      const res = await fetch("/api/reply-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await auth.currentUser.getIdToken()}`,
+        },
+        body: JSON.stringify({ messageId: id, reply }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't send the reply.");
+      openReplies.delete(id);
+      showToast("Reply sent.");
+      // The live list re-renders with the saved reply.
+    } catch (err) {
+      errorEl.textContent = err.message || "Couldn't send the reply. Please try again.";
+      errorEl.classList.remove("d-none");
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = '<i class="bi bi-send"></i> Send reply';
+    }
+  });
+
   listEl.addEventListener("click", (e) => {
+    const openBtn = e.target.closest("[data-reply-open]");
+    if (openBtn) {
+      showReplyForm(openBtn.dataset.replyOpen, true);
+      return;
+    }
+    const cancelBtn = e.target.closest("[data-reply-cancel]");
+    if (cancelBtn) {
+      showReplyForm(cancelBtn.dataset.replyCancel, false);
+      return;
+    }
     const toggle = e.target.closest("[data-toggle-read]");
     if (toggle) {
       const m = messages.find((x) => x.id === toggle.dataset.toggleRead);
@@ -2076,7 +2202,7 @@ function initMessages() {
       document
         .querySelectorAll("[data-msg-filter]")
         .forEach((b) => b.classList.toggle("active", b === btn));
-      render();
+      renderKeepingDrafts();
     }),
   );
 
@@ -2084,7 +2210,7 @@ function initMessages() {
     query(collection(db, "contactMessages"), orderBy("createdAt", "desc"), limit(200)),
     (snap) => {
       messages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      render();
+      renderKeepingDrafts();
     },
     (err) => {
       console.error("Couldn't load messages:", err);

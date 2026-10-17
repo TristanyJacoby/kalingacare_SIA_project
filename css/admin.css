@@ -1507,28 +1507,15 @@ body.admin-body {
   }
 }
 
-/* Small laptops: icon-only sidebar, so tables keep enough room. The link
-   text stays in the page (font-size 0), so screen readers still read it. */
-@media (min-width: 769px) and (max-width: 1200px) {
-  .admin-sidebar {
-    width: 72px;
-  }
-  .admin-sidebar .logo {
-    font-size: 0;
-    padding: 0 0 20px;
-    text-align: center;
-  }
-  .admin-sidebar .logo .navbar-logo-img {
-    margin: 0;
-  }
-  .admin-nav a {
-    font-size: 0;
-    justify-content: center;
-    padding: 14px 0;
-  }
-  .admin-nav a i {
-    font-size: 1.25rem;
-  }
+/* Narrow windows: the sidebar keeps its full width and only the table
+   scrolls sideways inside its panel; the page header, search and filters
+   stay put. (Row "⋯" menus open as fixed popovers so this can't clip
+   them; see admin.js.) */
+.admin-panel:has(> .admin-table) {
+  overflow-x: auto;
+}
+.orders-table {
+  min-width: 880px;
 }
 /* Customer names/emails wrap by word, never letter by letter. */
 .order-customer-cell {
@@ -1671,17 +1658,67 @@ body.admin-body {
 .admin-nav .nav-count.d-none {
   display: none;
 }
-@media (min-width: 769px) and (max-width: 1200px) {
-  .admin-nav a {
-    position: relative;
-  }
-  .admin-nav .nav-count {
-    position: absolute;
-    top: 6px;
-    right: 10px;
-    font-size: 0.65rem;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-  }
+
+
+/* Replies sent from the Messages page */
+.message-reply {
+  margin-top: 14px;
+  background: #f2f9ff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.message-reply-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-text);
+}
+.message-reply-head span {
+  margin-left: auto;
+  font-weight: 400;
+  color: var(--gray);
+}
+.message-reply p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+  color: var(--dark);
+}
+.message-reply-form {
+  margin-top: 16px;
+}
+.message-reply-form textarea {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.92rem;
+  color: var(--dark);
+  background: var(--input-bg);
+  resize: vertical;
+  min-height: 110px;
+}
+.message-reply-form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+}
+.message-reply-note {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--gray);
+}
+.message-reply-error {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: #c0392b;
+}
+.msg-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
