@@ -1879,7 +1879,7 @@ function initOrders() {
       .map(
         (item) => `
         <div class="od-item-row">
-          <img src="${item.imgBase64 || `../${item.img || "assets/images/products/placeholder.jpg"}`}" alt="${escapeHtml(item.name)}" />
+          <img src="${item.imgBase64 || `../${item.img || "assets/images/products/placeholder.jpg"}`}" alt="${escapeHtml(item.name)}" ${item.imgBase64 || item.img ? "" : `data-product-photo="${escapeHtml(item.id)}"`} />
           <div>
             <div class="od-item-name">${escapeHtml(item.name)}</div>
             <div class="od-item-qty">Qty: ${item.qty}</div>
@@ -1888,6 +1888,18 @@ function initOrders() {
         </div>`,
       )
       .join("");
+
+    // Orders placed by the server (and by the app) don't copy product
+    // photos; show the product's own photo instead.
+    itemsList.querySelectorAll("[data-product-photo]").forEach(async (img) => {
+      try {
+        const snap = await getDoc(doc(db, "products", img.dataset.productPhoto));
+        const photo = snap.exists() ? snap.data().imgBase64 || (snap.data().img ? `../${snap.data().img}` : "") : "";
+        if (photo) img.src = photo;
+      } catch {
+        // Keep the placeholder.
+      }
+    });
 
     document.getElementById("odTotal").textContent = peso(o.total);
 

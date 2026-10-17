@@ -15,6 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { initAddressPicker } from "./address-map.js";
+import { getSavedAddresses, defaultAddress, saveAddresses, makeAddressId } from "./site.js";
 import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
 
 const authGate = document.getElementById("authGate");
@@ -27,10 +28,42 @@ function showMsg(el, message, isError = true) {
   if (!isError) setTimeout(() => el.classList.remove("show"), 3000);
 }
 
-/* ===== Address map picker (js/address-map.js) =====
-   The pin's coordinates are saved alongside the text address. */
+/* ===== Saved addresses (list shared with the mobile app) =====
+   The picker chooses which address the form edits ("new" = add one). The
+   map pin's coordinates are saved with the address. */
 let currentLat = null;
 let currentLng = null;
+let addresses = [];
+let editingId = "new";
+let mapPicker = null;
+
+function fillAddressPicker() {
+  const picker = document.getElementById("addrPicker");
+  picker.innerHTML =
+    addresses
+      .map(
+        (a) =>
+          `<option value="${a.id}">${(a.label || "Address").replace(/</g, "&lt;")}: ${(a.recipient || "").replace(/</g, "&lt;")}${a.isDefault ? " (default)" : ""}</option>`,
+      )
+      .join("") + `<option value="new">+ Add a new address</option>`;
+  picker.value = editingId;
+}
+
+function showAddress(id) {
+  editingId = id;
+  const a = addresses.find((x) => x.id === id);
+  document.getElementById("addrLabel").value = a?.label || "";
+  document.getElementById("addrRecipient").value = a?.recipient || "";
+  document.getElementById("addrAddress").value = a?.address || "";
+  document.getElementById("addrPhone").value = a?.phone || "";
+  // The first address is always the default.
+  document.getElementById("addrDefault").checked = a ? !!a.isDefault : addresses.length === 0;
+  document.getElementById("addrRemoveBtn").hidden = !a;
+  currentLat = a?.lat ?? null;
+  currentLng = a?.lng ?? null;
+  if (a?.lat != null) mapPicker?.setPosition(a.lat, a.lng);
+  fillAddressPicker();
+}
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -50,28 +83,22 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById("profileEmail").value = user.email || "";
   populateCountrySelect(document.getElementById("profileCountry"), userData.country || "");
 
-  // Delivery Address
-  let savedLat = null;
-  let savedLng = null;
-  if (userData.savedAddress) {
-    document.getElementById("addrRecipient").value = userData.savedAddress.recipient || "";
-    document.getElementById("addrAddress").value = userData.savedAddress.address || "";
-    document.getElementById("addrPhone").value = userData.savedAddress.phone || "";
-    savedLat = userData.savedAddress.lat ?? null;
-    savedLng = userData.savedAddress.lng ?? null;
-  }
-  currentLat = savedLat;
-  currentLng = savedLng;
+  // Delivery addresses (same list as the app)
+  addresses = getSavedAddresses(userData);
+  const def = defaultAddress(addresses);
+  showAddress(def ? def.id : "new");
   initAddressPicker({
     mapEl: document.getElementById("addressMap"),
     searchContainer: document.getElementById("addressSearchBoxContainer"),
     addressInput: document.getElementById("addrAddress"),
-    lat: savedLat,
-    lng: savedLng,
+    lat: def?.lat ?? null,
+    lng: def?.lng ?? null,
     onChange: (pos) => {
       currentLat = pos.lat;
       currentLng = pos.lng;
     },
+  }).then((p) => {
+    mapPicker = p;
   });
 
   // Notification preferences (default: email on, promos off)
@@ -104,7 +131,9 @@ document.getElementById("profileForm").addEventListener("submit", async (e) => {
   }
 });
 
-/* ===== Delivery Address ===== */
+/* ===== Delivery Addresses ===== */
+document.getElementById("addrPicker").addEventListener("change", (e) => showAddress(e.target.value));
+
 document.getElementById("addressForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errorEl = document.getElementById("addressError");
@@ -112,19 +141,46 @@ document.getElementById("addressForm").addEventListener("submit", async (e) => {
   errorEl.classList.remove("show");
   successEl.classList.remove("show");
 
-  const savedAddress = {
+  const entry = {
+    id: editingId === "new" ? makeAddressId() : editingId,
+    label: document.getElementById("addrLabel").value.trim() || "Address",
     recipient: document.getElementById("addrRecipient").value.trim(),
     address: document.getElementById("addrAddress").value.trim(),
     phone: document.getElementById("addrPhone").value.trim(),
+    isDefault: document.getElementById("addrDefault").checked,
     lat: currentLat,
     lng: currentLng,
   };
 
+  let next = editingId === "new" ? [...addresses, entry] : addresses.map((a) => (a.id === entry.id ? entry : a));
+  if (entry.isDefault) next = next.map((a) => ({ ...a, isDefault: a.id === entry.id }));
+  if (!next.some((a) => a.isDefault)) next[0].isDefault = true;
+
   try {
-    await updateDoc(doc(db, "users", auth.currentUser.uid), { savedAddress });
+    await saveAddresses(auth.currentUser.uid, next);
+    addresses = next;
+    showAddress(entry.id);
     showMsg(successEl, "Address saved.", false);
   } catch (err) {
     showMsg(errorEl, "Couldn't save address. Please try again.");
+  }
+});
+
+document.getElementById("addrRemoveBtn").addEventListener("click", async () => {
+  const errorEl = document.getElementById("addressError");
+  const successEl = document.getElementById("addressSuccess");
+  const a = addresses.find((x) => x.id === editingId);
+  if (!a || !confirm(`Remove "${a.label || "this address"}"?`)) return;
+  let next = addresses.filter((x) => x.id !== a.id);
+  if (next.length && !next.some((x) => x.isDefault)) next[0].isDefault = true;
+  try {
+    await saveAddresses(auth.currentUser.uid, next);
+    addresses = next;
+    const d = defaultAddress(addresses);
+    showAddress(d ? d.id : "new");
+    showMsg(successEl, "Address removed.", false);
+  } catch {
+    showMsg(errorEl, "Couldn't remove the address. Please try again.");
   }
 });
 

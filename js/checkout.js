@@ -2,19 +2,17 @@
 // KalingaCare — Checkout page: auth gate, order summary, places the order.
 
 import { auth, db } from "./firebase.js";
-import { loadCart, clearCart, SHIPPING_FEE } from "./site.js";
+import { loadCart, clearCart, SHIPPING_FEE, accountCartReady } from "./site.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
-  collection,
-  addDoc,
   doc,
   getDoc,
-  serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getRates, convertAndFormat, populateCurrencySelect } from "./currency.js";
 import { startOnlinePayment } from "./payments.js";
 import { sendVerificationEmail, TooSoonError } from "./verification.js";
 import { initAddressPicker } from "./address-map.js";
+import { getSavedAddresses, defaultAddress } from "./site.js";
 
 const authGate = document.getElementById("authGate");
 const staffGate = document.getElementById("staffGate");
@@ -119,6 +117,8 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  // The cart lives on the account (shared with the app); wait for it.
+  await accountCartReady;
   const cart = loadCart();
   if (cart.length === 0) {
     emptyGate.style.display = "block";
@@ -152,19 +152,35 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById("ckName").value = user.displayName || "";
   document.getElementById("ckEmail").value = user.email || "";
 
-  // Pre-fill from the saved delivery address (Settings), if any. Editing
-  // it here changes only this order, not the saved address.
-  const savedAddress = userData.savedAddress;
-  if (savedAddress) {
-    document.getElementById("ckRecipient").value = savedAddress.recipient || "";
-    document.getElementById("ckAddress").value = savedAddress.address || "";
-    document.getElementById("ckPhone").value = savedAddress.phone || "";
-    deliveryCoords = {
-      lat: savedAddress.lat ?? null,
-      lng: savedAddress.lng ?? null,
+  // Pre-fill from the default saved address (same list as the app). With
+  // more than one, "Deliver to" switches between them. Editing the fields
+  // changes only this order, not the saved addresses.
+  const addresses = getSavedAddresses(userData);
+  const fillFrom = (a) => {
+    document.getElementById("ckRecipient").value = a?.recipient || "";
+    document.getElementById("ckAddress").value = a?.address || "";
+    document.getElementById("ckPhone").value = a?.phone || "";
+    deliveryCoords = { lat: a?.lat ?? null, lng: a?.lng ?? null };
+  };
+  const startAddress = defaultAddress(addresses);
+  if (startAddress) fillFrom(startAddress);
+
+  const choice = document.getElementById("ckAddressChoice");
+  if (addresses.length > 1) {
+    const esc = (t) => String(t || "").replace(/</g, "&lt;");
+    choice.innerHTML = addresses
+      .map((a) => `<option value="${a.id}">${esc(a.label || "Address")}: ${esc(a.recipient)}, ${esc(a.address).slice(0, 60)}</option>`)
+      .join("");
+    choice.value = startAddress.id;
+    document.getElementById("ckAddressChoiceWrap").hidden = false;
+    choice.onchange = () => {
+      const a = addresses.find((x) => x.id === choice.value);
+      fillFrom(a);
+      if (a?.lat != null) checkoutMap?.setPosition(a.lat, a.lng);
     };
   }
 
+  let checkoutMap = null;
   initAddressPicker({
     mapEl: document.getElementById("ckAddressMap"),
     searchContainer: document.getElementById("ckAddressSearch"),
@@ -174,6 +190,8 @@ onAuthStateChanged(auth, async (user) => {
     onChange: (pos) => {
       deliveryCoords = pos;
     },
+  }).then((p) => {
+    checkoutMap = p;
   });
 });
 
@@ -247,8 +265,6 @@ document
     submitBtn.disabled = true;
     submitBtn.textContent = "Placing order...";
 
-    const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-
     // Record what currency the buyer was viewing at order time, purely
     // for admin/support context — the canonical subtotal/shippingFee/total
     // above stay PHP no matter what's picked here (see the note on
@@ -261,29 +277,33 @@ document
     let leavingPage = false;
 
     try {
-      orderRef = await addDoc(collection(db, "orders"), {
-        userId: currentUser.uid,
-        items: cart,
-        subtotal,
-        shippingFee: SHIPPING_FEE,
-        total: subtotal + SHIPPING_FEE,
-        displayCurrency,
-        status: "New",
-        shippingInfo: {
-          fullName: document.getElementById("ckName").value.trim(),
-          email: document.getElementById("ckEmail").value.trim(),
-          recipient: document.getElementById("ckRecipient").value.trim(),
-          address: document.getElementById("ckAddress").value.trim(),
-          phone: document.getElementById("ckPhone").value.trim(),
-          paymentMethod,
-          lat: deliveryCoords.lat,
-          lng: deliveryCoords.lng,
+      // The server creates the order and works out the prices and total
+      // from the product records (api/place-order.js), so they can't be
+      // changed in the browser. Only the server marks online orders paid.
+      const res = await fetch("/api/place-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await currentUser.getIdToken()}`,
         },
-        // Online orders start unpaid; only the server marks them "paid"
-        // after PayMongo confirms the payment.
-        ...(payOnline ? { paymentStatus: "pending" } : {}),
-        createdAt: serverTimestamp(),
+        body: JSON.stringify({
+          items: cart.map((item) => ({ id: item.id, qty: item.qty })),
+          paymentMethod,
+          displayCurrency,
+          shippingInfo: {
+            fullName: document.getElementById("ckName").value.trim(),
+            email: document.getElementById("ckEmail").value.trim(),
+            recipient: document.getElementById("ckRecipient").value.trim(),
+            address: document.getElementById("ckAddress").value.trim(),
+            phone: document.getElementById("ckPhone").value.trim(),
+            lat: deliveryCoords.lat,
+            lng: deliveryCoords.lng,
+          },
+        }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "");
+      orderRef = { id: data.orderId };
 
       clearCart();
 
@@ -305,6 +325,7 @@ document
         return;
       }
       errorBox.textContent =
+        (!(err instanceof TypeError) && err.message) ||
         "Something went wrong placing your order. Please try again.";
       errorBox.classList.add("show");
     } finally {

@@ -25,6 +25,7 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 /* ===== Toast notifications =====
@@ -82,10 +83,19 @@ export function resizeImageToDataUrl(file, maxSize = 300, quality = 0.75) {
   });
 }
 
-/* ===== Cart storage (shared by products.js / cart.js / checkout.js) ===== */
+/* ===== Cart storage (shared by products.js / cart.js / checkout.js) =====
+   The cart belongs to the account: it's saved on users/{uid}.cart in
+   Firestore, so the website and the mobile app see the same cart. Each
+   item there is just { id, name, price, qty } (no photos: product photos
+   are large and live on the product). localStorage keeps a copy on this
+   browser, with photos, so pages render instantly. Only signed-in users
+   can add to cart, and signing out clears this browser's copy. */
 
 export const CART_KEY = "kalingacare_cart";
 export const SHIPPING_FEE = 150;
+// Fired on window when the cart changes from another device/tab, so open
+// pages (e.g. the Cart page) can re-render.
+export const CART_CHANGED_EVENT = "kalingacare-cart-changed";
 
 export function loadCart() {
   try {
@@ -95,14 +105,189 @@ export function loadCart() {
   }
 }
 
-export function saveCart(cart) {
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+function writeLocalCart(cart) {
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  } catch {
+    // Full storage (photos are big): keep the cart without photos.
+    localStorage.setItem(CART_KEY, JSON.stringify(cart.map((i) => ({ ...i, imgBase64: null }))));
+  }
   updateNavCartBadge();
+}
+
+// The shape saved on the account (shared with the mobile app).
+function toSyncedCart(cart) {
+  return cart.map((i) => ({
+    id: i.id,
+    name: i.name || "",
+    price: Number(i.price) || 0,
+    qty: Math.max(1, Number(i.qty) || 1),
+  }));
+}
+
+let syncTimer = null;
+// True while a change made here hasn't reached the account yet, so an
+// older copy arriving from the account doesn't overwrite it.
+let syncPending = false;
+function syncCartToAccount(cart) {
+  const user = auth.currentUser;
+  if (!user) return;
+  syncPending = true;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    updateDoc(doc(db, "users", user.uid), { cart: toSyncedCart(cart) })
+      .catch((err) => console.warn("Couldn't save the cart to your account:", err))
+      .finally(() => {
+        syncPending = false;
+      });
+  }, 300);
+}
+
+export function saveCart(cart) {
+  writeLocalCart(cart);
+  syncCartToAccount(cart);
 }
 
 export function clearCart() {
   localStorage.removeItem(CART_KEY);
   updateNavCartBadge();
+  syncCartToAccount([]);
+}
+
+// Items that came from the account (or the app) have no photo yet: look
+// them up on the product.
+async function fillCartPhotos(cart) {
+  const missing = cart.filter((i) => !i.imgBase64 && !i.img);
+  if (!missing.length) return cart;
+  await Promise.all(
+    missing.map(async (item) => {
+      try {
+        const snap = await getDoc(doc(db, "products", item.id));
+        if (snap.exists()) {
+          item.imgBase64 = snap.data().imgBase64 || null;
+          item.img = snap.data().img || "";
+        }
+      } catch {
+        // No photo: the cart shows a placeholder.
+      }
+    }),
+  );
+  return cart;
+}
+
+// Applies the account's cart to this browser, keeping photos we already have.
+async function applyAccountCart(remote) {
+  const local = loadCart();
+  const merged = toSyncedCart(remote).map((r) => {
+    const known = local.find((l) => l.id === r.id);
+    return { ...r, img: known?.img || "", imgBase64: known?.imgBase64 || null };
+  });
+  writeLocalCart(merged);
+  window.dispatchEvent(new Event(CART_CHANGED_EVENT));
+  const withPhotos = await fillCartPhotos(merged);
+  if (JSON.stringify(toSyncedCart(loadCart())) === JSON.stringify(toSyncedCart(withPhotos))) {
+    writeLocalCart(withPhotos);
+    window.dispatchEvent(new Event(CART_CHANGED_EVENT));
+  }
+}
+
+// Resolves once the signed-in account's cart has been applied to this
+// browser (or right away when signed out), so Checkout doesn't decide the
+// cart is empty before it arrives from the account.
+let resolveCartReady;
+export const accountCartReady = new Promise((r) => {
+  resolveCartReady = r;
+});
+
+let unsubscribeCart = null;
+function watchAccountCart(user) {
+  unsubscribeCart?.();
+  unsubscribeCart = null;
+  if (!user) {
+    // Signed out: this browser's cart belonged to that account.
+    localStorage.removeItem(CART_KEY);
+    updateNavCartBadge();
+    window.dispatchEvent(new Event(CART_CHANGED_EVENT));
+    resolveCartReady();
+    return;
+  }
+  let first = true;
+  unsubscribeCart = onSnapshot(
+    doc(db, "users", user.uid),
+    (snap) => {
+      const remote = snap.exists() ? snap.data().cart : undefined;
+      if (first) {
+        first = false;
+        // First time this account uses the shared cart: keep what's here.
+        if (!Array.isArray(remote)) {
+          if (loadCart().length) syncCartToAccount(loadCart());
+          resolveCartReady();
+          return;
+        }
+      }
+      if (!Array.isArray(remote) || syncPending) {
+        resolveCartReady();
+        return;
+      }
+      if (JSON.stringify(toSyncedCart(remote)) !== JSON.stringify(toSyncedCart(loadCart()))) {
+        applyAccountCart(remote).finally(resolveCartReady);
+      } else {
+        resolveCartReady();
+      }
+    },
+    (err) => {
+      console.warn("Couldn't load the cart from your account:", err);
+      resolveCartReady();
+    },
+  );
+}
+
+/* ===== Saved delivery addresses (shared with the mobile app) =====
+   users/{uid}.savedAddresses is a list:
+   { id, label, recipient, address, phone, isDefault, lat, lng }.
+   Older accounts only have the single `savedAddress` from before; it's
+   read as a one-item list. Writers also keep `savedAddress` = the default
+   entry, so older copies of the apps still find it. */
+
+export function makeAddressId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+export function getSavedAddresses(userData) {
+  if (Array.isArray(userData?.savedAddresses) && userData.savedAddresses.length) {
+    return userData.savedAddresses.map((a) => ({ ...a }));
+  }
+  const legacy = userData?.savedAddress;
+  if (legacy && (legacy.address || legacy.recipient)) {
+    return [
+      {
+        id: makeAddressId(),
+        label: "Saved Address",
+        recipient: legacy.recipient || "",
+        address: legacy.address || "",
+        phone: legacy.phone || "",
+        isDefault: true,
+        lat: legacy.lat ?? null,
+        lng: legacy.lng ?? null,
+      },
+    ];
+  }
+  return [];
+}
+
+export function defaultAddress(list) {
+  return list.find((a) => a.isDefault) || list[0] || null;
+}
+
+// Writes the list (and the legacy single field) to the user's doc.
+export async function saveAddresses(uid, list) {
+  const def = defaultAddress(list);
+  await updateDoc(doc(db, "users", uid), {
+    savedAddresses: list,
+    savedAddress: def
+      ? { recipient: def.recipient, address: def.address, phone: def.phone, lat: def.lat ?? null, lng: def.lng ?? null }
+      : null,
+  });
 }
 
 /* ===== Favorites (shared by products.js, product.js, favorites.js) =====
@@ -146,6 +331,7 @@ onAuthStateChanged(auth, async (user) => {
 
   if (authLinks) authLinks.classList.toggle("d-none", !!user);
   if (cartWrap) cartWrap.classList.toggle("d-none", !user);
+  watchAccountCart(user);
   updateNavCartBadge();
 
   // The home page's "Get Started Today" CTA shouldn't send an already
