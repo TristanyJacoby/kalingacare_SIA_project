@@ -114,5 +114,18 @@ service cloud.firestore {
 
       allow update, delete: if false;
     }
+
+    /* ---------- contactMessages ----------
+       Written only by api/contact.js (Admin SDK) from the Contact Us form.
+       Staff read them in Admin → Messages and may only flip read status;
+       admins may delete. */
+    match /contactMessages/{messageId} {
+      allow read: if isStaffUp();
+      allow update: if isStaffUp()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(["read", "readAt", "readBy"]);
+      allow delete: if isAdminUp();
+      allow create: if false;
+    }
   }
 }

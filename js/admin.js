@@ -47,6 +47,15 @@ function initials(name) {
     .toUpperCase();
 }
 
+// For anything a customer typed (names, reviews, contact messages) before
+// it goes into innerHTML, so it shows as text and can't inject markup.
+function escapeHtml(text) {
+  return String(text ?? "").replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
+}
+
 function peso(amount) {
   return "\u20B1" + (amount || 0).toLocaleString("en-PH");
 }
@@ -102,6 +111,7 @@ onAuthStateChanged(auth, async (user) => {
 
   initHeaderDropdowns();
   initNotifBell();
+  initUnreadMessagesCount();
   initPageFor(role);
 });
 
@@ -181,6 +191,19 @@ async function initNotifBell() {
     console.error("Couldn't load recent reviews for notif bell:", err);
   }
 
+  // Unread Contact Us messages (Admin → Messages).
+  let unreadMessages = [];
+  try {
+    const msgSnap = await getDocs(
+      query(collection(db, "contactMessages"), where("read", "==", false)),
+    );
+    unreadMessages = msgSnap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+  } catch (err) {
+    console.error("Couldn't load messages for notif bell:", err);
+  }
+
   const TWO_DAYS_MS = 48 * 60 * 60 * 1000;
   const now = Date.now();
   const recentReviews = reviews.filter((r) => {
@@ -188,7 +211,7 @@ async function initNotifBell() {
     return now - t < TWO_DAYS_MS;
   });
 
-  if (pending.length > 0 || recentReviews.length > 0) {
+  if (pending.length > 0 || recentReviews.length > 0 || unreadMessages.length > 0) {
     dot.classList.remove("d-none");
   } else {
     dot.classList.add("d-none");
@@ -200,8 +223,8 @@ async function initNotifBell() {
           .slice(0, 5)
           .map(
             (o) => `
-        <a href="orders.html" class="notif-item">
-          <div class="notif-item-title">#${o.id.slice(0, 8).toUpperCase()} — ${o.shippingInfo?.fullName || "—"}</div>
+        <a href="admin-orders.html" class="notif-item">
+          <div class="notif-item-title">#${o.id.slice(0, 8).toUpperCase()} — ${escapeHtml(o.shippingInfo?.fullName || "—")}</div>
           <div class="notif-item-sub">${peso(o.total)} · awaiting processing</div>
         </a>`,
           )
@@ -214,14 +237,30 @@ async function initNotifBell() {
           .map(
             (r) => `
         <a href="admin-products.html" class="notif-item">
-          <div class="notif-item-title">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)} on ${r.productName}</div>
-          <div class="notif-item-sub">${r.userName || "A customer"}${r.text ? " · " + r.text.slice(0, 40) + (r.text.length > 40 ? "…" : "") : ""}</div>
+          <div class="notif-item-title">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)} on ${escapeHtml(r.productName)}</div>
+          <div class="notif-item-sub">${escapeHtml(r.userName || "A customer")}${r.text ? " · " + escapeHtml(r.text.slice(0, 40)) + (r.text.length > 40 ? "…" : "") : ""}</div>
         </a>`,
           )
           .join("")
       : `<p class="notif-empty">No reviews yet.</p>`;
 
+  const messagesHtml =
+    unreadMessages.length > 0
+      ? unreadMessages
+          .slice(0, 5)
+          .map(
+            (m) => `
+        <a href="admin-messages.html" class="notif-item">
+          <div class="notif-item-title">${escapeHtml(m.name)} — ${escapeHtml(m.subject)}</div>
+          <div class="notif-item-sub">${escapeHtml((m.message || "").slice(0, 50))}${(m.message || "").length > 50 ? "…" : ""}</div>
+        </a>`,
+          )
+          .join("")
+      : `<p class="notif-empty">No new messages.</p>`;
+
   list.innerHTML = `
+    <div class="notif-section-title">Messages</div>
+    ${messagesHtml}
     <div class="notif-section-title">Orders</div>
     ${ordersHtml}
     <div class="notif-section-title">Recent Reviews</div>
@@ -249,6 +288,7 @@ function initPageFor(role) {
   if (document.getElementById("adminOrdersTable")) initOrders(role);
   if (document.getElementById("staffMgmtBody")) initUsers(role);
   if (document.getElementById("adminNameForm")) initSettings();
+  if (document.getElementById("messagesList")) initMessages();
 }
 
 /* =====================================================
@@ -451,8 +491,8 @@ async function initUsers(role) {
       .map(
         (u) => `
         <tr>
-          <td>${u.fullName || "—"}</td>
-          <td>${u.email || "—"}</td>
+          <td>${escapeHtml(u.fullName || "—")}</td>
+          <td>${escapeHtml(u.email || "—")}</td>
           <td><select data-uid="${u.id}" class="role-select">${roleOptions(u)}</select></td>
         </tr>`,
       )
@@ -1543,10 +1583,10 @@ function initOrders() {
             <td>#${o.id.slice(0, 8).toUpperCase()}</td>
             <td>
               <div class="order-customer-cell">
-                <div class="avatar avatar-sm">${initials(o.shippingInfo?.fullName)}</div>
+                <div class="avatar avatar-sm">${escapeHtml(initials(o.shippingInfo?.fullName))}</div>
                 <div>
-                  <div class="order-customer-name">${o.shippingInfo?.fullName || "—"}</div>
-                  <span class="text-muted" style="font-size:0.78rem;">${o.shippingInfo?.email || ""}</span>
+                  <div class="order-customer-name">${escapeHtml(o.shippingInfo?.fullName || "—")}</div>
+                  <span class="text-muted" style="font-size:0.78rem;">${escapeHtml(o.shippingInfo?.email || "")}</span>
                 </div>
               </div>
             </td>
@@ -1821,9 +1861,9 @@ function initOrders() {
       .map(
         (item) => `
         <div class="od-item-row">
-          <img src="${item.imgBase64 || `../${item.img || "assets/images/products/placeholder.jpg"}`}" alt="${item.name}" />
+          <img src="${item.imgBase64 || `../${item.img || "assets/images/products/placeholder.jpg"}`}" alt="${escapeHtml(item.name)}" />
           <div>
-            <div class="od-item-name">${item.name}</div>
+            <div class="od-item-name">${escapeHtml(item.name)}</div>
             <div class="od-item-qty">Qty: ${item.qty}</div>
           </div>
           <div class="od-item-price">${peso(item.price * item.qty)}</div>
@@ -1920,4 +1960,139 @@ function initOrders() {
         showToast("Couldn't cancel this order — see console for details.");
       }
     });
+}
+
+/* =====================================================
+   MESSAGES (Contact Us form, saved by api/contact.js)
+===================================================== */
+
+// Unread count next to "Messages" in the sidebar, live on every admin page.
+function initUnreadMessagesCount() {
+  const badges = document.querySelectorAll("[data-unread-messages]");
+  if (!badges.length) return;
+  onSnapshot(
+    query(collection(db, "contactMessages"), where("read", "==", false)),
+    (snap) => {
+      badges.forEach((b) => {
+        b.textContent = snap.size > 99 ? "99+" : String(snap.size);
+        b.classList.toggle("d-none", snap.size === 0);
+      });
+    },
+    (err) => console.error("Couldn't load unread messages count:", err),
+  );
+}
+
+function initMessages() {
+  const listEl = document.getElementById("messagesList");
+  const unreadCountEl = document.getElementById("msgUnreadCount");
+  let messages = [];
+  let filter = "all";
+
+  const when = (m) => {
+    const d = m.createdAt?.toDate?.();
+    return d
+      ? d.toLocaleString("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })
+      : "Just now";
+  };
+
+  function render() {
+    const unread = messages.filter((m) => !m.read).length;
+    unreadCountEl.textContent = unread ? `(${unread})` : "";
+    const shown = messages.filter((m) =>
+      filter === "unread" ? !m.read : filter === "read" ? m.read : true,
+    );
+    if (!shown.length) {
+      listEl.innerHTML = `<div class="admin-panel messages-empty">
+        <i class="bi bi-envelope-open"></i>
+        <p>${filter === "unread" ? "No unread messages." : filter === "read" ? "No read messages yet." : "No messages yet. Messages from the Contact Us form will appear here."}</p>
+      </div>`;
+      return;
+    }
+    listEl.innerHTML = shown
+      .map((m) => {
+        const replySubject = encodeURIComponent(`Re: ${m.subject || "Your message to KalingaCare"}`);
+        const mailto = `mailto:${encodeURIComponent(m.email)}?subject=${replySubject}`;
+        return `
+        <article class="message-card ${m.read ? "" : "unread"}" data-id="${m.id}">
+          <div class="message-head">
+            <div class="avatar avatar-sm">${escapeHtml(initials(m.name))}</div>
+            <div class="message-from">
+              <div class="message-name">${escapeHtml(m.name)} ${m.read ? "" : '<span class="message-new">New</span>'}</div>
+              <div class="message-meta">
+                ${escapeHtml(m.email)} · ${m.source === "mobile app" ? "Mobile app" : "Website"}
+                ${m.userId ? " · has an account" : " · guest"}
+              </div>
+            </div>
+            <time class="message-time">${when(m)}</time>
+          </div>
+          <h2 class="message-subject">${escapeHtml(m.subject)}</h2>
+          <p class="message-body">${escapeHtml(m.message)}</p>
+          ${m.emailSent === false ? '<p class="message-warning"><i class="bi bi-exclamation-triangle"></i> This one could not be emailed to the support inbox; it is only here.</p>' : ""}
+          <div class="message-actions">
+            <a class="msg-btn msg-btn-primary" href="${mailto}" data-reply="${m.id}">
+              <i class="bi bi-reply"></i> Reply by email
+            </a>
+            <button type="button" class="msg-btn" data-toggle-read="${m.id}">
+              <i class="bi ${m.read ? "bi-envelope" : "bi-envelope-open"}"></i>
+              ${m.read ? "Mark as unread" : "Mark as read"}
+            </button>
+          </div>
+        </article>`;
+      })
+      .join("");
+  }
+
+  async function setRead(id, read) {
+    try {
+      await updateDoc(doc(db, "contactMessages", id), {
+        read,
+        readAt: read ? serverTimestamp() : null,
+        readBy: read ? auth.currentUser?.uid || null : null,
+      });
+    } catch (err) {
+      console.error("Couldn't update message:", err);
+      showToast("Couldn't update the message. Please try again.");
+    }
+  }
+
+  listEl.addEventListener("click", (e) => {
+    const toggle = e.target.closest("[data-toggle-read]");
+    if (toggle) {
+      const m = messages.find((x) => x.id === toggle.dataset.toggleRead);
+      if (m) setRead(m.id, !m.read);
+      return;
+    }
+    // Replying counts as reading it.
+    const reply = e.target.closest("[data-reply]");
+    if (reply) {
+      const m = messages.find((x) => x.id === reply.dataset.reply);
+      if (m && !m.read) setRead(m.id, true);
+    }
+  });
+
+  document.querySelectorAll("[data-msg-filter]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      filter = btn.dataset.msgFilter;
+      document
+        .querySelectorAll("[data-msg-filter]")
+        .forEach((b) => b.classList.toggle("active", b === btn));
+      render();
+    }),
+  );
+
+  onSnapshot(
+    query(collection(db, "contactMessages"), orderBy("createdAt", "desc"), limit(200)),
+    (snap) => {
+      messages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      render();
+    },
+    (err) => {
+      console.error("Couldn't load messages:", err);
+      listEl.innerHTML = `<div class="admin-panel messages-empty">
+        <i class="bi bi-exclamation-circle"></i>
+        <p>Couldn't load messages. If this is new, the Firestore rules for
+        <code>contactMessages</code> may not be published yet.</p>
+      </div>`;
+    },
+  );
 }
