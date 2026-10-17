@@ -42,6 +42,19 @@ function getRedirectDestination() {
   return "index.html";
 }
 
+// Staff, admins and super admins land on the admin dashboard after
+// signing in; customers go back to where they came from.
+async function destinationFor(user) {
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    const role = snap.exists() ? snap.data().role || "user" : "user";
+    if (["staff", "admin", "superadmin"].includes(role)) return "admin/admin-dashboard.html";
+  } catch {
+    // Can't read the role: treat as a customer.
+  }
+  return getRedirectDestination();
+}
+
 const COPY = {
   login: {
     title: "Welcome Back!",
@@ -104,8 +117,8 @@ loginForm.addEventListener("submit", async (e) => {
   submitBtn.textContent = "Signing in...";
 
   try {
-    await signInWithEmailAndPassword(auth, email, password);
-    window.location.href = getRedirectDestination();
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    window.location.href = await destinationFor(cred.user);
   } catch (err) {
     showError(loginError, friendlyAuthError(err.code));
   } finally {
@@ -329,7 +342,7 @@ async function handleGoogleSignIn(button) {
       });
     }
 
-    window.location.href = getRedirectDestination();
+    window.location.href = await destinationFor(user);
   } catch (err) {
     // auth/popup-closed-by-user just means they backed out — no error needed.
     if (err.code !== "auth/popup-closed-by-user") {

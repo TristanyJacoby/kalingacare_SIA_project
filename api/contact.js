@@ -1,6 +1,8 @@
 // api/contact.js — the "Contact Us" form on the website and the mobile app.
 // Emails the customer's message to the KalingaCare support inbox, with
-// Reply-To set to the customer so support can answer straight from Gmail.
+// Reply-To set to the customer so support can answer straight from Gmail,
+// and saves a copy in the staff-only Firestore collection `contactMessages`
+// for the Admin → Messages page.
 //
 // POST { name, email, subject?, message, website? } — "website" is a hidden
 // honeypot field real people leave empty. Signing in is not required; if an
@@ -81,12 +83,27 @@ module.exports = async function handler(req, res) {
 
     const gmailUser = process.env.GMAIL_USER;
     const gmailPass = process.env.GMAIL_APP_PASSWORD;
-    if (!gmailUser || !gmailPass) throw new HttpError(500, "Server is missing GMAIL_USER / GMAIL_APP_PASSWORD");
 
     const admin = getAdmin();
     await checkRateLimit(admin, clientIp(req));
     const user = await optionalUser(admin, req);
     const account = user ? `${user.email || "no email"} (UID ${user.uid})` : "not signed in";
+
+    // Saved first, so the message reaches staff in Admin → Messages even
+    // if the email can't be sent. Clients can't read or write this
+    // collection directly; only staff (Firestore rules) and this function.
+    const saved = await admin.firestore().collection("contactMessages").add({
+      name,
+      email,
+      subject,
+      message,
+      source,
+      userId: user?.uid || null,
+      accountEmail: user?.email || null,
+      read: false,
+      emailSent: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
     const text = `New message from the KalingaCare ${source}.
 
@@ -111,18 +128,26 @@ Reply to this email to answer ${name} directly.`;
   <p style="margin:16px 0 0;color:#5c6b7f;font-size:12px;">Reply to this email to answer ${escapeHtml(name)} directly.</p>
 </div>`;
 
-    const transport = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: gmailUser, pass: gmailPass.replace(/\s+/g, "") },
-    });
-    await transport.sendMail({
-      from: `"KalingaCare Contact Form" <${gmailUser}>`,
-      to: SUPPORT_EMAIL,
-      replyTo: { name, address: email },
-      subject: `[Contact] ${subject}`,
-      text,
-      html,
-    });
+    // The message is already saved, so an email problem doesn't fail the
+    // request: it's logged, and the Messages page shows it wasn't emailed.
+    try {
+      if (!gmailUser || !gmailPass) throw new Error("Missing GMAIL_USER / GMAIL_APP_PASSWORD");
+      const transport = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: gmailUser, pass: gmailPass.replace(/\s+/g, "") },
+      });
+      await transport.sendMail({
+        from: `"KalingaCare Contact Form" <${gmailUser}>`,
+        to: SUPPORT_EMAIL,
+        replyTo: { name, address: email },
+        subject: `[Contact] ${subject}`,
+        text,
+        html,
+      });
+      await saved.update({ emailSent: true });
+    } catch (mailErr) {
+      console.error("Contact email not sent (message saved):", mailErr);
+    }
 
     res.status(200).json({ sent: true });
   } catch (err) {
