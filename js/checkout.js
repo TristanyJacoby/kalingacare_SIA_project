@@ -165,15 +165,24 @@ onAuthStateChanged(auth, async (user) => {
   const startAddress = defaultAddress(addresses);
   if (startAddress) fillFrom(startAddress);
 
+  // "Deliver to": any saved address, or "Someone else" to pick a spot on
+  // the map for a recipient who isn't saved.
   const choice = document.getElementById("ckAddressChoice");
-  if (addresses.length > 1) {
-    const esc = (t) => String(t || "").replace(/</g, "&lt;");
-    choice.innerHTML = addresses
-      .map((a) => `<option value="${a.id}">${esc(a.label || "Address")}: ${esc(a.recipient)}, ${esc(a.address).slice(0, 60)}</option>`)
-      .join("");
+  const OTHER = "__other__";
+  if (addresses.length > 0) {
+    const esc = (t) => String(t || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    choice.innerHTML =
+      addresses
+        .map((a) => `<option value="${esc(a.id)}">${esc(a.label || "Address")}: ${esc(a.recipient)}, ${esc(a.address).slice(0, 60)}</option>`)
+        .join("") + `<option value="${OTHER}">Someone else (pick on the map)</option>`;
     choice.value = startAddress.id;
     document.getElementById("ckAddressChoiceWrap").hidden = false;
     choice.onchange = () => {
+      if (choice.value === OTHER) {
+        fillFrom(null);
+        document.getElementById("ckRecipient").focus();
+        return;
+      }
       const a = addresses.find((x) => x.id === choice.value);
       fillFrom(a);
       if (a?.lat != null) checkoutMap?.setPosition(a.lat, a.lng);
@@ -192,6 +201,8 @@ onAuthStateChanged(auth, async (user) => {
     },
   }).then((p) => {
     checkoutMap = p;
+    // Without a working map there'd be no way to fill the address in.
+    if (!p) document.getElementById("ckAddress").readOnly = false;
   });
 });
 
@@ -259,6 +270,13 @@ document
     const cart = loadCart();
     if (cart.length === 0) return;
 
+    const errorBox0 = document.getElementById("checkoutError");
+    if (!document.getElementById("ckAddress").value.trim()) {
+      errorBox0.textContent = "Please pick the delivery location on the map.";
+      errorBox0.classList.add("show");
+      return;
+    }
+
     const submitBtn = document.getElementById("placeOrderBtn");
     const errorBox = document.getElementById("checkoutError");
     errorBox.classList.remove("show");
@@ -296,6 +314,7 @@ document
             recipient: document.getElementById("ckRecipient").value.trim(),
             address: document.getElementById("ckAddress").value.trim(),
             phone: document.getElementById("ckPhone").value.trim(),
+            note: document.getElementById("ckNote").value.trim(),
             lat: deliveryCoords.lat,
             lng: deliveryCoords.lng,
           },

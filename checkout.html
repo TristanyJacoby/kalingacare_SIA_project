@@ -249,8 +249,8 @@
                   required
                 />
               </div>
-              <!-- Shown when the account has more than one saved address
-                   (same list as the app; managed in Settings). -->
+              <!-- Shown when the account has saved addresses (same list as the
+                   app; managed in Settings), plus a "someone else" option. -->
               <div class="mb-3" id="ckAddressChoiceWrap" hidden>
                 <label class="form-label" for="ckAddressChoice">Deliver to</label>
                 <select class="summary-select" id="ckAddressChoice"></select>
@@ -270,8 +270,7 @@
                 <label class="form-label" for="ckAddress">Delivery Address</label>
                 <p class="checkout-map-hint" id="ckMapHint">
                   Search for the address, or drag the pin / tap the map to mark
-                  the exact spot. The address below fills in automatically, and
-                  you can still edit it (add a unit number, landmark, etc.).
+                  the exact spot. The address below fills in from the map.
                 </p>
                 <div id="ckAddressSearch"></div>
                 <div id="ckAddressMap" class="address-map" aria-describedby="ckMapHint"></div>
@@ -279,7 +278,19 @@
                   class="form-control"
                   id="ckAddress"
                   rows="3"
+                  readonly
+                  placeholder="Pick a location on the map"
                   required
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="ckNote">Note for the driver (optional)</label>
+                <textarea
+                  class="form-control"
+                  id="ckNote"
+                  rows="2"
+                  maxlength="300"
+                  placeholder="e.g. Blue gate, call when you arrive, leave with the guard"
                 ></textarea>
               </div>
               <div class="row">
