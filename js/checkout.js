@@ -8,7 +8,11 @@ import {
   doc,
   getDoc,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getRates, convertAndFormat, populateCurrencySelect } from "./currency.js";
+import {
+  getRates,
+  convertAndFormat,
+  populateCurrencySelect,
+} from "./currency.js";
 import { startOnlinePayment } from "./payments.js";
 import { sendVerificationEmail, TooSoonError } from "./verification.js";
 import { initAddressPicker } from "./address-map.js";
@@ -131,10 +135,12 @@ onAuthStateChanged(auth, async (user) => {
     await user.reload().catch(() => {});
     // Just verified: get a fresh ID token so the Firestore rule that checks
     // email_verified sees it when the order is written.
-    if (auth.currentUser.emailVerified) await auth.currentUser.getIdToken(true).catch(() => {});
+    if (auth.currentUser.emailVerified)
+      await auth.currentUser.getIdToken(true).catch(() => {});
   }
   if (!auth.currentUser.emailVerified) {
-    document.getElementById("verifyEmail").textContent = user.email || "your email";
+    document.getElementById("verifyEmail").textContent =
+      user.email || "your email";
     verifyGate.style.display = "block";
     return;
   }
@@ -145,7 +151,10 @@ onAuthStateChanged(auth, async (user) => {
   // registration or in Settings) rather than always starting on PHP —
   // that's the whole point of asking for their country up front.
   const userData = roleSnap.exists() ? roleSnap.data() : {};
-  populateCurrencySelect(document.getElementById("ckCurrency"), userData.currency || "PHP");
+  populateCurrencySelect(
+    document.getElementById("ckCurrency"),
+    userData.currency || "PHP",
+  );
 
   renderSummary(cart);
 
@@ -170,11 +179,18 @@ onAuthStateChanged(auth, async (user) => {
   const choice = document.getElementById("ckAddressChoice");
   const OTHER = "__other__";
   if (addresses.length > 0) {
-    const esc = (t) => String(t || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const esc = (t) =>
+      String(t || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;");
     choice.innerHTML =
       addresses
-        .map((a) => `<option value="${esc(a.id)}">${esc(a.label || "Address")}: ${esc(a.recipient)}</option>`)
-        .join("") + `<option value="${OTHER}">Someone else (pick on the map)</option>`;
+        .map(
+          (a) =>
+            `<option value="${esc(a.id)}">${esc(a.label || "Address")}: ${esc(a.recipient)}</option>`,
+        )
+        .join("") +
+      `<option value="${OTHER}">Others (pick on the map)</option>`;
     choice.value = startAddress.id;
     document.getElementById("ckAddressChoiceWrap").hidden = false;
     choice.onchange = () => {
@@ -210,49 +226,53 @@ onAuthStateChanged(auth, async (user) => {
 const verifyError = document.getElementById("verifyError");
 const verifyInfo = document.getElementById("verifyInfo");
 
-document.getElementById("verifyCheckBtn").addEventListener("click", async () => {
-  const btn = document.getElementById("verifyCheckBtn");
-  verifyError.classList.remove("show");
-  verifyInfo.textContent = "";
-  verifyInfo.classList.remove("show");
-  btn.disabled = true;
-  try {
-    await auth.currentUser.reload();
-    if (auth.currentUser.emailVerified) {
-      // New ID token, so Firestore rules see email_verified = true.
-      await auth.currentUser.getIdToken(true);
-      window.location.reload();
-      return;
+document
+  .getElementById("verifyCheckBtn")
+  .addEventListener("click", async () => {
+    const btn = document.getElementById("verifyCheckBtn");
+    verifyError.classList.remove("show");
+    verifyInfo.textContent = "";
+    verifyInfo.classList.remove("show");
+    btn.disabled = true;
+    try {
+      await auth.currentUser.reload();
+      if (auth.currentUser.emailVerified) {
+        // New ID token, so Firestore rules see email_verified = true.
+        await auth.currentUser.getIdToken(true);
+        window.location.reload();
+        return;
+      }
+      verifyError.textContent =
+        "Your email isn't verified yet. Open the link in the email we sent, then try again.";
+      verifyError.classList.add("show");
+    } catch {
+      verifyError.textContent = "Couldn't check right now. Please try again.";
+      verifyError.classList.add("show");
     }
-    verifyError.textContent =
-      "Your email isn't verified yet. Open the link in the email we sent, then try again.";
-    verifyError.classList.add("show");
-  } catch {
-    verifyError.textContent = "Couldn't check right now. Please try again.";
-    verifyError.classList.add("show");
-  }
-  btn.disabled = false;
-});
+    btn.disabled = false;
+  });
 
-document.getElementById("verifyResendBtn").addEventListener("click", async () => {
-  const btn = document.getElementById("verifyResendBtn");
-  verifyError.classList.remove("show");
-  verifyInfo.textContent = "";
-  verifyInfo.classList.remove("show");
-  btn.disabled = true;
-  try {
-    await sendVerificationEmail(auth.currentUser);
-    verifyInfo.textContent = `New link sent to ${auth.currentUser.email}.`;
-    verifyInfo.classList.add("show");
-  } catch (err) {
-    verifyError.textContent =
-      err instanceof TooSoonError || err.code === "auth/too-many-requests"
-        ? "A link was sent recently. Please wait a minute before asking for another."
-        : "Couldn't send the email right now. Please try again.";
-    verifyError.classList.add("show");
-  }
-  btn.disabled = false;
-});
+document
+  .getElementById("verifyResendBtn")
+  .addEventListener("click", async () => {
+    const btn = document.getElementById("verifyResendBtn");
+    verifyError.classList.remove("show");
+    verifyInfo.textContent = "";
+    verifyInfo.classList.remove("show");
+    btn.disabled = true;
+    try {
+      await sendVerificationEmail(auth.currentUser);
+      verifyInfo.textContent = `New link sent to ${auth.currentUser.email}.`;
+      verifyInfo.classList.add("show");
+    } catch (err) {
+      verifyError.textContent =
+        err instanceof TooSoonError || err.code === "auth/too-many-requests"
+          ? "A link was sent recently. Please wait a minute before asking for another."
+          : "Couldn't send the email right now. Please try again.";
+      verifyError.classList.add("show");
+    }
+    btn.disabled = false;
+  });
 
 // Shows the PayMongo / test-mode note only when paying online.
 const paymentSelect = document.getElementById("ckPayment");
