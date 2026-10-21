@@ -858,3 +858,11 @@
 .address-remove-btn[hidden] {
   display: none;
 }
+
+/* Checkout delivery address: display only, filled from the map */
+#ckAddress[readonly] {
+  resize: none;
+  background: #eef5fb;
+  cursor: default;
+  user-select: none;
+}

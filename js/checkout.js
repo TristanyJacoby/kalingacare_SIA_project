@@ -173,7 +173,7 @@ onAuthStateChanged(auth, async (user) => {
     const esc = (t) => String(t || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
     choice.innerHTML =
       addresses
-        .map((a) => `<option value="${esc(a.id)}">${esc(a.label || "Address")}: ${esc(a.recipient)}, ${esc(a.address).slice(0, 60)}</option>`)
+        .map((a) => `<option value="${esc(a.id)}">${esc(a.label || "Address")}: ${esc(a.recipient)}</option>`)
         .join("") + `<option value="${OTHER}">Someone else (pick on the map)</option>`;
     choice.value = startAddress.id;
     document.getElementById("ckAddressChoiceWrap").hidden = false;
