@@ -1874,6 +1874,19 @@ function initOrders() {
     document.getElementById("odCustomerEmail").textContent =
       o.shippingInfo?.email || "—";
 
+    const ship = o.shippingInfo || {};
+    const deliveryRows = [
+      ["Recipient", ship.recipient],
+      ["Phone", ship.phone],
+      ["Address", ship.address],
+      ["Driver note", ship.note],
+    ].filter(([, v]) => v);
+    document.getElementById("odDelivery").innerHTML = deliveryRows.length
+      ? deliveryRows
+          .map(([k, v]) => `<div><strong>${k}:</strong> ${escapeHtml(v)}</div>`)
+          .join("")
+      : "—";
+
     const itemsList = document.getElementById("odItemsList");
     itemsList.innerHTML = (o.items || [])
       .map(

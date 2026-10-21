@@ -10,7 +10,7 @@
 //   promoCode?: string,
 //   paymentMethod: "cod" | "online",
 //   displayCurrency?: string,
-//   shippingInfo: { fullName, email, recipient, address, phone, lat?, lng? }
+//   shippingInfo: { fullName, email, recipient, address, phone, note?, lat?, lng? }
 // }
 // Returns { orderId, total }. For "online", the client then calls
 // api/create-checkout.js with that orderId, as before.
@@ -114,6 +114,7 @@ module.exports = async function handler(req, res) {
       recipient: text(info.recipient, 120),
       address: text(info.address, 500),
       phone: text(info.phone, 40),
+      note: text(info.note, 300),
       paymentMethod,
       lat: coord(info.lat),
       lng: coord(info.lng),
