@@ -83,9 +83,13 @@ module.exports = async function handler(req, res) {
             ? await t.getAll(...items.map((i) => db.collection("products").doc(i.id)))
             : [];
           productSnaps.forEach((p, i) => {
-            if (p.exists && typeof p.get("stock") === "number") {
-              t.update(p.ref, { stock: p.get("stock") + (Number(items[i].qty) || 0) });
-            }
+            if (!p.exists) return;
+            const qty = Number(items[i].qty) || 0;
+            const back = {};
+            if (typeof p.get("stock") === "number") back.stock = p.get("stock") + qty;
+            // The sale no longer counts towards "popular".
+            if (typeof p.get("soldCount") === "number") back.soldCount = Math.max(0, p.get("soldCount") - qty);
+            if (Object.keys(back).length) t.update(p.ref, back);
           });
           update.stockRestored = true;
         }

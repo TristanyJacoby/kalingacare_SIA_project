@@ -198,6 +198,16 @@
               </label>
             </div>
 
+            <!-- Filled from the products' sizes/colors (hidden when none). -->
+            <div class="filter-group d-none" id="sizeFilterGroup">
+              <div class="filter-group-label">Size</div>
+              <div id="sizeFilterOptions"></div>
+            </div>
+            <div class="filter-group d-none" id="colorFilterGroup">
+              <div class="filter-group-label">Color</div>
+              <div id="colorFilterOptions"></div>
+            </div>
+
             <div class="filter-group">
               <div class="filter-group-label">Price</div>
               <label class="filter-checkbox-row">
@@ -246,6 +256,8 @@
                 <option value="name-asc">Sort: Name A&ndash;Z</option>
                 <option value="price-asc">Sort: Price Low to High</option>
                 <option value="price-desc">Sort: Price High to Low</option>
+                <option value="newest">Sort: Newest</option>
+                <option value="popular">Sort: Most Popular</option>
               </select>
             </div>
           </div>

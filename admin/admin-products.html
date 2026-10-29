@@ -59,7 +59,7 @@
             >
           </li>
           <li>
-            <a href="admin-products.html" class="active" title="Products"><i class="bi bi-box-seam"></i> Products</a
+            <a href="admin-products.html" class="active" title="Products"><i class="bi bi-box-seam"></i> Products<span class="nav-count d-none" data-low-stock title="Products low or out of stock"></span></a
             >
           </li>
           <li>
@@ -364,6 +364,31 @@
                 placeholder="Description (shown on the product's detail page)"
                 rows="4"
               ></textarea>
+              <label class="stock-modal-label" for="pStatus">Status</label>
+              <select id="pStatus">
+                <option value="active">Active &mdash; shown in the store</option>
+                <option value="inactive">Inactive &mdash; hidden from the store</option>
+              </select>
+              <input
+                type="text"
+                id="pSizes"
+                placeholder="Sizes, separated by commas (optional, e.g. S, M, L)"
+              />
+              <input
+                type="text"
+                id="pColors"
+                placeholder="Colors, separated by commas (optional)"
+              />
+              <textarea
+                id="pSpecs"
+                placeholder="Specifications, one per line (e.g. Weight: 5 kg)"
+                rows="4"
+              ></textarea>
+              <input
+                type="url"
+                id="pVideo"
+                placeholder="Video link (YouTube, optional)"
+              />
               <input
                 type="number"
                 id="pPrice"

@@ -374,3 +374,95 @@ document
       }
     }
   });
+
+/* ===== Three steps: Shipping > Payment > Review ===== */
+const checkoutForm = document.getElementById("checkoutForm");
+let ckStep = 1;
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str ?? "";
+  return div.innerHTML;
+}
+
+function showStep(n) {
+  ckStep = n;
+  checkoutForm.querySelectorAll(".ck-step").forEach((el) => {
+    el.hidden = Number(el.dataset.step) !== n;
+  });
+  document.querySelectorAll("#ckStepper li").forEach((li) => {
+    const i = Number(li.dataset.stepper);
+    li.classList.toggle("active", i === n);
+    li.classList.toggle("done", i < n);
+    if (i === n) li.setAttribute("aria-current", "step");
+    else li.removeAttribute("aria-current");
+  });
+  if (n === 3) renderReview();
+  checkoutForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderReview() {
+  const val = (id) => document.getElementById(id).value.trim();
+  const online = document.getElementById("ckPayment").value === "online";
+  const rows = [
+    [1, "Billed to", `${escapeHtml(val("ckName"))}<br>${escapeHtml(val("ckEmail"))}`],
+    [
+      1,
+      "Deliver to",
+      `${escapeHtml(val("ckRecipient"))}<br>${escapeHtml(val("ckAddress"))}<br>${escapeHtml(val("ckPhone"))}` +
+        (val("ckNote") ? `<br><em>Driver note: ${escapeHtml(val("ckNote"))}</em>` : ""),
+    ],
+    [2, "Payment", online ? "Pay online (card, GCash or Maya)" : "Cash on Delivery"],
+  ];
+  document.getElementById("ckReview").innerHTML = rows
+    .map(
+      ([step, label, html]) => `
+      <div class="ck-review-row">
+        <div><p class="ck-review-label">${label}</p><p>${html}</p></div>
+        <button type="button" class="ck-edit-btn" data-ck-goto="${step}">Edit</button>
+      </div>`,
+    )
+    .join("");
+}
+
+// Step 1 must be complete before moving on. The address box is read-only
+// (filled from the map), so the browser's own check skips it.
+function step1Valid() {
+  const errorBox = document.getElementById("ckStep1Error");
+  errorBox.classList.remove("show");
+  const fields = checkoutForm.querySelectorAll('.ck-step[data-step="1"] [required]:not([readonly])');
+  for (const field of fields) {
+    if (field.offsetParent !== null && !field.reportValidity()) return false;
+  }
+  if (!document.getElementById("ckAddress").value.trim()) {
+    errorBox.textContent = "Please pick the delivery location on the map.";
+    errorBox.classList.add("show");
+    return false;
+  }
+  return true;
+}
+
+checkoutForm.addEventListener("click", (e) => {
+  if (e.target.closest("[data-ck-next]")) {
+    if (ckStep === 1 && !step1Valid()) return;
+    showStep(ckStep + 1);
+  } else if (e.target.closest("[data-ck-back]")) {
+    showStep(ckStep - 1);
+  } else {
+    const goto = e.target.closest("[data-ck-goto]");
+    if (goto) showStep(Number(goto.dataset.ckGoto));
+  }
+});
+
+// Enter inside an earlier step moves on instead of placing the order.
+checkoutForm.addEventListener(
+  "submit",
+  (e) => {
+    if (ckStep === 3) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (ckStep === 1 && !step1Valid()) return;
+    showStep(ckStep + 1);
+  },
+  true,
+);

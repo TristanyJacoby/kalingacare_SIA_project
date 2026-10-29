@@ -70,7 +70,7 @@ async function loadStock(cart) {
 
 function stockNote(item) {
   const stock = stockById[item.id];
-  if (stock === 0) return `<p class="cart-stock-note cart-stock-out">Out of stock. Remove it to check out.</p>`;
+  if (stock === 0) return `<p class="cart-stock-note cart-stock-out">Not available right now. Remove it to check out.</p>`;
   if (stock !== undefined && stock !== Infinity && item.qty >= stock) {
     return `<p class="cart-stock-note">Only ${stock} in stock</p>`;
   }
@@ -161,7 +161,7 @@ checkoutBtn?.addEventListener("click", (e) => {
   const soldOut = loadCart().find((item) => stockById[item.id] === 0);
   if (soldOut) {
     e.preventDefault();
-    showToast(`${soldOut.name} is out of stock. Remove it to check out.`, 2600);
+    showToast(`${soldOut.name} isn't available right now. Remove it to check out.`, 2600);
   }
 });
 

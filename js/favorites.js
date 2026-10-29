@@ -10,7 +10,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { addToCart, showToast, toggleFavorite } from "./site.js";
 import { getRates, formatCurrency } from "./currency.js";
-import { CATEGORY_LABELS, CATEGORY_BADGE_CLASS } from "./product-constants.js";
+import { CATEGORY_LABELS, CATEGORY_BADGE_CLASS, isActive } from "./product-constants.js";
 
 const grid = document.getElementById("favoritesGrid");
 const countEl = document.getElementById("favoritesCount");
@@ -52,7 +52,8 @@ onAuthStateChanged(auth, async (user) => {
   // rather than rendering a broken card.
   favoriteProducts = results
     .filter((s) => s.exists())
-    .map((s) => ({ id: s.id, ...s.data() }));
+    .map((s) => ({ id: s.id, ...s.data() }))
+    .filter(isActive);
   render();
 
   const currency = userData.currency;

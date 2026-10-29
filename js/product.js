@@ -16,7 +16,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { addToCart, showToast, toggleFavorite } from "./site.js";
 import { getRates, formatCurrency } from "./currency.js";
-import { CATEGORY_LABELS, CATEGORY_BADGE_CLASS } from "./product-constants.js";
+import { CATEGORY_LABELS, CATEGORY_BADGE_CLASS, isActive, youtubeId } from "./product-constants.js";
 
 const productId = new URLSearchParams(window.location.search).get("id");
 
@@ -53,6 +53,11 @@ async function init() {
     return;
   }
   product = { id: snap.id, ...snap.data() };
+  // Inactive products are hidden from the store, links included.
+  if (!isActive(product)) {
+    showNotFound();
+    return;
+  }
 
   renderProduct();
   loadingEl.classList.add("d-none");
@@ -159,6 +164,37 @@ function renderProduct() {
   } else {
     descEl.classList.add("d-none");
   }
+
+  renderOptions();
+  renderSpecsAndVideo();
+}
+
+// Sizes and colors are shown as information (the product is one item to order).
+function renderOptions() {
+  const rows = [
+    ["Sizes", product.sizes],
+    ["Colors", product.colors],
+  ].filter(([, list]) => Array.isArray(list) && list.length);
+  const el = document.getElementById("pdOptions");
+  el.classList.toggle("d-none", rows.length === 0);
+  el.innerHTML = rows
+    .map(([label, list]) => `<div><dt>Available ${label.toLowerCase()}</dt><dd>${escapeHtml(list.join(", "))}</dd></div>`)
+    .join("");
+}
+
+function renderSpecsAndVideo() {
+  const specs = Array.isArray(product.specs) ? product.specs.filter((s) => s.value) : [];
+  document.getElementById("pdSpecs").classList.toggle("d-none", specs.length === 0);
+  document.getElementById("pdSpecsBody").innerHTML = specs
+    .map((s) => `<tr><th scope="row">${escapeHtml(s.label)}</th><td>${escapeHtml(s.value)}</td></tr>`)
+    .join("");
+
+  const videoId = youtubeId(product.videoUrl);
+  const section = document.getElementById("pdVideoSection");
+  section.classList.toggle("d-none", !videoId);
+  document.getElementById("pdVideoFrame").innerHTML = videoId
+    ? `<iframe src="https://www.youtube-nocookie.com/embed/${videoId}" title="${escapeHtml(product.name)} video" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`
+    : "";
 }
 
 function renderPrice() {
@@ -365,7 +401,7 @@ async function loadRelated() {
     );
     const related = snap.docs
       .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((p) => p.id !== product.id)
+      .filter((p) => p.id !== product.id && isActive(p))
       .slice(0, 4);
 
     const section = document.getElementById("pdRelatedSection");

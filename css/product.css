@@ -305,3 +305,69 @@
   border: 1px solid var(--line);
   display: block;
 }
+
+/* Sizes / colors, specifications and video on the product page */
+.pd-options {
+  margin: 14px 0 0;
+}
+.pd-options div {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+.pd-options dt {
+  font-weight: 600;
+  color: var(--dark);
+}
+.pd-options dd {
+  margin: 0;
+  color: var(--gray);
+}
+.pd-specs {
+  margin-top: 18px;
+}
+.pd-section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--dark);
+}
+.pd-specs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.pd-specs-table th,
+.pd-specs-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.pd-specs-table th {
+  width: 38%;
+  font-weight: 600;
+  color: var(--dark);
+}
+.pd-specs-table td {
+  color: var(--gray);
+}
+.pd-video-section {
+  margin-top: 32px;
+}
+.pd-video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  max-width: 720px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+.pd-video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

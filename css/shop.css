@@ -900,3 +900,102 @@
   cursor: default;
   user-select: none;
 }
+
+/* Checkout steps */
+.ck-stepper {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+}
+.ck-stepper li {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--line);
+  color: var(--gray);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.ck-stepper li span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.ck-stepper li.active {
+  border-color: var(--primary);
+  color: var(--dark);
+  font-weight: 600;
+}
+.ck-stepper li.active span,
+.ck-stepper li.done span {
+  background: var(--primary);
+  color: var(--primary-fg, #fff);
+}
+.ck-nav {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  margin-top: 18px;
+}
+.ck-nav .btn-auth {
+  flex: 1;
+  margin-top: 0;
+}
+.ck-back-btn {
+  border: 1.5px solid var(--primary);
+  background: #fff;
+  color: var(--primary-text);
+  border-radius: var(--radius-pill);
+  padding: 0 24px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ck-review-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ck-review-row p {
+  margin: 0;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+.ck-review-row .ck-review-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray);
+  margin-bottom: 2px;
+}
+.ck-edit-btn {
+  border: none;
+  background: none;
+  color: var(--primary-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+}
+@media (max-width: 575px) {
+  .ck-stepper li {
+    padding: 6px 8px;
+    font-size: 0.78rem;
+    gap: 5px;
+  }
+}

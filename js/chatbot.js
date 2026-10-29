@@ -39,6 +39,7 @@ async function loadCatalog() {
   try {
     const snap = await getDocs(collection(db, "products"));
     return snap.docs
+      .filter((d) => d.data().status !== "inactive")
       .slice(0, MAX_CATALOG_ITEMS)
       .map((d) => {
         const p = d.data();
