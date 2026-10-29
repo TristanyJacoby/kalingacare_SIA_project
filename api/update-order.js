@@ -16,6 +16,7 @@
 //     stock back once. Customers can't cancel an order that is already paid.
 
 const { handleCors, readJsonBody, requireUser, getAdmin, sendError, HttpError } = require("./_lib/payments");
+const { notifyOrder } = require("./_lib/notify");
 
 const STAFF_ROLES = ["staff", "admin", "superadmin"];
 const CANCELLABLE = ["New", "Pending", "Processing"];
@@ -126,10 +127,15 @@ module.exports = async function handler(req, res) {
       }
 
       t.update(orderRef, update);
-      return { status: update.status, paymentStatus };
+      return { status: update.status, paymentStatus, order: { ...order, paymentStatus } };
     });
 
-    res.status(200).json(result);
+    // Shipped / Delivered / Cancelled emails (each can be switched off in
+    // Admin > Settings); a failure never affects the order.
+    const kind = { Shipped: "shipped", Delivered: "delivered", Cancelled: "cancelled" }[result.status];
+    if (kind) await notifyOrder(admin, kind, orderId, result.order);
+
+    res.status(200).json({ status: result.status, paymentStatus: result.paymentStatus });
   } catch (err) {
     sendError(res, err);
   }

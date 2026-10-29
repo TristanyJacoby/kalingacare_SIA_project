@@ -6,7 +6,42 @@
 // js/chatbot.js (web) and, later, the mobile app.
 
 const MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"];
-const SHIPPING_FEE = 150; // keep in sync with SHIPPING_FEE in js/site.js
+
+// The store's shipping and payment settings (Admin > Settings) live in the
+// public Firestore doc settings/store; read here over REST so this function
+// needs no Firebase credentials. Falls back to the defaults on any problem.
+const SETTINGS_URL =
+  "https://firestore.googleapis.com/v1/projects/kalingacare-e9873/databases/(default)/documents/settings/store";
+const DEFAULT_STORE = { shippingFee: 150, freeShippingOver: 0, codEnabled: true, onlineEnabled: true };
+let settingsCache = { at: 0, value: DEFAULT_STORE };
+
+async function getStoreInfo() {
+  if (Date.now() - settingsCache.at < 60 * 1000) return settingsCache.value;
+  let value = DEFAULT_STORE;
+  try {
+    const res = await fetch(SETTINGS_URL, { signal: AbortSignal.timeout(2500) });
+    if (res.ok) {
+      const f = (await res.json()).fields || {};
+      const n = (k, d) => {
+        const v = f[k];
+        const x = Number(v?.integerValue ?? v?.doubleValue);
+        return Number.isFinite(x) && x >= 0 ? x : d;
+      };
+      const b = (k, d) => (typeof f[k]?.booleanValue === "boolean" ? f[k].booleanValue : d);
+      value = {
+        shippingFee: n("shippingFee", 150),
+        freeShippingOver: n("freeShippingOver", 0),
+        codEnabled: b("codEnabled", true),
+        onlineEnabled: b("onlineEnabled", true),
+      };
+      if (!value.codEnabled && !value.onlineEnabled) value.codEnabled = true;
+    }
+  } catch {
+    // Keep the defaults.
+  }
+  settingsCache = { at: Date.now(), value };
+  return value;
+}
 
 const MAX_MESSAGES = 12;
 const MAX_MESSAGE_CHARS = 500;
@@ -31,14 +66,23 @@ function rateLimited(ip) {
   return recent.length > RATE_LIMIT.max;
 }
 
-function buildSystemPrompt(catalog) {
+function buildSystemPrompt(catalog, store) {
+  const payment = [
+    store.codEnabled ? "Cash on Delivery" : "",
+    store.onlineEnabled ? `"Pay online" (card, GCash or Maya) on PayMongo's secure page` : "",
+  ]
+    .filter(Boolean)
+    .join(", or ");
+  const shipping = store.shippingFee
+    ? `a flat PHP ${store.shippingFee} per order${store.freeShippingOver > 0 ? `, free when the items add up to PHP ${store.freeShippingOver} or more` : ""}`
+    : "free";
   return `You are Kali, the friendly shopping assistant for KalingaCare — an online store where Overseas Filipino Workers (OFWs) buy healthcare, mobility and wellness products for elderly family members in the Philippines. Slogan: "Care Beyond Borders."
 
 Style: warm, brief, plain language (many users are older or non-technical). Reply in the same language the user writes in (English, Filipino or Taglish). Keep answers under about 120 words. Never use markdown headings or tables.
 
 Facts about the store — these are the ONLY store policies you may state:
-- Payment: Cash on Delivery, or "Pay online" (card, GCash or Maya) on PayMongo's secure page. Online payments are in TEST MODE right now, so no real money is charged. An unpaid online order shows "Payment pending" and can be paid later from Profile > My Orders. Paid online orders cannot be cancelled from the site; the customer must contact the store about a refund.
-- Shipping fee: a flat PHP ${SHIPPING_FEE} per order. Delivery is within the Philippines.
+- Payment: ${payment}. Online payments are in TEST MODE right now, so no real money is charged. An unpaid online order shows "Payment pending" and can be paid later from Profile > My Orders. Paid online orders cannot be cancelled from the site; the customer must contact the store about a refund.
+- Shipping fee: ${shipping}. Delivery is within the Philippines.
 - Order statuses customers see: Pending, Processing, Shipped, Delivered, Cancelled. Orders can be cancelled while Pending or Processing, from Profile > My Orders.
 - Reviews: only customers who received a product (order marked Delivered) can review it, from Profile > My Orders. A review is written once and cannot be edited or deleted.
 - Prices can be shown in the buyer's own currency; PHP is the real charged amount. Some currency rates are estimates.
@@ -84,7 +128,7 @@ module.exports = async function handler(req, res) {
 
   const catalog = typeof body.catalog === "string" ? body.catalog.slice(0, MAX_CATALOG_CHARS) : "";
   const payload = JSON.stringify({
-    systemInstruction: { parts: [{ text: buildSystemPrompt(catalog) }] },
+    systemInstruction: { parts: [{ text: buildSystemPrompt(catalog, await getStoreInfo()) }] },
     contents,
     generationConfig: { maxOutputTokens: 400, temperature: 0.4 },
   });

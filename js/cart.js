@@ -2,7 +2,16 @@
 // KalingaCare — Cart page: render, update quantity, remove, live totals.
 
 import { auth, db } from "./firebase.js";
-import { loadCart, saveCart, showToast, stockLimit, SHIPPING_FEE, CART_CHANGED_EVENT } from "./site.js";
+import {
+  loadCart,
+  saveCart,
+  showToast,
+  stockLimit,
+  loadStoreSettings,
+  shippingFor,
+  DEFAULT_STORE_SETTINGS,
+  CART_CHANGED_EVENT,
+} from "./site.js";
 import { getRates, formatCurrency } from "./currency.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -37,6 +46,13 @@ function priceHtml(phpAmount, className) {
 // Current stock per product in the cart (looked up from Firestore, since
 // cart items don't carry stock). Missing = not known yet or not limited.
 const stockById = {};
+
+// Shipping fee and free-shipping rule from Admin > Settings.
+let storeSettings = DEFAULT_STORE_SETTINGS;
+loadStoreSettings().then((s) => {
+  storeSettings = s;
+  render();
+});
 
 async function loadStock(cart) {
   const unknown = cart.filter((item) => !(item.id in stockById));
@@ -116,17 +132,16 @@ function render() {
     .join("");
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const shipping = shippingFor(subtotal, storeSettings);
   document.getElementById("summarySubtotal").textContent = peso(subtotal);
-  document.getElementById("summaryShipping").textContent = peso(SHIPPING_FEE);
-  document.getElementById("summaryTotal").textContent = peso(
-    subtotal + SHIPPING_FEE,
-  );
+  document.getElementById("summaryShipping").textContent = shipping === 0 ? "Free" : peso(shipping);
+  document.getElementById("summaryTotal").textContent = peso(subtotal + shipping);
 
   const convertedRow = document.getElementById("summaryConvertedRow");
   const rateNote = document.getElementById("summaryRateNote");
   if (userCurrency && userRates) {
     document.getElementById("summaryCurrencyLabel").textContent = userCurrency;
-    document.getElementById("summaryConvertedTotal").textContent = local(subtotal + SHIPPING_FEE);
+    document.getElementById("summaryConvertedTotal").textContent = local(subtotal + shipping);
     rateNote.textContent = `${userRateIsLive ? "Live exchange rate" : "Estimated rate (live data isn't available for this currency)"}. You're always charged in Philippine Peso (\u20B1).`;
     convertedRow.style.display = "flex";
     rateNote.style.display = "block";

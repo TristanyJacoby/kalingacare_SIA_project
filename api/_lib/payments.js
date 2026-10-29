@@ -167,7 +167,10 @@ async function computeOrderTotal(orderId, order) {
         : Math.min(promo.value, subtotal);
   }
 
-  const total = subtotal + SHIPPING_FEE - discount;
+  // The shipping fee on the order itself (set by place-order from the store
+  // settings at the time), so a later settings change can't invalidate it.
+  const shippingFee = Number.isFinite(Number(order.shippingFee)) ? Number(order.shippingFee) : SHIPPING_FEE;
+  const total = subtotal + shippingFee - discount;
   if (Math.abs(total - Number(order.total)) > 0.005) {
     throw new HttpError(409, "Prices changed since this order was placed. Please place a new order.");
   }
