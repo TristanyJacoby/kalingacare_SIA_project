@@ -86,6 +86,12 @@ module.exports = async function handler(req, res) {
       if (typeof stock === "number" && stock <= 0) {
         throw new HttpError(409, `${snap.get("name") || "An item"} is out of stock.`);
       }
+      if (typeof stock === "number" && wanted.get(ids[i]) > stock) {
+        throw new HttpError(
+          409,
+          `Only ${stock} of ${snap.get("name") || "an item"} ${stock === 1 ? "is" : "are"} left in stock. Please lower the quantity in your cart.`,
+        );
+      }
       return { id: ids[i], name: snap.get("name") || "Product", price, qty: wanted.get(ids[i]) };
     });
     const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);

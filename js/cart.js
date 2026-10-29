@@ -2,7 +2,7 @@
 // KalingaCare — Cart page: render, update quantity, remove, live totals.
 
 import { auth, db } from "./firebase.js";
-import { loadCart, saveCart, SHIPPING_FEE, CART_CHANGED_EVENT } from "./site.js";
+import { loadCart, saveCart, showToast, stockLimit, SHIPPING_FEE, CART_CHANGED_EVENT } from "./site.js";
 import { getRates, formatCurrency } from "./currency.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -34,8 +34,52 @@ function priceHtml(phpAmount, className) {
           <span class="cart-price-php">${peso(phpAmount)}</span>`;
 }
 
+// Current stock per product in the cart (looked up from Firestore, since
+// cart items don't carry stock). Missing = not known yet or not limited.
+const stockById = {};
+
+async function loadStock(cart) {
+  const unknown = cart.filter((item) => !(item.id in stockById));
+  if (!unknown.length) return;
+  await Promise.all(
+    unknown.map(async (item) => {
+      try {
+        const snap = await getDoc(doc(db, "products", item.id));
+        stockById[item.id] = snap.exists() ? stockLimit(snap.data()) : 0;
+      } catch {
+        stockById[item.id] = Infinity;
+      }
+    }),
+  );
+  // Stock may have dropped since the item was added: bring quantities down.
+  const latest = loadCart();
+  let changed = false;
+  for (const item of latest) {
+    const stock = stockById[item.id];
+    if (stock >= 1 && item.qty > stock) {
+      item.qty = stock;
+      changed = true;
+    }
+  }
+  if (changed) {
+    saveCart(latest);
+    showToast("Some quantities were lowered to match the stock left.", 2600);
+  }
+  render();
+}
+
+function stockNote(item) {
+  const stock = stockById[item.id];
+  if (stock === 0) return `<p class="cart-stock-note cart-stock-out">Out of stock. Remove it to check out.</p>`;
+  if (stock !== undefined && stock !== Infinity && item.qty >= stock) {
+    return `<p class="cart-stock-note">Only ${stock} in stock</p>`;
+  }
+  return "";
+}
+
 function render() {
   const cart = loadCart();
+  loadStock(cart);
 
   if (cart.length === 0) {
     cartLoaded.classList.add("d-none");
@@ -57,8 +101,10 @@ function render() {
         <div class="qty-stepper">
           <button type="button" data-action="decrease" data-index="${index}">&minus;</button>
           <span>${item.qty}</span>
-          <button type="button" data-action="increase" data-index="${index}">+</button>
+          <button type="button" data-action="increase" data-index="${index}" aria-label="Increase quantity"
+            ${item.qty >= (stockById[item.id] ?? Infinity) ? "disabled" : ""}>+</button>
         </div>
+        ${stockNote(item)}
         <button type="button" class="remove-item" data-action="remove" data-index="${index}">
           <i class="bi bi-trash3"></i> Remove
         </button>
@@ -110,6 +156,15 @@ onAuthStateChanged(auth, async (user) => {
   render();
 });
 
+// The server refuses orders above stock anyway; stop here with a clearer note.
+checkoutBtn?.addEventListener("click", (e) => {
+  const soldOut = loadCart().find((item) => stockById[item.id] === 0);
+  if (soldOut) {
+    e.preventDefault();
+    showToast(`${soldOut.name} is out of stock. Remove it to check out.`, 2600);
+  }
+});
+
 itemsList?.addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-action]");
   if (!btn) return;
@@ -119,6 +174,8 @@ itemsList?.addEventListener("click", (e) => {
   const action = btn.dataset.action;
 
   if (action === "increase") {
+    const stock = stockById[cart[index].id] ?? Infinity;
+    if (cart[index].qty >= stock) return;
     cart[index].qty += 1;
   } else if (action === "decrease") {
     cart[index].qty -= 1;
