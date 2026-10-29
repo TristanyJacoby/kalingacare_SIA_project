@@ -177,7 +177,12 @@
           </div>
 
           <div class="admin-panel">
-            <h2><i class="bi bi-person-badge"></i> Staff &amp; Admins</h2>
+            <div class="dash-panel-header">
+              <h2 class="mb-0"><i class="bi bi-person-badge"></i> Staff &amp; Admins</h2>
+              <button type="button" class="bulk-print-btn" id="addUserBtn">
+                <i class="bi bi-person-plus"></i> Add Staff / Admin
+              </button>
+            </div>
             <p class="text-muted" style="margin-top: -10px; font-size: 0.85rem">
               Superadmin, Admin, and Staff accounts. Change a role and it
               applies immediately.
@@ -189,12 +194,14 @@
                   <th>Email</th>
                   <th>Country</th>
                   <th>Joined</th>
+                  <th>Status</th>
                   <th>Role</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="staffMgmtBody">
                 <tr>
-                  <td colspan="5" class="text-center text-muted py-4">
+                  <td colspan="7" class="text-center text-muted py-4">
                     Loading...
                   </td>
                 </tr>
@@ -214,12 +221,14 @@
                   <th>Email</th>
                   <th>Country</th>
                   <th>Joined</th>
+                  <th>Status</th>
                   <th>Role</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="customerMgmtBody">
                 <tr>
-                  <td colspan="5" class="text-center text-muted py-4">
+                  <td colspan="7" class="text-center text-muted py-4">
                     Loading...
                   </td>
                 </tr>
@@ -228,6 +237,58 @@
           </div>
         </div>
       </main>
+    </div>
+
+    <!-- Add staff / admin -->
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addUserTitle">Add Staff or Admin</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form class="admin-form" id="addUserForm">
+              <input type="text" id="auName" placeholder="Full name" required maxlength="120" />
+              <input type="email" id="auEmail" placeholder="Email address" required maxlength="254" />
+              <label class="stock-modal-label" for="auRole">Role</label>
+              <select id="auRole">
+                <option value="staff">Staff &mdash; manage orders and products</option>
+                <option value="admin">Admin &mdash; staff access plus reports</option>
+              </select>
+              <p class="text-muted" style="font-size: 0.82rem">
+                We email them a link to set their own password. Nobody else ever sees it.
+              </p>
+              <p class="auth-error" id="auError" style="display:none"></p>
+              <button type="submit" class="btn-success w-100" id="auSubmit">Send Invitation</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit a person's details -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editUserTitle">Edit Account</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form class="admin-form" id="editUserForm">
+              <input type="hidden" id="euUid" />
+              <p class="text-muted mb-1" id="euEmail" style="font-size: 0.85rem"></p>
+              <label class="stock-modal-label" for="euName">Full name</label>
+              <input type="text" id="euName" required maxlength="120" />
+              <label class="stock-modal-label" for="euCountry">Country</label>
+              <select id="euCountry"></select>
+              <p class="auth-error" id="euError" style="display:none"></p>
+              <button type="submit" class="btn-success w-100" id="euSubmit">Save Changes</button>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>

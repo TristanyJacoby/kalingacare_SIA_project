@@ -12,7 +12,8 @@
 
 import { auth, db } from "./firebase.js";
 import { showToast, resizeImageToDataUrl } from "./site.js";
-import { updateOrder } from "./payments.js";
+import { updateOrder, manageUser } from "./payments.js";
+import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
 import { isActive, splitList, parseSpecs, specsToText, youtubeId } from "./product-constants.js";
 import {
   onAuthStateChanged,
@@ -585,38 +586,193 @@ async function initUsers(role) {
 
   function renderGroup(tbody, list, emptyMsg) {
     if (list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">${emptyMsg}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted py-4">${emptyMsg}</td></tr>`;
       return;
     }
     tbody.innerHTML = list
       .map(
-        (u) => `
-        <tr>
-          <td>${escapeHtml(u.fullName || "—")}</td>
+        (u) => {
+          const isSelf = u.id === auth.currentUser?.uid;
+          const isSuper = u.role === "superadmin";
+          const canDelete = !isSelf && ["staff", "admin"].includes(u.role);
+          const canSuspend = !isSelf && !isSuper;
+          return `
+        <tr class="${u.disabled ? "user-suspended" : ""}">
+          <td>${escapeHtml(u.fullName || "—")}${isSelf ? ` <span class="text-muted">(you)</span>` : ""}</td>
           <td>${escapeHtml(u.email || "—")}</td>
           <td>${escapeHtml(u.country || "—")}</td>
           <td>${u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString("en-PH") : "—"}</td>
-          <td><select data-uid="${u.id}" class="role-select">${roleOptions(u)}</select></td>
-        </tr>`,
+          <td>${u.disabled ? `<span class="status-badge status-cancelled">Suspended</span>` : `<span class="status-badge status-delivered">Active</span>`}</td>
+          <td><select data-uid="${u.id}" class="role-select" ${isSelf ? "disabled title=\"You can't change your own role\"" : ""}>${roleOptions(u)}</select></td>
+          <td class="user-actions">
+            <button class="icon-btn edit-user" data-uid="${u.id}" title="Edit details"><i class="bi bi-pencil"></i></button>
+            ${canSuspend ? `<button class="icon-btn toggle-suspend ${u.disabled ? "" : "danger"}" data-uid="${u.id}" title="${u.disabled ? "Reactivate" : "Suspend"}"><i class="bi ${u.disabled ? "bi-person-check" : "bi-person-slash"}"></i></button>` : ""}
+            ${canDelete ? `<button class="icon-btn danger delete-user" data-uid="${u.id}" title="Delete account"><i class="bi bi-trash3"></i></button>` : ""}
+          </td>
+        </tr>`;
+        },
       )
       .join("");
 
     tbody.querySelectorAll(".role-select").forEach((select) => {
       select.addEventListener("change", async () => {
+        const changed = allUsers.find((u) => u.id === select.dataset.uid);
         try {
-          await updateDoc(doc(db, "users", select.dataset.uid), {
-            role: select.value,
-          });
-          const changed = allUsers.find((u) => u.id === select.dataset.uid);
+          await manageUser({ action: "setRole", uid: select.dataset.uid, role: select.value });
           if (changed) changed.role = select.value; // so later filtering uses the new role
           showToast("Role updated.");
+          applyUserFilters(); // it may now belong in the other table
         } catch (err) {
           console.error(err);
-          showToast("Couldn't update role — see console for details.");
+          select.value = changed?.role || "user";
+          showToast(err.message || "Couldn't update role.");
         }
       });
     });
+
+    tbody.querySelectorAll(".edit-user").forEach((btn) =>
+      btn.addEventListener("click", () => openEditUser(btn.dataset.uid)),
+    );
+
+    tbody.querySelectorAll(".toggle-suspend").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const u = allUsers.find((x) => x.id === btn.dataset.uid);
+        if (!u) return;
+        const suspend = !u.disabled;
+        const who = u.fullName || u.email;
+        if (
+          !confirm(
+            suspend
+              ? `Suspend ${who}? They'll be signed out and can't log in or order until you reactivate them.`
+              : `Reactivate ${who}?`,
+          )
+        )
+          return;
+        btn.disabled = true;
+        try {
+          await manageUser({ action: "setSuspended", uid: u.id, suspended: suspend });
+          u.disabled = suspend;
+          showToast(suspend ? `${who} suspended.` : `${who} reactivated.`);
+          applyUserFilters();
+        } catch (err) {
+          console.error(err);
+          btn.disabled = false;
+          showToast(err.message || "Couldn't update that account.");
+        }
+      }),
+    );
+
+    tbody.querySelectorAll(".delete-user").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const u = allUsers.find((x) => x.id === btn.dataset.uid);
+        if (!u) return;
+        if (!confirm(`Delete ${u.fullName || u.email}'s account? This can't be undone.`)) return;
+        btn.disabled = true;
+        try {
+          await manageUser({ action: "delete", uid: u.id });
+          allUsers.splice(allUsers.indexOf(u), 1);
+          showToast("Account deleted.");
+          applyUserFilters();
+        } catch (err) {
+          console.error(err);
+          btn.disabled = false;
+          showToast(err.message || "Couldn't delete that account.");
+        }
+      }),
+    );
   }
+
+  /* ---- Edit details ---- */
+  const editModal = new bootstrap.Modal(document.getElementById("editUserModal"));
+  populateCountrySelect(document.getElementById("euCountry"), "");
+  const euError = document.getElementById("euError");
+
+  function openEditUser(uid) {
+    const u = allUsers.find((x) => x.id === uid);
+    if (!u) return;
+    document.getElementById("euUid").value = uid;
+    document.getElementById("euEmail").textContent = u.email || "";
+    document.getElementById("euName").value = u.fullName || "";
+    const country = document.getElementById("euCountry");
+    // A country not in the list (or blank) shows as the first entry; only
+    // send it back if the person picked one.
+    country.value = u.country && COUNTRY_CURRENCY[u.country] ? u.country : "";
+    euError.style.display = "none";
+    editModal.show();
+  }
+
+  document.getElementById("editUserForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const uid = document.getElementById("euUid").value;
+    const u = allUsers.find((x) => x.id === uid);
+    const submit = document.getElementById("euSubmit");
+    const fullName = document.getElementById("euName").value.trim();
+    const country = document.getElementById("euCountry").value;
+    const body = { action: "update", uid, fullName };
+    if (country && country !== (u?.country || "")) {
+      body.country = country;
+      body.currency = COUNTRY_CURRENCY[country] || "PHP";
+    }
+    submit.disabled = true;
+    euError.style.display = "none";
+    try {
+      await manageUser(body);
+      if (u) Object.assign(u, { fullName }, body.country ? { country: body.country, currency: body.currency } : {});
+      editModal.hide();
+      showToast("Account updated.");
+      applyUserFilters();
+    } catch (err) {
+      euError.textContent = err.message;
+      euError.style.display = "block";
+    }
+    submit.disabled = false;
+  });
+
+  /* ---- Add staff / admin ---- */
+  const addModal = new bootstrap.Modal(document.getElementById("addUserModal"));
+  const auError = document.getElementById("auError");
+  document.getElementById("addUserBtn").addEventListener("click", () => {
+    document.getElementById("addUserForm").reset();
+    auError.style.display = "none";
+    addModal.show();
+  });
+
+  document.getElementById("addUserForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submit = document.getElementById("auSubmit");
+    submit.disabled = true;
+    submit.textContent = "Sending...";
+    auError.style.display = "none";
+    try {
+      const result = await manageUser({
+        action: "create",
+        fullName: document.getElementById("auName").value.trim(),
+        email: document.getElementById("auEmail").value.trim(),
+        role: document.getElementById("auRole").value,
+      });
+      allUsers.push({
+        id: result.uid,
+        fullName: document.getElementById("auName").value.trim(),
+        email: document.getElementById("auEmail").value.trim().toLowerCase(),
+        role: document.getElementById("auRole").value,
+        country: "",
+        createdAt: { toDate: () => new Date(), toMillis: () => Date.now() },
+      });
+      addModal.hide();
+      applyUserFilters();
+      if (result.emailSent) {
+        showToast("Invitation sent.");
+      } else {
+        // Email isn't set up or failed: let the Super Admin pass the link on.
+        window.prompt("The account was created, but the email couldn't be sent. Copy this link and send it to them:", result.inviteLink);
+      }
+    } catch (err) {
+      auError.textContent = err.message;
+      auError.style.display = "block";
+    }
+    submit.disabled = false;
+    submit.textContent = "Send Invitation";
+  });
 
   function renderAll(list) {
     const staff = list.filter((u) =>

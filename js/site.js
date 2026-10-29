@@ -260,6 +260,12 @@ function watchAccountCart(user) {
   unsubscribeCart = onSnapshot(
     doc(db, "users", user.uid),
     (snap) => {
+      // A Super Admin suspended this account: sign out right away.
+      if (snap.exists() && snap.data().disabled === true) {
+        showToast("This account has been suspended. Please contact support.", 4000);
+        signOut(auth);
+        return;
+      }
       const remote = snap.exists() ? snap.data().cart : undefined;
       if (first) {
         first = false;

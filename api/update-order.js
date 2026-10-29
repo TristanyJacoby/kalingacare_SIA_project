@@ -49,6 +49,9 @@ module.exports = async function handler(req, res) {
 
     const profile = await db.collection("users").doc(user.uid).get();
     const isStaff = STAFF_ROLES.includes(profile.get("role"));
+    if (profile.get("disabled") === true) {
+      throw new HttpError(403, "Your account is suspended. Please contact support.");
+    }
 
     const orderRef = db.collection("orders").doc(orderId);
     const result = await db.runTransaction(async (t) => {
