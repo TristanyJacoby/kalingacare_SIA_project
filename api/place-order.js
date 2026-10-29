@@ -76,40 +76,16 @@ module.exports = async function handler(req, res) {
     if (wanted.size > 50) throw new HttpError(400, "Too many different items in one order.");
 
     const ids = [...wanted.keys()];
-    const snaps = await db.getAll(...ids.map((id) => db.collection("products").doc(id)));
-    const items = snaps.map((snap, i) => {
-      const price = Number(snap.get("price"));
-      if (!snap.exists || !Number.isFinite(price) || price < 0) {
-        throw new HttpError(409, "An item in your cart is no longer available. Please remove it and try again.");
-      }
-      const stock = snap.get("stock");
-      if (typeof stock === "number" && stock <= 0) {
-        throw new HttpError(409, `${snap.get("name") || "An item"} is out of stock.`);
-      }
-      if (typeof stock === "number" && wanted.get(ids[i]) > stock) {
-        throw new HttpError(
-          409,
-          `Only ${stock} of ${snap.get("name") || "an item"} ${stock === 1 ? "is" : "are"} left in stock. Please lower the quantity in your cart.`,
-        );
-      }
-      return { id: ids[i], name: snap.get("name") || "Product", price, qty: wanted.get(ids[i]) };
-    });
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
 
     // Promo code (same rules as the apps and api/create-checkout.js).
     const promoCode = text(body.promoCode, 40).toUpperCase() || null;
-    let discount = 0;
+    const promo = promoCode ? PROMO_CODES[promoCode] : null;
     if (promoCode) {
-      const promo = PROMO_CODES[promoCode];
       if (!promo) throw new HttpError(400, "That promo code isn't valid.");
       if (promo.firstOrderOnly) {
         const earlier = await db.collection("orders").where("userId", "==", user.uid).limit(1).get();
         if (!earlier.empty) throw new HttpError(400, "That promo code is only for your first order.");
       }
-      discount =
-        promo.type === "percent"
-          ? Math.round((subtotal * promo.value) / 100)
-          : Math.min(promo.value, subtotal);
     }
 
     const paymentMethod = body.paymentMethod === "online" ? "online" : "cod";
@@ -129,23 +105,71 @@ module.exports = async function handler(req, res) {
       throw new HttpError(400, "Please fill in the recipient, address and contact number.");
     }
 
-    const total = subtotal + SHIPPING_FEE - discount;
-    const ref = await db.collection("orders").add({
-      userId: user.uid,
-      items,
-      subtotal,
-      shippingFee: SHIPPING_FEE,
-      promoCode,
-      discount,
-      total,
-      status: "New",
-      shippingInfo,
-      displayCurrency: text(body.displayCurrency, 3).toUpperCase() || "PHP",
-      ...(paymentMethod === "online" ? { paymentStatus: "pending" } : {}),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    // One transaction: check stock, take it off the products, number the
+    // invoice and create the order, so two customers can't both buy the
+    // last unit.
+    const orderRef = db.collection("orders").doc();
+    const counterRef = db.collection("counters").doc("orders");
+    const total = await db.runTransaction(async (t) => {
+      const snaps = await t.getAll(...ids.map((id) => db.collection("products").doc(id)));
+      const counter = await t.get(counterRef);
+
+      const items = snaps.map((snap, i) => {
+        const price = Number(snap.get("price"));
+        if (!snap.exists || !Number.isFinite(price) || price < 0) {
+          throw new HttpError(409, "An item in your cart is no longer available. Please remove it and try again.");
+        }
+        const qty = wanted.get(ids[i]);
+        const stock = snap.get("stock");
+        if (typeof stock === "number" && stock <= 0) {
+          throw new HttpError(409, `${snap.get("name") || "An item"} is out of stock.`);
+        }
+        if (typeof stock === "number" && qty > stock) {
+          throw new HttpError(
+            409,
+            `Only ${stock} of ${snap.get("name") || "an item"} ${stock === 1 ? "is" : "are"} left in stock. Please lower the quantity in your cart.`,
+          );
+        }
+        return { id: ids[i], name: snap.get("name") || "Product", price, qty };
+      });
+      const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+      const discount = !promo
+        ? 0
+        : promo.type === "percent"
+          ? Math.round((subtotal * promo.value) / 100)
+          : Math.min(promo.value, subtotal);
+      const orderTotal = subtotal + SHIPPING_FEE - discount;
+
+      // Invoice numbers run KC-<year>-00001, 00002, ... in order placed.
+      const seq = (counter.exists ? Number(counter.get("last")) || 0 : 0) + 1;
+      const invoiceNo = `KC-${new Date().getFullYear()}-${String(seq).padStart(5, "0")}`;
+
+      snaps.forEach((snap, i) => {
+        const stock = snap.get("stock");
+        if (typeof stock === "number") t.update(snap.ref, { stock: stock - items[i].qty });
+      });
+      t.set(counterRef, { last: seq });
+      t.set(orderRef, {
+        userId: user.uid,
+        invoiceNo,
+        items,
+        subtotal,
+        shippingFee: SHIPPING_FEE,
+        promoCode,
+        discount,
+        total: orderTotal,
+        status: "New",
+        shippingInfo,
+        displayCurrency: text(body.displayCurrency, 3).toUpperCase() || "PHP",
+        // Stock was taken off the products; cancelling puts it back once.
+        stockDeducted: true,
+        ...(paymentMethod === "online" ? { paymentStatus: "pending" } : {}),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      return orderTotal;
     });
 
-    res.status(200).json({ orderId: ref.id, total });
+    res.status(200).json({ orderId: orderRef.id, total });
   } catch (err) {
     sendError(res, err);
   }

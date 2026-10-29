@@ -59,25 +59,10 @@ service cloud.firestore {
       // be tampered with.
       allow create: if false;
 
-      allow update: if (
-                      isStaffUp()
-                      && resource.data.status != "Cancelled"
-                      // D: staff manage the order, never its payment record.
-                      && !request.resource.data.diff(resource.data).affectedKeys()
-                            .hasAny(["paymentStatus", "payment", "paymentSessionId"])
-                    )
-                    || (
-                      // C: owner can only cancel an order that is still
-                      // New/Pending/Processing, and only the status field
-                      // may change. D: not once it's been paid online
-                      // (refunds go through the store).
-                      isSignedIn()
-                      && resource.data.userId == request.auth.uid
-                      && resource.data.status in ["New", "Pending", "Processing"]
-                      && resource.data.get("paymentStatus", "") != "paid"
-                      && request.resource.data.status == "Cancelled"
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"])
-                    );
+      // Orders change only through the server (api/update-order.js): it
+      // enforces the status order, the payment checks and puts stock back
+      // on cancel. Clients can't edit them directly.
+      allow update: if false;
 
       allow delete: if false;
     }
