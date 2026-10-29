@@ -135,16 +135,45 @@
         </div>
 
         <div id="usersContent" class="d-none">
-          <div
-            class="admin-search"
-            style="max-width: 340px; margin-bottom: 24px"
-          >
-            <i class="bi bi-search"></i>
-            <input
-              type="text"
-              id="userMgmtSearch"
-              placeholder="Search name or email..."
-            />
+          <div class="orders-toolbar">
+            <div class="admin-search orders-search">
+              <i class="bi bi-search"></i>
+              <input
+                type="text"
+                id="userMgmtSearch"
+                placeholder="Search name or email..."
+              />
+            </div>
+            <label class="toolbar-date">
+              Role
+              <select id="userRoleFilter">
+                <option value="all">All</option>
+                <option value="user">Customer</option>
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+                <option value="superadmin">Superadmin</option>
+              </select>
+            </label>
+            <label class="toolbar-date">
+              Country
+              <select id="userCountryFilter">
+                <option value="all">All</option>
+              </select>
+            </label>
+            <label class="toolbar-date" title="Joined on or after">
+              Joined from
+              <input type="date" id="userJoinedFrom" />
+            </label>
+            <label class="toolbar-date" title="Joined on or before">
+              to
+              <input type="date" id="userJoinedTo" />
+            </label>
+          </div>
+          <div class="orders-summary">
+            <span id="usersResultCount" class="text-muted">&nbsp;</span>
+            <button type="button" class="toolbar-link d-none" id="userFiltersClear">
+              Clear filters
+            </button>
           </div>
 
           <div class="admin-panel">
@@ -158,12 +187,14 @@
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Country</th>
+                  <th>Joined</th>
                   <th>Role</th>
                 </tr>
               </thead>
               <tbody id="staffMgmtBody">
                 <tr>
-                  <td colspan="3" class="text-center text-muted py-4">
+                  <td colspan="5" class="text-center text-muted py-4">
                     Loading...
                   </td>
                 </tr>
@@ -181,12 +212,14 @@
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
+                  <th>Country</th>
+                  <th>Joined</th>
                   <th>Role</th>
                 </tr>
               </thead>
               <tbody id="customerMgmtBody">
                 <tr>
-                  <td colspan="3" class="text-center text-muted py-4">
+                  <td colspan="5" class="text-center text-muted py-4">
                     Loading...
                   </td>
                 </tr>

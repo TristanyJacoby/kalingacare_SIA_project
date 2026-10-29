@@ -938,6 +938,57 @@ body.admin-body {
   margin-left: 2px;
 }
 
+.toolbar-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  color: var(--gray);
+  border-radius: var(--radius-pill);
+  padding: 4px 6px 4px 16px;
+  font-size: 0.85rem;
+  font-family: "Poppins", sans-serif;
+}
+.toolbar-date input {
+  border: none;
+  background: transparent;
+  color: var(--dark);
+  font: inherit;
+  padding: 5px 6px;
+}
+.toolbar-date select {
+  border: none;
+  background: transparent;
+  color: var(--dark);
+  font: inherit;
+  padding: 5px 6px;
+  max-width: 160px;
+}
+.toolbar-date:focus-within {
+  border-color: var(--primary-text);
+}
+.orders-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: -6px 0 14px;
+  font-size: 0.85rem;
+}
+.toolbar-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--primary-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.toolbar-link:hover {
+  text-decoration: underline;
+}
+
 .toolbar-dropdown-menu {
   position: absolute;
   top: calc(100% + 8px);

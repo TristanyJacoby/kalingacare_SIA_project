@@ -315,6 +315,33 @@
           <div class="col-lg-8">
             <div class="summary-card profile-panel">
               <h2 class="mb-3">Order History</h2>
+              <div class="order-filters d-none" id="orderFilters">
+                <input
+                  type="search"
+                  id="orderFilterSearch"
+                  class="form-control"
+                  placeholder="Search order no. or product"
+                  aria-label="Search your orders"
+                />
+                <select id="orderFilterStatus" class="form-select" aria-label="Filter by status">
+                  <option value="all">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <label class="order-filter-date">
+                  From <input type="date" id="orderFilterFrom" class="form-control" />
+                </label>
+                <label class="order-filter-date">
+                  To <input type="date" id="orderFilterTo" class="form-control" />
+                </label>
+              </div>
+              <p class="text-muted d-none" id="orderFilterEmpty">
+                No orders match your search.
+                <button type="button" class="remove-item" id="orderFilterClear" style="color: var(--primary-text);">Clear filters</button>
+              </p>
               <div id="orderHistoryList"></div>
               <div class="empty-state d-none" id="noOrders">
                 <i class="bi bi-bag"></i>
