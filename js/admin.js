@@ -1619,6 +1619,7 @@ function initOrders() {
                 <button type="button" class="row-action-btn" data-id="${o.id}"><i class="bi bi-three-dots"></i></button>
                 <div class="row-action-menu d-none">
                   <button type="button" class="row-view-details" data-id="${o.id}"><i class="bi bi-eye"></i> View Details</button>
+                  <button type="button" class="row-print-invoice" data-id="${o.id}"><i class="bi bi-printer"></i> Print Invoice</button>
                   ${CANCELLABLE_STATUSES.includes(status) ? `<button type="button" class="row-cancel-order danger" data-id="${o.id}"><i class="bi bi-x-circle"></i> Cancel Order</button>` : ""}
                 </div>
               </div>
@@ -1683,6 +1684,14 @@ function initOrders() {
         e.stopPropagation();
         btn.closest(".row-action-menu").classList.add("d-none");
         openOrderDetail(btn.dataset.id);
+      });
+    });
+
+    tbody.querySelectorAll(".row-print-invoice").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        btn.closest(".row-action-menu").classList.add("d-none");
+        openInvoices([btn.dataset.id]);
       });
     });
 
@@ -1775,6 +1784,27 @@ function initOrders() {
       renderRows();
     });
   }
+
+  // Opens the printable invoice page (one tab, one invoice per page).
+  function openInvoices(orderIds) {
+    const q = orderIds.length === 1 ? `id=${orderIds[0]}` : `ids=${orderIds.join(",")}`;
+    window.open(`../invoice.html?${q}&print=1`, "_blank");
+  }
+
+  document.getElementById("bulkPrintBtn")?.addEventListener("click", () => {
+    const chosen = allOrders.filter((o) => selectedIds.has(o.id)).map((o) => o.id);
+    if (!chosen.length) return;
+    if (chosen.length > 30) {
+      showToast("Select up to 30 orders to print at once.");
+      return;
+    }
+    openInvoices(chosen);
+  });
+
+  document.getElementById("odPrintBtn")?.addEventListener("click", () => {
+    const id = document.getElementById("odCancelOrderBtn").dataset.id;
+    if (id) openInvoices([id]);
+  });
 
   const bulkCancelBtn = document.getElementById("bulkCancelBtn");
   if (bulkCancelBtn) {

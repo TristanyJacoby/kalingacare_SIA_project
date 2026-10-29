@@ -1005,6 +1005,24 @@ body.admin-body {
   background: #a73325;
 }
 
+.bulk-print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: var(--primary);
+  color: var(--primary-fg, #fff);
+  border-radius: var(--radius-pill);
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+}
+.bulk-print-btn:hover {
+  filter: brightness(0.92);
+}
+
 .orders-table td {
   position: relative;
 }
