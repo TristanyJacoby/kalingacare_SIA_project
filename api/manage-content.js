@@ -10,11 +10,20 @@
 //   { action: "savePromo",  code, type, value, label, firstOrderOnly, active, expiresOn }
 //   { action: "deletePromo", code }
 //   { action: "seedPromos" }
+//   { action: "saveSettings", settings: { shippingFee, freeShippingOver, codEnabled, onlineEnabled,
+//                             emailOrderConfirmation, emailShipped, emailDelivered, emailCancelled,
+//                             returnWindowDays, emailReturns } }     (Admin > Settings)
+//   { action: "testEmail" }   sends a sample order confirmation to the signed-in admin
 // Returns { ok: true } (or what was saved).
+//
+// (Settings live here, not in their own function, because the Vercel Hobby
+// plan allows at most 12 serverless functions.)
 
 const { handleCors, readJsonBody, requireUser, getAdmin, sendError, HttpError } = require("./_lib/payments");
 const { logAudit, actorFrom } = require("./_lib/audit");
 const { CODE_RE, seedPromos } = require("./_lib/promos");
+const { DEFAULT_SETTINGS, sanitizeSettings, clearSettingsCache } = require("./_lib/settings");
+const { sendSampleEmail } = require("./_lib/notify");
 
 const PAGE_SLUGS = ["about", "contact", "faqs", "privacy", "terms"];
 const PAGE_NAMES = { about: "About Us", contact: "Contact", faqs: "FAQs", privacy: "Privacy Policy", terms: "Terms & Conditions" };
@@ -119,6 +128,56 @@ module.exports = async function handler(req, res) {
           summary: `Updated the homepage: announcement ${announcement.enabled ? "on" : "off"}, ${banners.length} app banner${banners.length === 1 ? "" : "s"}, ${featuredIds.length} featured product${featuredIds.length === 1 ? "" : "s"}${hero.title ? ", custom headline" : ""}.`,
         });
         return res.status(200).json({ ok: true });
+      }
+
+      case "testEmail": {
+        if (!caller.email) throw new HttpError(400, "Your account has no email address.");
+        const sent = await sendSampleEmail(caller.email, profile.get("fullName") || "");
+        if (!sent) throw new HttpError(503, "The email couldn't be sent. Check the Gmail settings on the server.");
+        return res.status(200).json({ sent: true });
+      }
+
+      case "saveSettings": {
+        const input = body.settings || {};
+        const fee = Number(input.shippingFee);
+        if (!Number.isFinite(fee) || fee < 0 || fee > 10000) {
+          throw new HttpError(400, "The shipping fee must be between 0 and 10,000.");
+        }
+        const free = Number(input.freeShippingOver || 0);
+        if (!Number.isFinite(free) || free < 0 || free > 1000000) {
+          throw new HttpError(400, "The free-shipping amount must be 0 (off) or more.");
+        }
+        const windowDays = Number(input.returnWindowDays ?? 7);
+        if (!Number.isInteger(windowDays) || windowDays < 0 || windowDays > 60) {
+          throw new HttpError(400, "The return window must be a whole number of days from 0 (no returns) to 60.");
+        }
+        if (input.codEnabled !== true && input.onlineEnabled !== true) {
+          throw new HttpError(400, "Keep at least one payment option turned on.");
+        }
+
+        const settings = sanitizeSettings({ ...DEFAULT_SETTINGS, ...input, shippingFee: fee, freeShippingOver: free, returnWindowDays: windowDays });
+        const before = sanitizeSettings((await db.collection("settings").doc("store").get()).data());
+        const changes = Object.keys(settings)
+          .filter((k) => settings[k] !== before[k])
+          .map((k) => `${k}: ${before[k]} \u2192 ${settings[k]}`);
+        await db.collection("settings").doc("store").set({
+          ...settings,
+          updatedAt: FieldValue.serverTimestamp(),
+          updatedBy: caller.uid,
+        });
+        clearSettingsCache();
+        if (changes.length) {
+          await logAudit(admin, {
+            actor,
+            action: "settings.update",
+            targetType: "settings",
+            targetId: "store",
+            targetLabel: "Store settings",
+            summary: `Changed store settings: ${changes.join(", ")}.`,
+            details: { changes },
+          });
+        }
+        return res.status(200).json({ settings });
       }
 
       case "seedPromos": {
