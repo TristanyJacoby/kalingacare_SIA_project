@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+
+    <title>KalingaCare | Invoice</title>
+    <link rel="icon" type="image/png" href="assets/images/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <!-- An invoice is a paper document: its own stylesheet, always light,
+         with print rules (A4, one invoice per page). -->
+    <link rel="stylesheet" href="css/invoice.css" />
+  </head>
+
+  <body>
+    <div class="invoice-toolbar no-print">
+      <button type="button" class="inv-btn inv-btn-outline" id="invBackBtn">
+        <i class="bi bi-arrow-left"></i> Back
+      </button>
+      <span class="inv-toolbar-title" id="invToolbarTitle">Invoice</span>
+      <button type="button" class="inv-btn inv-btn-primary" id="invPrintBtn" disabled>
+        <i class="bi bi-printer"></i> Print
+      </button>
+    </div>
+
+    <main class="invoice-stage" id="invoiceStage" aria-live="polite">
+      <p class="invoice-message" id="invoiceMessage">Loading your invoice…</p>
+    </main>
+
+    <script type="module" src="js/invoice.js"></script>
+  </body>
+</html>

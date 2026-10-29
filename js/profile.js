@@ -234,7 +234,7 @@ async function loadOrderHistory(uid) {
           <div class="cart-item" style="align-items:flex-start; flex-direction:column;">
             <div class="cart-item-info w-100">
               <div class="d-flex justify-content-between align-items-center mb-1">
-                <h5 class="mb-0">Order #${order.id.slice(0, 8).toUpperCase()}</h5>
+                <h5 class="mb-0">Order #${order.id.slice(0, 8).toUpperCase()}${order.invoiceNo ? ` <small class="text-muted" style="font-size:0.75rem;font-weight:500">${order.invoiceNo}</small>` : ""}</h5>
                 <span class="status-badge status-${displayClass}">${displayStatus}</span>
               </div>
               <p class="text-muted mb-1" style="font-size:0.85rem;">${date} &middot; ${order.items.length} item${order.items.length > 1 ? "s" : ""}</p>
@@ -244,6 +244,9 @@ async function loadOrderHistory(uid) {
                 <button type="button" class="remove-item track-order-btn" data-id="${order.id}" style="color: var(--primary-text);">
                   <i class="bi bi-truck"></i> Track Order
                 </button>
+                <a class="remove-item" href="invoice.html?id=${order.id}" target="_blank" rel="noopener" style="color: var(--primary-text); text-decoration: none;">
+                  <i class="bi bi-receipt"></i> Invoice
+                </a>
                 ${canCancel ? `<button type="button" class="remove-item cancel-order-btn" data-id="${order.id}"><i class="bi bi-x-circle"></i> Cancel Order</button>` : ""}
               </div>
               <div class="tracking-panel d-none" id="tracking-${order.id}"></div>
