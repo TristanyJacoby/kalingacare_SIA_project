@@ -83,6 +83,54 @@ export function resizeImageToDataUrl(file, maxSize = 300, quality = 0.75) {
   });
 }
 
+/* ===== Announcement bar (Admin > Content) =====
+   A thin banner above the navbar on every storefront page. Dismissing it
+   hides that message for the rest of the visit. */
+async function showAnnouncement() {
+  if (window.location.pathname.includes("/admin/")) return;
+  try {
+    const { loadHomeContent } = await import("./cms.js");
+    const a = (await loadHomeContent()).announcement;
+    if (!a?.enabled || !a.text) return;
+    const key = `kalingacare_announcement_${a.text.length}_${a.text.slice(0, 20)}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+    } catch {
+      // Private mode: show it every time.
+    }
+    const bar = document.createElement("div");
+    bar.className = "announce-bar";
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", "Announcement");
+    const msg = document.createElement("span");
+    msg.textContent = a.text;
+    bar.appendChild(msg);
+    if (a.linkUrl && a.linkLabel) {
+      const link = document.createElement("a");
+      link.href = a.linkUrl;
+      link.textContent = a.linkLabel;
+      bar.appendChild(link);
+    }
+    const close = document.createElement("button");
+    close.type = "button";
+    close.setAttribute("aria-label", "Dismiss announcement");
+    close.innerHTML = "&times;";
+    close.addEventListener("click", () => {
+      bar.remove();
+      try {
+        sessionStorage.setItem(key, "1");
+      } catch {
+        // Nothing to remember it with.
+      }
+    });
+    bar.appendChild(close);
+    document.body.prepend(bar);
+  } catch {
+    // No announcement: the page looks as usual.
+  }
+}
+showAnnouncement();
+
 /* ===== Cart storage (shared by products.js / cart.js / checkout.js) =====
    The cart belongs to the account: it's saved on users/{uid}.cart in
    Firestore, so the website and the mobile app see the same cart. Each

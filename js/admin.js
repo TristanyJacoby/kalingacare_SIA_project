@@ -12,7 +12,8 @@
 
 import { auth, db } from "./firebase.js";
 import { showToast, resizeImageToDataUrl } from "./site.js";
-import { updateOrder, manageUser } from "./payments.js";
+import { updateOrder, manageUser, manageContent } from "./payments.js";
+import { DEFAULT_PAGES } from "./cms.js";
 import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
 import { isActive, splitList, parseSpecs, specsToText, youtubeId } from "./product-constants.js";
 import {
@@ -295,6 +296,8 @@ function initPageFor(role) {
   if (document.getElementById("adminNameForm")) initSettings();
   if (document.getElementById("storeSettingsForm")) initStoreSettings(role);
   if (document.getElementById("auditBody")) initAudit(role);
+  if (document.getElementById("promoBody")) initPromos(role);
+  if (document.getElementById("announceForm")) initContent(role);
   if (document.getElementById("messagesList")) initMessages();
 }
 
@@ -858,6 +861,330 @@ async function initUsers(role) {
    SETTINGS — the logged-in admin's own name + photo.
 ===================================================== */
 /* =====================================================
+   PROMOTIONS — promo codes (Firestore promos, saved by api/manage-content.js)
+===================================================== */
+async function initPromos(role) {
+  if (!["admin", "superadmin"].includes(role)) {
+    document.getElementById("promoRestricted").classList.remove("d-none");
+    return;
+  }
+  document.getElementById("promoContent").classList.remove("d-none");
+
+  const $ = (id) => document.getElementById(id);
+  const modal = new bootstrap.Modal($("promoModal"));
+  let promos = [];
+
+  const money = (n) => "\u20B1" + Number(n).toLocaleString("en-PH");
+  const isExpired = (p) => p.expiresAt?.toMillis && p.expiresAt.toMillis() < Date.now();
+  const expiryKey = (p) => {
+    const d = p.expiresAt?.toDate ? p.expiresAt.toDate() : null;
+    if (!d) return "";
+    // Shown and edited as a Philippine date.
+    return new Date(d.getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+  };
+
+  async function load(seedIfEmpty = true) {
+    try {
+      const snap = await getDocs(collection(db, "promos"));
+      promos = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (!promos.length && seedIfEmpty) {
+        // First visit: the original codes (WELCOME10, CARE50) move into the database.
+        await manageContent({ action: "seedPromos" });
+        return load(false);
+      }
+    } catch (err) {
+      console.error(err);
+      $("promoBody").innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Couldn't load the promo codes.</td></tr>`;
+      return;
+    }
+    render();
+  }
+
+  function render() {
+    $("promoCount").textContent = `${promos.length} promo code${promos.length === 1 ? "" : "s"}`;
+    if (!promos.length) {
+      $("promoBody").innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No promo codes yet.</td></tr>`;
+      return;
+    }
+    $("promoBody").innerHTML = promos
+      .sort((a, b) => a.code.localeCompare(b.code))
+      .map((p) => {
+        const expired = isExpired(p);
+        const status = p.active === false ? `<span class="status-badge status-cancelled">Inactive</span>` : expired ? `<span class="status-badge status-cancelled">Expired</span>` : `<span class="status-badge status-delivered">Active</span>`;
+        return `
+        <tr>
+          <td><strong>${escapeHtml(p.code)}</strong></td>
+          <td>${p.type === "percent" ? `${p.value}% off` : `${money(p.value)} off`}<br><span class="text-muted" style="font-size:0.78rem">${escapeHtml(p.label || "")}</span></td>
+          <td>${p.firstOrderOnly ? "First order only" : "Any order"}</td>
+          <td>${expiryKey(p) || "Never"}</td>
+          <td>${status}</td>
+          <td class="user-actions">
+            <button class="icon-btn promo-edit" data-code="${escapeHtml(p.code)}" title="Edit"><i class="bi bi-pencil"></i></button>
+            <button class="icon-btn promo-toggle" data-code="${escapeHtml(p.code)}" title="${p.active === false ? "Turn on" : "Turn off"}"><i class="bi ${p.active === false ? "bi-toggle-off" : "bi-toggle-on"}"></i></button>
+            <button class="icon-btn danger promo-delete" data-code="${escapeHtml(p.code)}" title="Delete"><i class="bi bi-trash3"></i></button>
+          </td>
+        </tr>`;
+      })
+      .join("");
+  }
+
+  function syncTypeLabel() {
+    const percent = $("pmType").value === "percent";
+    $("pmValueLabel").textContent = percent ? "Percent off (1-100)" : "Pesos off (whole number)";
+    $("pmValue").max = percent ? 100 : 100000;
+  }
+  $("pmType").addEventListener("change", syncTypeLabel);
+
+  function openForm(p) {
+    $("pmEditing").value = p?.code || "";
+    $("promoModalTitle").textContent = p ? `Edit ${p.code}` : "New Promo Code";
+    $("pmCode").value = p?.code || "";
+    $("pmCode").readOnly = !!p; // the code is its identity; make a new one to rename
+    $("pmType").value = p?.type || "percent";
+    $("pmValue").value = p?.value || "";
+    $("pmLabel").value = p?.label || "";
+    $("pmExpires").value = p ? expiryKey(p) : "";
+    $("pmFirst").checked = !!p?.firstOrderOnly;
+    $("pmActive").checked = p ? p.active !== false : true;
+    $("pmError").style.display = "none";
+    syncTypeLabel();
+    modal.show();
+  }
+  $("addPromoBtn").addEventListener("click", () => openForm(null));
+
+  async function save(body, errorEl) {
+    try {
+      await manageContent({ action: "savePromo", ...body });
+      return true;
+    } catch (err) {
+      if (errorEl) {
+        errorEl.textContent = err.message;
+        errorEl.style.display = "block";
+      } else {
+        showToast(err.message);
+      }
+      return false;
+    }
+  }
+
+  $("promoForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("pmSave").disabled = true;
+    const ok = await save(
+      {
+        code: $("pmCode").value.trim().toUpperCase(),
+        type: $("pmType").value,
+        value: Number($("pmValue").value),
+        label: $("pmLabel").value.trim(),
+        expiresOn: $("pmExpires").value,
+        firstOrderOnly: $("pmFirst").checked,
+        active: $("pmActive").checked,
+      },
+      $("pmError"),
+    );
+    $("pmSave").disabled = false;
+    if (ok) {
+      modal.hide();
+      showToast("Promo code saved.");
+      load(false);
+    }
+  });
+
+  $("promoBody").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-code]");
+    if (!btn) return;
+    const p = promos.find((x) => x.code === btn.dataset.code);
+    if (!p) return;
+    if (btn.classList.contains("promo-edit")) {
+      openForm(p);
+    } else if (btn.classList.contains("promo-toggle")) {
+      btn.disabled = true;
+      const ok = await save({
+        code: p.code,
+        type: p.type,
+        value: p.value,
+        label: p.label,
+        expiresOn: expiryKey(p),
+        firstOrderOnly: !!p.firstOrderOnly,
+        active: p.active === false,
+      });
+      if (ok) load(false);
+      else btn.disabled = false;
+    } else if (btn.classList.contains("promo-delete")) {
+      if (!confirm(`Delete ${p.code}? Customers won't be able to use it any more.`)) return;
+      btn.disabled = true;
+      try {
+        await manageContent({ action: "deletePromo", code: p.code });
+        showToast(`${p.code} deleted.`);
+        load(false);
+      } catch (err) {
+        btn.disabled = false;
+        showToast(err.message);
+      }
+    }
+  });
+
+  load();
+}
+
+/* =====================================================
+   CONTENT — announcement bar, homepage headline, featured products, app
+   banners and the editable pages (saved by api/manage-content.js)
+===================================================== */
+async function initContent(role) {
+  if (!["admin", "superadmin"].includes(role)) {
+    document.getElementById("contentRestricted").classList.remove("d-none");
+    return;
+  }
+  document.getElementById("contentContent").classList.remove("d-none");
+
+  const $ = (id) => document.getElementById(id);
+  const MAX_FEATURED = 6;
+  let featured = []; // product ids, in the order they'll show
+
+  /* ---- Homepage, banners, featured ---- */
+  let home = {};
+  try {
+    const snap = await getDoc(doc(db, "content", "home"));
+    home = snap.exists() ? snap.data() : {};
+  } catch (err) {
+    console.error(err);
+  }
+  const a = home.announcement || {};
+  $("anEnabled").checked = a.enabled === true;
+  $("anText").value = a.text || "";
+  $("anLinkLabel").value = a.linkLabel || "";
+  $("anLinkUrl").value = a.linkUrl || "";
+  const hero = home.hero || {};
+  $("heroTitle").value = hero.title || "";
+  $("heroAccent").value = hero.accent || "";
+  $("heroText").value = hero.text || "";
+  featured = Array.isArray(home.featuredIds) ? [...home.featuredIds] : [];
+
+  const banners = Array.isArray(home.banners) ? home.banners : [];
+  $("bannerRows").innerHTML = [0, 1, 2, 3]
+    .map((i) => {
+      const b = banners[i] || {};
+      return `
+      <div class="banner-row">
+        <input type="text" class="bn-title" maxlength="60" placeholder="Banner ${i + 1} title" value="${escapeHtml(b.title || "")}" />
+        <input type="text" class="bn-subtitle" maxlength="140" placeholder="Short text under the title" value="${escapeHtml(b.subtitle || "")}" />
+        <input type="text" class="bn-code" maxlength="20" placeholder="Promo code (optional)" value="${escapeHtml(b.code || "")}" style="text-transform: uppercase" />
+      </div>`;
+    })
+    .join("");
+
+  try {
+    const snap = await getDocs(query(collection(db, "products"), orderBy("name")));
+    const products = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter(isActive);
+    // Products that were deleted or made inactive since can't be picked: drop them.
+    featured = featured.filter((id) => products.some((p) => p.id === id));
+    $("featuredList").innerHTML = products.length
+      ? products
+          .map(
+            (p) => `
+        <label class="settings-check">
+          <input type="checkbox" value="${escapeHtml(p.id)}" ${featured.includes(p.id) ? "checked" : ""} />
+          <span>${escapeHtml(p.name)} <span class="text-muted">&middot; ${peso(p.price)}</span></span>
+        </label>`,
+          )
+          .join("")
+      : `<p class="text-muted mb-0">No active products yet.</p>`;
+    $("featuredList").addEventListener("change", (e) => {
+      const box = e.target.closest("input[type=checkbox]");
+      if (!box) return;
+      if (box.checked) {
+        if (featured.length >= MAX_FEATURED) {
+          box.checked = false;
+          showToast(`Pick up to ${MAX_FEATURED} featured products.`);
+          return;
+        }
+        featured.push(box.value);
+      } else {
+        featured = featured.filter((id) => id !== box.value);
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    $("featuredList").innerHTML = `<p class="text-muted mb-0">Couldn't load the products.</p>`;
+  }
+
+  $("saveHomeBtn").addEventListener("click", async () => {
+    const btn = $("saveHomeBtn");
+    const errorEl = $("homeError");
+    errorEl.style.display = "none";
+    btn.disabled = true;
+    try {
+      await manageContent({
+        action: "saveHome",
+        announcement: {
+          enabled: $("anEnabled").checked,
+          text: $("anText").value,
+          linkLabel: $("anLinkLabel").value,
+          linkUrl: $("anLinkUrl").value,
+        },
+        hero: { title: $("heroTitle").value, accent: $("heroAccent").value, text: $("heroText").value },
+        banners: [...document.querySelectorAll(".banner-row")].map((row) => ({
+          title: row.querySelector(".bn-title").value,
+          subtitle: row.querySelector(".bn-subtitle").value,
+          code: row.querySelector(".bn-code").value,
+        })),
+        featuredIds: featured,
+      });
+      $("homeSaved").textContent = "Saved just now.";
+      showToast("Homepage content saved.");
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.style.display = "block";
+      errorEl.scrollIntoView({ block: "center" });
+    }
+    btn.disabled = false;
+  });
+
+  /* ---- Pages ---- */
+  async function loadPageIntoForm() {
+    const slug = $("pgSelect").value;
+    $("pgSaved").textContent = "";
+    $("pgError").style.display = "none";
+    $("pgView").href = `../page.html?p=${slug}`;
+    let page = null;
+    try {
+      const snap = await getDoc(doc(db, "pages", slug));
+      if (snap.exists() && snap.data().body) page = snap.data();
+    } catch (err) {
+      console.error(err);
+    }
+    const shown = page || DEFAULT_PAGES[slug];
+    $("pgTitle").value = shown.title;
+    $("pgBody").value = shown.body;
+    if (!page) $("pgSaved").textContent = "Showing the starter text (not edited yet).";
+  }
+  $("pgSelect").addEventListener("change", loadPageIntoForm);
+  $("pgReset").addEventListener("click", () => {
+    const d = DEFAULT_PAGES[$("pgSelect").value];
+    $("pgTitle").value = d.title;
+    $("pgBody").value = d.body;
+    $("pgSaved").textContent = "Starter text restored. Press Save Page to use it.";
+  });
+  $("pageForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = $("pgSave");
+    btn.disabled = true;
+    $("pgError").style.display = "none";
+    try {
+      await manageContent({ action: "savePage", slug: $("pgSelect").value, title: $("pgTitle").value, body: $("pgBody").value });
+      $("pgSaved").textContent = "Saved just now.";
+      showToast("Page saved.");
+    } catch (err) {
+      $("pgError").textContent = err.message;
+      $("pgError").style.display = "block";
+    }
+    btn.disabled = false;
+  });
+  loadPageIntoForm();
+}
+
+/* =====================================================
    AUDIT TRAIL — who did what, and when (Admin and Super Admin).
    Entries are written by the server (and, for products, by the admin
    page); nothing here can edit or delete them.
@@ -879,6 +1206,10 @@ const AUDIT_ACTIONS = {
   "user.delete": "Account deleted",
   "settings.update": "Settings changed",
   "message.reply": "Message reply",
+  "content.page": "Page edited",
+  "content.home": "Homepage edited",
+  "promo.save": "Promo code saved",
+  "promo.delete": "Promo code deleted",
 };
 
 function initAudit(role) {
