@@ -14,7 +14,7 @@ import {
   getDocs,
   limit,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { loadCart, saveCart, showToast, toggleFavorite } from "./site.js";
+import { addToCart, showToast, toggleFavorite } from "./site.js";
 import { getRates, formatCurrency } from "./currency.js";
 import { CATEGORY_LABELS, CATEGORY_BADGE_CLASS } from "./product-constants.js";
 
@@ -257,21 +257,7 @@ document.getElementById("pdAddToCartBtn").addEventListener("click", () => {
     return;
   }
 
-  const cart = loadCart();
-  const existing = cart.find((item) => item.id === product.id);
-  if (existing) {
-    existing.qty += qty;
-  } else {
-    cart.push({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      img: product.img,
-      imgBase64: product.imgBase64 || null,
-      qty,
-    });
-  }
-  saveCart(cart);
+  if (addToCart(product, qty) === 0) return;
 
   const btn = document.getElementById("pdAddToCartBtn");
   const original = btn.innerHTML;

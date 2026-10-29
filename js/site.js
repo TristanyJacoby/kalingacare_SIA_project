@@ -148,6 +148,49 @@ export function saveCart(cart) {
   syncCartToAccount(cart);
 }
 
+// Products without a stock number aren't limited (the server checks too).
+export function stockLimit(product) {
+  return typeof product?.stock === "number" ? Math.max(0, product.stock) : Infinity;
+}
+
+// Adds up to `qty` of a product without going past its stock, counting
+// what's already in the cart. Returns how many were actually added and
+// shows a toast when the stock limit cut it short.
+export function addToCart(product, qty = 1) {
+  const cart = loadCart();
+  const existing = cart.find((item) => item.id === product.id);
+  const inCart = existing?.qty || 0;
+  const stock = stockLimit(product);
+  const added = Math.max(0, Math.min(qty, stock - inCart));
+
+  if (added === 0) {
+    showToast(
+      stock === 0
+        ? `${product.name} is out of stock.`
+        : `You already have all ${stock} in stock in your cart.`,
+      2400,
+    );
+    return 0;
+  }
+  if (existing) {
+    existing.qty += added;
+  } else {
+    cart.push({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      img: product.img,
+      imgBase64: product.imgBase64 || null,
+      qty: added,
+    });
+  }
+  saveCart(cart);
+  if (added < qty) {
+    showToast(`Only ${stock} in stock, so ${added} ${added === 1 ? "was" : "were"} added.`, 2400);
+  }
+  return added;
+}
+
 export function clearCart() {
   localStorage.removeItem(CART_KEY);
   updateNavCartBadge();

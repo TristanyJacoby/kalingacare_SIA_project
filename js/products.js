@@ -17,8 +17,7 @@ import {
   getDoc,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import {
-  loadCart,
-  saveCart,
+  addToCart,
   showToast,
   getFavoriteIds,
   toggleFavorite,
@@ -265,21 +264,7 @@ grid.addEventListener("click", (e) => {
   const product = allProducts.find((p) => p.id === button.dataset.id);
   if (!product) return;
 
-  const cart = loadCart();
-  const existing = cart.find((item) => item.id === product.id);
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    cart.push({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      img: product.img,
-      imgBase64: product.imgBase64 || null,
-      qty: 1,
-    });
-  }
-  saveCart(cart);
+  if (addToCart(product) === 0) return;
 
   button.innerHTML = '<i class="bi bi-check2"></i> Added';
   setTimeout(() => {

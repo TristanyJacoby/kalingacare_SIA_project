@@ -374,6 +374,19 @@
   font-weight: 700;
   cursor: pointer;
 }
+.qty-stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cart-stock-note {
+  font-size: 0.8rem;
+  color: var(--text-muted, #5b6b7a);
+  margin: 6px 0 0;
+}
+.cart-stock-note.cart-stock-out {
+  color: #c0392b;
+  font-weight: 600;
+}
 .qty-stepper span {
   min-width: 18px;
   text-align: center;
