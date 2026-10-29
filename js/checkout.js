@@ -2,7 +2,14 @@
 // KalingaCare — Checkout page: auth gate, order summary, places the order.
 
 import { auth, db } from "./firebase.js";
-import { loadCart, clearCart, SHIPPING_FEE, accountCartReady } from "./site.js";
+import {
+  loadCart,
+  clearCart,
+  accountCartReady,
+  loadStoreSettings,
+  shippingFor,
+  DEFAULT_STORE_SETTINGS,
+} from "./site.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   doc,
@@ -40,6 +47,20 @@ function hideAllGates() {
 
 let currentTotalPHP = 0;
 
+// Shipping fee, free-shipping rule and payment options from Admin > Settings.
+let storeSettings = DEFAULT_STORE_SETTINGS;
+loadStoreSettings().then((s) => {
+  storeSettings = s;
+  // Only offer the payment options that are switched on.
+  const select = document.getElementById("ckPayment");
+  [...select.options].forEach((opt) => {
+    if ((opt.value === "cod" && !s.codEnabled) || (opt.value === "online" && !s.onlineEnabled)) opt.remove();
+  });
+  document.getElementById("ckPaymentNote").hidden = select.value !== "online";
+  const cart = loadCart();
+  if (cart.length) renderSummary(cart);
+});
+
 function renderSummary(cart) {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
   document.getElementById("ckItemsSummary").innerHTML = cart
@@ -52,8 +73,9 @@ function renderSummary(cart) {
     )
     .join("");
   document.getElementById("ckSubtotal").textContent = peso(subtotal);
-  document.getElementById("ckShipping").textContent = peso(SHIPPING_FEE);
-  currentTotalPHP = subtotal + SHIPPING_FEE;
+  const shipping = shippingFor(subtotal, storeSettings);
+  document.getElementById("ckShipping").textContent = shipping === 0 ? "Free" : peso(shipping);
+  currentTotalPHP = subtotal + shipping;
   document.getElementById("ckTotal").textContent = peso(currentTotalPHP);
   updateConvertedDisplay();
   return subtotal;

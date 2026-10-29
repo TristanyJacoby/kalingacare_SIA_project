@@ -22,9 +22,10 @@ const {
   getAdmin,
   sendError,
   HttpError,
-  SHIPPING_FEE,
   PROMO_CODES,
 } = require("./_lib/payments");
+const { getStoreSettings, shippingFor } = require("./_lib/settings");
+const { notifyOrder } = require("./_lib/notify");
 
 const STAFF_ROLES = ["staff", "admin", "superadmin"];
 
@@ -92,6 +93,15 @@ module.exports = async function handler(req, res) {
     }
 
     const paymentMethod = body.paymentMethod === "online" ? "online" : "cod";
+    // Platform settings (Admin > Settings): shipping fee, free shipping and
+    // which payment options are on.
+    const settings = await getStoreSettings(db);
+    if (paymentMethod === "cod" && !settings.codEnabled) {
+      throw new HttpError(409, "Cash on Delivery isn't available right now. Please choose another payment option.");
+    }
+    if (paymentMethod === "online" && !settings.onlineEnabled) {
+      throw new HttpError(409, "Online payment isn't available right now. Please choose another payment option.");
+    }
     const info = body.shippingInfo || {};
     const shippingInfo = {
       fullName: text(info.fullName, 120),
@@ -113,7 +123,7 @@ module.exports = async function handler(req, res) {
     // last unit.
     const orderRef = db.collection("orders").doc();
     const counterRef = db.collection("counters").doc("orders");
-    const total = await db.runTransaction(async (t) => {
+    const placed = await db.runTransaction(async (t) => {
       const snaps = await t.getAll(...ids.map((id) => db.collection("products").doc(id)));
       const counter = await t.get(counterRef);
 
@@ -144,7 +154,8 @@ module.exports = async function handler(req, res) {
         : promo.type === "percent"
           ? Math.round((subtotal * promo.value) / 100)
           : Math.min(promo.value, subtotal);
-      const orderTotal = subtotal + SHIPPING_FEE - discount;
+      const shippingFee = shippingFor(subtotal, settings);
+      const orderTotal = subtotal + shippingFee - discount;
 
       // Invoice numbers run KC-<year>-00001, 00002, ... in order placed.
       const seq = (counter.exists ? Number(counter.get("last")) || 0 : 0) + 1;
@@ -157,12 +168,12 @@ module.exports = async function handler(req, res) {
         t.update(snap.ref, update);
       });
       t.set(counterRef, { last: seq });
-      t.set(orderRef, {
+      const orderData = {
         userId: user.uid,
         invoiceNo,
         items,
         subtotal,
-        shippingFee: SHIPPING_FEE,
+        shippingFee,
         promoCode,
         discount,
         total: orderTotal,
@@ -172,12 +183,15 @@ module.exports = async function handler(req, res) {
         // Stock was taken off the products; cancelling puts it back once.
         stockDeducted: true,
         ...(paymentMethod === "online" ? { paymentStatus: "pending" } : {}),
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-      return orderTotal;
+      };
+      t.set(orderRef, { ...orderData, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+      return orderData;
     });
 
-    res.status(200).json({ orderId: orderRef.id, total });
+    // "Thank you" email (if switched on); a failure never affects the order.
+    await notifyOrder(admin, "confirmation", orderRef.id, placed);
+
+    res.status(200).json({ orderId: orderRef.id, total: placed.total });
   } catch (err) {
     sendError(res, err);
   }

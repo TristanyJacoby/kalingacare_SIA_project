@@ -292,6 +292,7 @@ function initPageFor(role) {
   if (document.getElementById("adminOrdersTable")) initOrders(role);
   if (document.getElementById("staffMgmtBody")) initUsers(role);
   if (document.getElementById("adminNameForm")) initSettings();
+  if (document.getElementById("storeSettingsForm")) initStoreSettings(role);
   if (document.getElementById("messagesList")) initMessages();
 }
 
@@ -854,6 +855,100 @@ async function initUsers(role) {
 /* =====================================================
    SETTINGS — the logged-in admin's own name + photo.
 ===================================================== */
+/* Platform settings (shipping, payment options, emails): Admin and Super Admin. */
+async function initStoreSettings(role) {
+  if (!["admin", "superadmin"].includes(role)) return;
+  const panel = document.getElementById("storeSettingsPanel");
+  panel.classList.remove("d-none");
+
+  const $ = (id) => document.getElementById(id);
+  const errorEl = $("ssError");
+
+  function fill(s) {
+    $("ssShippingFee").value = s.shippingFee ?? 150;
+    $("ssFreeShipping").value = s.freeShippingOver ?? 0;
+    $("ssCod").checked = s.codEnabled !== false;
+    $("ssOnline").checked = s.onlineEnabled !== false;
+    $("ssEmailConfirm").checked = s.emailOrderConfirmation !== false;
+    $("ssEmailShipped").checked = s.emailShipped !== false;
+    $("ssEmailDelivered").checked = s.emailDelivered !== false;
+    $("ssEmailCancelled").checked = s.emailCancelled !== false;
+    $("ssUpdated").textContent = s.updatedAt?.toDate
+      ? `Last saved ${s.updatedAt.toDate().toLocaleString("en-PH")}.`
+      : "";
+  }
+
+  try {
+    const snap = await getDoc(doc(db, "settings", "store"));
+    fill(snap.exists() ? snap.data() : {});
+  } catch (err) {
+    console.error("Couldn't load store settings:", err);
+    fill({});
+  }
+
+  async function call(body) {
+    const res = await fetch("/api/save-settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await auth.currentUser.getIdToken()}`,
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Couldn't complete that. Please try again.");
+    return data;
+  }
+
+  $("storeSettingsForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.style.display = "none";
+    if (!$("ssCod").checked && !$("ssOnline").checked) {
+      errorEl.textContent = "Keep at least one payment option turned on.";
+      errorEl.style.display = "block";
+      return;
+    }
+    const btn = $("ssSave");
+    btn.disabled = true;
+    try {
+      const { settings } = await call({
+        action: "save",
+        settings: {
+          shippingFee: Number($("ssShippingFee").value),
+          freeShippingOver: Number($("ssFreeShipping").value || 0),
+          codEnabled: $("ssCod").checked,
+          onlineEnabled: $("ssOnline").checked,
+          emailOrderConfirmation: $("ssEmailConfirm").checked,
+          emailShipped: $("ssEmailShipped").checked,
+          emailDelivered: $("ssEmailDelivered").checked,
+          emailCancelled: $("ssEmailCancelled").checked,
+        },
+      });
+      fill(settings);
+      $("ssUpdated").textContent = "Saved just now.";
+      showToast("Store settings saved.");
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.style.display = "block";
+    }
+    btn.disabled = false;
+  });
+
+  $("ssTestEmail").addEventListener("click", async () => {
+    const btn = $("ssTestEmail");
+    btn.disabled = true;
+    errorEl.style.display = "none";
+    try {
+      await call({ action: "testEmail" });
+      showToast(`Test email sent to ${auth.currentUser.email}.`);
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.style.display = "block";
+    }
+    btn.disabled = false;
+  });
+}
+
 function initSettings() {
   const nameInput = document.getElementById("settingsFullName");
   const roleBadge = document.getElementById("settingsRoleBadge");

@@ -92,7 +92,41 @@ export function resizeImageToDataUrl(file, maxSize = 300, quality = 0.75) {
    can add to cart, and signing out clears this browser's copy. */
 
 export const CART_KEY = "kalingacare_cart";
-export const SHIPPING_FEE = 150;
+export const SHIPPING_FEE = 150; // default; the live value is in the store settings
+
+// Platform settings (Admin > Settings), the public doc settings/store. The
+// server applies them to every order; this is for showing the same numbers.
+export const DEFAULT_STORE_SETTINGS = {
+  shippingFee: SHIPPING_FEE,
+  freeShippingOver: 0,
+  codEnabled: true,
+  onlineEnabled: true,
+};
+
+let storeSettingsPromise = null;
+export function loadStoreSettings() {
+  if (!storeSettingsPromise) {
+    storeSettingsPromise = getDoc(doc(db, "settings", "store"))
+      .then((snap) => {
+        const s = snap.exists() ? snap.data() : {};
+        const out = {
+          shippingFee: Number.isFinite(Number(s.shippingFee)) ? Number(s.shippingFee) : SHIPPING_FEE,
+          freeShippingOver: Number(s.freeShippingOver) > 0 ? Number(s.freeShippingOver) : 0,
+          codEnabled: s.codEnabled !== false,
+          onlineEnabled: s.onlineEnabled !== false,
+        };
+        if (!out.codEnabled && !out.onlineEnabled) out.codEnabled = true;
+        return out;
+      })
+      .catch(() => DEFAULT_STORE_SETTINGS);
+  }
+  return storeSettingsPromise;
+}
+
+// Shipping for items adding up to `subtotal` (before any promo).
+export function shippingFor(subtotal, settings) {
+  return settings.freeShippingOver > 0 && subtotal >= settings.freeShippingOver ? 0 : settings.shippingFee;
+}
 // Fired on window when the cart changes from another device/tab, so open
 // pages (e.g. the Cart page) can re-render.
 export const CART_CHANGED_EVENT = "kalingacare-cart-changed";
