@@ -33,6 +33,7 @@ import {
   where,
   orderBy,
   limit,
+  startAfter,
   onSnapshot,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -293,6 +294,7 @@ function initPageFor(role) {
   if (document.getElementById("staffMgmtBody")) initUsers(role);
   if (document.getElementById("adminNameForm")) initSettings();
   if (document.getElementById("storeSettingsForm")) initStoreSettings(role);
+  if (document.getElementById("auditBody")) initAudit(role);
   if (document.getElementById("messagesList")) initMessages();
 }
 
@@ -855,6 +857,199 @@ async function initUsers(role) {
 /* =====================================================
    SETTINGS — the logged-in admin's own name + photo.
 ===================================================== */
+/* =====================================================
+   AUDIT TRAIL — who did what, and when (Admin and Super Admin).
+   Entries are written by the server (and, for products, by the admin
+   page); nothing here can edit or delete them.
+===================================================== */
+const AUDIT_ACTIONS = {
+  "order.place": "Order placed",
+  "order.status": "Order status",
+  "order.cancel": "Order cancelled",
+  "payment.paid": "Payment received",
+  "product.create": "Product added",
+  "product.update": "Product edited",
+  "product.stock": "Stock adjusted",
+  "product.delete": "Product deleted",
+  "user.create": "Account added",
+  "user.update": "Account edited",
+  "user.role": "Role changed",
+  "user.suspend": "Account suspended",
+  "user.reactivate": "Account reactivated",
+  "user.delete": "Account deleted",
+  "settings.update": "Settings changed",
+  "message.reply": "Message reply",
+};
+
+function initAudit(role) {
+  const restricted = document.getElementById("auditRestrictedNotice");
+  const content = document.getElementById("auditContent");
+  if (!["admin", "superadmin"].includes(role)) {
+    restricted.classList.remove("d-none");
+    return;
+  }
+  content.classList.remove("d-none");
+
+  const PAGE = 100;
+  const $ = (id) => document.getElementById(id);
+  const byId = new Map(); // id -> entry
+  let lastOlderDoc = null;
+  let hasMore = false;
+  let olderLoaded = false;
+
+  const dayKey = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const millis = (e) => e.at?.toMillis?.() || 0;
+
+  function filtered() {
+    const term = $("auditSearch").value.trim().toLowerCase();
+    const area = $("auditArea").value;
+    const actor = $("auditActor").value;
+    const from = $("auditFrom").value;
+    const to = $("auditTo").value;
+    return [...byId.values()]
+      .sort((a, b) => millis(b) - millis(a))
+      .filter((e) => {
+        if (area !== "all" && !String(e.action).startsWith(area + ".")) return false;
+        if (actor !== "all" && e.actorId !== actor) return false;
+        if (from || to) {
+          const d = e.at?.toDate ? e.at.toDate() : null;
+          if (!d) return false;
+          if (from && dayKey(d) < from) return false;
+          if (to && dayKey(d) > to) return false;
+        }
+        if (!term) return true;
+        return [e.summary, e.actorName, e.actorEmail, e.targetLabel, e.action].join(" ").toLowerCase().includes(term);
+      });
+  }
+
+  function refreshActorOptions() {
+    const select = $("auditActor");
+    const current = select.value;
+    const people = new Map();
+    byId.forEach((e) => people.set(e.actorId, e.actorName || e.actorEmail || e.actorId));
+    select.innerHTML =
+      `<option value="all">Everyone</option>` +
+      [...people]
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .map(([id, name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`)
+        .join("");
+    select.value = people.has(current) ? current : "all";
+  }
+
+  function render() {
+    const rows = filtered();
+    const active =
+      $("auditSearch").value || $("auditArea").value !== "all" || $("auditActor").value !== "all" || $("auditFrom").value || $("auditTo").value;
+    $("auditClear").classList.toggle("d-none", !active);
+    $("auditCount").textContent = `Showing ${rows.length} of ${byId.size} loaded entr${byId.size === 1 ? "y" : "ies"}`;
+    $("auditMore").classList.toggle("d-none", !hasMore);
+    if (!rows.length) {
+      $("auditBody").innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">${byId.size ? "No entries match these filters." : "Nothing has been recorded yet."}</td></tr>`;
+      return;
+    }
+    $("auditBody").innerHTML = rows
+      .map((e) => {
+        const d = e.at?.toDate ? e.at.toDate() : null;
+        return `
+        <tr>
+          <td class="audit-when">${d ? `${d.toLocaleDateString("en-PH")}<br><span class="text-muted">${d.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })}</span>` : "—"}</td>
+          <td>${escapeHtml(e.actorName || "—")}<br><span class="audit-role">${escapeHtml(e.actorRole || "")}</span></td>
+          <td><span class="audit-action audit-${escapeHtml(String(e.action).split(".")[0])}">${escapeHtml(AUDIT_ACTIONS[e.action] || e.action)}</span></td>
+          <td>${escapeHtml(e.summary || "")}${e.targetLabel ? `<br><span class="text-muted audit-target">${escapeHtml(e.targetLabel)}</span>` : ""}</td>
+        </tr>`;
+      })
+      .join("");
+  }
+
+  function addDocs(docs) {
+    docs.forEach((d) => byId.set(d.id, { id: d.id, ...d.data() }));
+    refreshActorOptions();
+    render();
+  }
+
+  // Newest entries stream in live; older ones load on request.
+  onSnapshot(
+    query(collection(db, "auditLogs"), orderBy("at", "desc"), limit(PAGE)),
+    (snap) => {
+      if (!olderLoaded) {
+        lastOlderDoc = snap.docs[snap.docs.length - 1] || null;
+        hasMore = snap.size === PAGE;
+      }
+      addDocs(snap.docs);
+    },
+    (err) => {
+      console.error("Couldn't load the audit trail:", err);
+      $("auditBody").innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">Couldn't load the audit trail.</td></tr>`;
+    },
+  );
+
+  $("auditMore").addEventListener("click", async () => {
+    if (!lastOlderDoc) return;
+    const btn = $("auditMore");
+    btn.disabled = true;
+    try {
+      const snap = await getDocs(
+        query(collection(db, "auditLogs"), orderBy("at", "desc"), startAfter(lastOlderDoc), limit(PAGE)),
+      );
+      olderLoaded = true;
+      lastOlderDoc = snap.docs[snap.docs.length - 1] || lastOlderDoc;
+      hasMore = snap.size === PAGE;
+      addDocs(snap.docs);
+    } catch (err) {
+      console.error(err);
+      showToast("Couldn't load older entries.");
+    }
+    btn.disabled = false;
+  });
+
+  ["auditSearch", "auditFrom", "auditTo"].forEach((id) => $(id).addEventListener("input", render));
+  ["auditArea", "auditActor"].forEach((id) => $(id).addEventListener("change", render));
+  $("auditClear").addEventListener("click", () => {
+    $("auditSearch").value = "";
+    $("auditArea").value = "all";
+    $("auditActor").value = "all";
+    $("auditFrom").value = $("auditTo").value = "";
+    render();
+  });
+
+  // Spreadsheet formulas in typed text (=, @) are defused, as in the orders export.
+  const csvCell = (v) => {
+    let s = String(v ?? "");
+    if (/^[=@\t\r]/.test(s) || /^[+-][^\d\s().-]/.test(s)) s = `'${s}`;
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  $("auditExport").addEventListener("click", () => {
+    const rows = filtered();
+    if (!rows.length) {
+      showToast("Nothing to export.");
+      return;
+    }
+    const header = ["Date and time", "Who", "Email", "Role", "Action", "Target", "What happened"];
+    const lines = rows.map((e) =>
+      [
+        e.at?.toDate ? e.at.toDate().toLocaleString("en-PH") : "",
+        e.actorName,
+        e.actorEmail,
+        e.actorRole,
+        AUDIT_ACTIONS[e.action] || e.action,
+        e.targetLabel,
+        e.summary,
+      ]
+        .map(csvCell)
+        .join(","),
+    );
+    const blob = new Blob(["\uFEFF" + [header.map(csvCell).join(","), ...lines].join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `kalingacare-audit-trail-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  });
+}
+
 /* Platform settings (shipping, payment options, emails): Admin and Super Admin. */
 async function initStoreSettings(role) {
   if (!["admin", "superadmin"].includes(role)) return;
@@ -1221,10 +1416,62 @@ function stockBadge(status) {
   return `<span class="status-badge status-${status}">${labels[status]}</span>`;
 }
 
+/* Audit trail for product changes. Orders, users and settings are logged by
+   the server; products are edited straight from this page, so the entry is
+   written here (the Firestore rules only let an admin write entries under their
+   own name, and nobody can edit or delete one afterwards). */
+async function logProductAudit(action, productId, label, summary, details) {
+  try {
+    const user = auth.currentUser;
+    const profile = await getDoc(doc(db, "users", user.uid));
+    await addDoc(collection(db, "auditLogs"), {
+      at: serverTimestamp(),
+      actorId: user.uid,
+      actorName: profile.get("fullName") || user.displayName || user.email || "",
+      actorEmail: user.email || "",
+      actorRole: profile.get("role") || "admin",
+      action,
+      targetType: "product",
+      targetId: productId,
+      targetLabel: String(label || "").slice(0, 160),
+      summary: String(summary || "").slice(0, 400),
+      ...(details ? { details } : {}),
+    });
+  } catch (err) {
+    console.warn("Couldn't write the audit log:", err);
+  }
+}
+
+// "price 2950 → 3100, status active → inactive" for the audit trail.
+function describeProductChanges(before, after) {
+  const plain = (v) => (Array.isArray(v) ? v.join(", ") : v && typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
+  const changes = [];
+  [
+    ["name", "name"],
+    ["category", "category"],
+    ["subcategory", "subcategory"],
+    ["price", "price"],
+    ["status", "status"],
+    ["sizes", "sizes"],
+    ["colors", "colors"],
+    ["videoUrl", "video"],
+  ].forEach(([key, label]) => {
+    const a = key === "status" ? before.status || "active" : before[key];
+    const b = after[key];
+    if (plain(a) !== plain(b)) changes.push(`${label} ${plain(a) || "(none)"} \u2192 ${plain(b) || "(none)"}`);
+  });
+  if ((before.description || "") !== (after.description || "")) changes.push("description edited");
+  if (plain(before.specs) !== plain(after.specs)) changes.push("specifications edited");
+  const photosBefore = (before.images || []).length || (before.imgBase64 || before.img ? 1 : 0);
+  if (photosBefore !== (after.images || []).length) changes.push(`photos ${photosBefore} \u2192 ${(after.images || []).length}`);
+  return changes;
+}
+
 function initProducts(role) {
   const tbody = document.querySelector("#adminProductsTable tbody");
   const form = document.getElementById("productForm");
   const editingIdField = document.getElementById("productEditingId");
+  let editingOriginal = null; // the product as it was when the edit form opened
   const formTitle = document.getElementById("productFormTitle");
   const editable = ["admin", "superadmin"].includes(role);
 
@@ -1335,6 +1582,7 @@ function initProducts(role) {
         const snap2 = await getDoc(doc(db, "products", btn.dataset.id));
         if (!snap2.exists()) return;
         const p = snap2.data();
+        editingOriginal = p;
         editingIdField.value = btn.dataset.id;
         document.getElementById("pName").value = p.name;
         document.getElementById("pCategory").value = p.category;
@@ -1373,7 +1621,9 @@ function initProducts(role) {
     tbody.querySelectorAll(".delete-product").forEach((btn) =>
       btn.addEventListener("click", async () => {
         if (confirm("Delete this product?")) {
+          const gone = allProducts.find((p) => p.id === btn.dataset.id);
           await deleteDoc(doc(db, "products", btn.dataset.id));
+          logProductAudit("product.delete", btn.dataset.id, gone?.name || btn.dataset.id, `Deleted product ${gone?.name || btn.dataset.id}.`);
         }
       }),
     );
@@ -1714,9 +1964,12 @@ function initProducts(role) {
         if (editingIdField.value) {
           await updateDoc(doc(db, "products", editingIdField.value), data);
           showToast(`${data.name} updated.`);
+          const changes = editingOriginal ? describeProductChanges(editingOriginal, data) : [];
+          logProductAudit("product.update", editingIdField.value, data.name, `Edited ${data.name}: ${changes.join(", ") || "saved with no visible change"}.`, { changes });
         } else {
-          await addDoc(productsRef, { ...data, soldCount: 0, createdAt: serverTimestamp() });
+          const created = await addDoc(productsRef, { ...data, soldCount: 0, createdAt: serverTimestamp() });
           showToast(`${data.name} added.`);
+          logProductAudit("product.create", created.id, data.name, `Added product ${data.name} (\u20B1${data.price}, ${data.stock} in stock, ${data.status}).`);
         }
         productModalInstance.hide();
       } catch (err) {
@@ -1817,6 +2070,13 @@ function wireStockModal() {
         stock: newQty,
         updatedAt: serverTimestamp(),
       });
+      logProductAudit(
+        "product.stock",
+        currentStockProductId,
+        currentStockName,
+        `Stock of ${currentStockName}: ${currentStockOldQty} \u2192 ${newQty}.`,
+        { from: currentStockOldQty, to: newQty },
+      );
       stockModalInstance.hide();
       showToast(
         `Stock updated — ${currentStockName} now has ${newQty} in stock.`,

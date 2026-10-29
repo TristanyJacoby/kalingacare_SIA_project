@@ -26,6 +26,7 @@ const {
 } = require("./_lib/payments");
 const { getStoreSettings, shippingFor } = require("./_lib/settings");
 const { notifyOrder } = require("./_lib/notify");
+const { logAudit, actorFrom, shortOrder } = require("./_lib/audit");
 
 const STAFF_ROLES = ["staff", "admin", "superadmin"];
 
@@ -190,6 +191,15 @@ module.exports = async function handler(req, res) {
 
     // "Thank you" email (if switched on); a failure never affects the order.
     await notifyOrder(admin, "confirmation", orderRef.id, placed);
+    await logAudit(admin, {
+      actor: actorFrom(user.uid, user, profile),
+      action: "order.place",
+      targetType: "order",
+      targetId: orderRef.id,
+      targetLabel: `Order ${shortOrder(orderRef.id)} (${placed.invoiceNo})`,
+      summary: `Placed order ${placed.invoiceNo}: \u20B1${placed.total} by ${paymentMethod === "online" ? "online payment" : "Cash on Delivery"}, ${placed.items.length} product${placed.items.length === 1 ? "" : "s"}.`,
+      details: { total: placed.total, shippingFee: placed.shippingFee, discount: placed.discount, items: placed.items.map((i) => `${i.name} x${i.qty}`) },
+    });
 
     res.status(200).json({ orderId: orderRef.id, total: placed.total });
   } catch (err) {

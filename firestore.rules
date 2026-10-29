@@ -46,6 +46,24 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    /* ---------- audit trail ---------- */
+    // Who changed what, and when. Server functions write most entries (Admin
+    // SDK); product changes are written from the admin page, so an admin may
+    // add a product entry under their own name, stamped with the server time.
+    // Nobody can edit or delete an entry. Admins and Super Admins can read.
+    match /auditLogs/{logId} {
+      allow read: if isAdminUp();
+      allow create: if isAdminUp()
+                    && request.resource.data.actorId == request.auth.uid
+                    && request.resource.data.targetType == "product"
+                    && request.resource.data.at == request.time
+                    && request.resource.data.keys().hasOnly([
+                         "at", "actorId", "actorName", "actorEmail", "actorRole", "action",
+                         "targetType", "targetId", "targetLabel", "summary", "details"
+                       ]);
+      allow update, delete: if false;
+    }
+
     /* ---------- store settings ---------- */
     // Shipping fee and payment options: public to read (the store and the
     // apps show them), written only by api/save-settings.js (Admin SDK).

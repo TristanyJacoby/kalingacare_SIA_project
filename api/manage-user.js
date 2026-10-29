@@ -16,6 +16,7 @@
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const { handleCors, readJsonBody, requireUser, getAdmin, sendError, HttpError } = require("./_lib/payments");
+const { logAudit, actorFrom } = require("./_lib/audit");
 
 const PUBLIC_SITE_URL = (
   process.env.PUBLIC_SITE_URL || "https://kalingacare-drab.vercel.app"
@@ -75,6 +76,9 @@ module.exports = async function handler(req, res) {
     }
 
     const action = body.action;
+    const actor = actorFrom(caller.uid, caller, callerSnap, "superadmin");
+    const audit = (a, targetId, targetLabel, summary, details) =>
+      logAudit(admin, { actor, action: a, targetType: "user", targetId, targetLabel, summary, details });
 
     if (action === "create") {
       const email = text(body.email, 254).toLowerCase();
@@ -116,6 +120,7 @@ module.exports = async function handler(req, res) {
       } catch (err) {
         console.error("Invitation email failed:", err);
       }
+      await audit("user.create", created.uid, `${fullName} (${email})`, `Added ${ROLE_LABEL[role]} account for ${fullName} (${email}); invitation ${emailSent ? "emailed" : "not emailed"}.`, { role, emailSent });
       // If the email couldn't go out, hand the link to the Super Admin to share.
       return res.status(200).json({ uid: created.uid, emailSent, ...(emailSent ? {} : { inviteLink: link }) });
     }
@@ -145,6 +150,12 @@ module.exports = async function handler(req, res) {
       if (!Object.keys(update).length) throw new HttpError(400, "Nothing to change.");
       await targetRef.update(update);
       if (update.fullName) await admin.auth().updateUser(uid, { displayName: update.fullName }).catch(() => {});
+      const label = `${update.fullName || targetSnap.get("fullName") || ""} (${targetSnap.get("email") || uid})`;
+      const changes = [
+        update.fullName !== undefined && update.fullName !== targetSnap.get("fullName") ? `name "${targetSnap.get("fullName") || ""}" \u2192 "${update.fullName}"` : "",
+        update.country !== undefined && update.country !== (targetSnap.get("country") || "") ? `country "${targetSnap.get("country") || ""}" \u2192 "${update.country}"` : "",
+      ].filter(Boolean);
+      await audit("user.update", uid, label, `Edited ${label}: ${changes.join(", ") || "no visible change"}.`, update);
       return res.status(200).json({ ok: true });
     }
 
@@ -159,6 +170,8 @@ module.exports = async function handler(req, res) {
         }
       }
       await targetRef.update({ role });
+      const label = `${targetSnap.get("fullName") || ""} (${targetSnap.get("email") || uid})`;
+      await audit("user.role", uid, label, `Changed the role of ${label}: ${targetRole} \u2192 ${role}.`, { from: targetRole, to: role });
       return res.status(200).json({ ok: true });
     }
 
@@ -176,6 +189,8 @@ module.exports = async function handler(req, res) {
           ? { disabled: true, suspendedAt: FieldValue.serverTimestamp(), suspendedBy: caller.uid }
           : { disabled: false, suspendedAt: FieldValue.delete(), suspendedBy: FieldValue.delete() },
       );
+      const label = `${targetSnap.get("fullName") || ""} (${targetSnap.get("email") || uid})`;
+      await audit(suspended ? "user.suspend" : "user.reactivate", uid, label, `${suspended ? "Suspended" : "Reactivated"} ${label}.`, { role: targetRole });
       return res.status(200).json({ ok: true });
     }
 
@@ -188,6 +203,8 @@ module.exports = async function handler(req, res) {
         if (err.code !== "auth/user-not-found") throw err;
       });
       await targetRef.delete();
+      const label = `${targetSnap.get("fullName") || ""} (${targetSnap.get("email") || uid})`;
+      await audit("user.delete", uid, label, `Deleted the ${targetRole} account of ${label}.`, { role: targetRole });
       return res.status(200).json({ ok: true });
     }
 

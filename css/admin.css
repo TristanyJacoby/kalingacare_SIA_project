@@ -1873,6 +1873,38 @@ body.admin-body {
   overflow-wrap: anywhere;
 }
 
+.audit-table td {
+  vertical-align: top;
+  font-size: 0.86rem;
+}
+.audit-when {
+  white-space: nowrap;
+}
+.audit-role {
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+.audit-target {
+  font-size: 0.78rem;
+}
+.audit-action {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #e8f1f8;
+  color: #0b5e83;
+}
+.audit-product { background: #e6f4ea; color: #166534; }
+.audit-user { background: #fdf0d5; color: #8a5a00; }
+.audit-settings { background: #ede7f6; color: #4527a0; }
+.audit-payment { background: #e0f7f4; color: #0f6a5f; }
+.audit-message { background: #fde8ea; color: #a12a3f; }
+
 .settings-group-title {
   font-size: 0.78rem;
   font-weight: 600;
