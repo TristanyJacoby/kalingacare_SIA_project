@@ -231,7 +231,11 @@ async function loadOrderHistory(uid) {
           : "";
 
         return `
-          <div class="cart-item" style="align-items:flex-start; flex-direction:column;">
+          <div class="cart-item" style="align-items:flex-start; flex-direction:column;"
+               data-order-card
+               data-status="${displayClass}"
+               data-date="${order.createdAt?.toDate ? localDay(order.createdAt.toDate()) : ""}"
+               data-search="${escapeAttr(`${order.id} ${order.invoiceNo || ""} ${order.items.map((i) => i.name).join(" ")}`.toLowerCase())}">
             <div class="cart-item-info w-100">
               <div class="d-flex justify-content-between align-items-center mb-1">
                 <h5 class="mb-0">Order #${order.id.slice(0, 8).toUpperCase()}${order.invoiceNo ? ` <small class="text-muted" style="font-size:0.75rem;font-weight:500">${order.invoiceNo}</small>` : ""}</h5>
@@ -257,10 +261,52 @@ async function loadOrderHistory(uid) {
       .join("");
 
     window.__ordersById = Object.fromEntries(orders.map((o) => [o.id, o]));
+    document.getElementById("orderFilters").classList.remove("d-none");
+    applyOrderFilters();
   } catch (err) {
     list.innerHTML = `<p class="text-muted">Couldn't load order history right now. Please try again later.</p>`;
   }
 }
+
+function localDay(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function escapeAttr(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
+// Search / status / date filters over the order cards already on the page.
+function applyOrderFilters() {
+  const term = document.getElementById("orderFilterSearch").value.trim().toLowerCase();
+  const status = document.getElementById("orderFilterStatus").value;
+  const from = document.getElementById("orderFilterFrom").value;
+  const to = document.getElementById("orderFilterTo").value;
+  const cards = [...document.querySelectorAll("#orderHistoryList [data-order-card]")];
+  let shown = 0;
+  cards.forEach((card) => {
+    const date = card.dataset.date;
+    const ok =
+      (!term || card.dataset.search.includes(term)) &&
+      (status === "all" || card.dataset.status === status) &&
+      (!from || (date && date >= from)) &&
+      (!to || (date && date <= to));
+    card.classList.toggle("d-none", !ok);
+    if (ok) shown += 1;
+  });
+  document.getElementById("orderFilterEmpty").classList.toggle("d-none", shown > 0 || cards.length === 0);
+}
+
+["orderFilterSearch", "orderFilterStatus", "orderFilterFrom", "orderFilterTo"].forEach((id) =>
+  document.getElementById(id).addEventListener("input", applyOrderFilters),
+);
+document.getElementById("orderFilterClear").addEventListener("click", () => {
+  document.getElementById("orderFilterSearch").value = "";
+  document.getElementById("orderFilterStatus").value = "all";
+  document.getElementById("orderFilterFrom").value = "";
+  document.getElementById("orderFilterTo").value = "";
+  applyOrderFilters();
+});
 
 const STATUS_STEPS = ["Pending", "Processing", "Shipped", "Delivered"];
 

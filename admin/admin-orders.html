@@ -132,7 +132,7 @@
             <input
               type="text"
               id="orderSearch"
-              placeholder="Search order, customer, or email..."
+              placeholder="Search invoice no., order, customer, product..."
             />
           </div>
 
@@ -190,6 +190,37 @@
           </div>
 
           <div class="toolbar-dropdown">
+            <button
+              type="button"
+              class="toolbar-dropdown-btn"
+              id="paidFilterBtn"
+            >
+              Paid: <strong id="paidFilterLabel">All</strong>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="toolbar-dropdown-menu d-none" id="paidFilterMenu">
+              <button type="button" class="tdm-item active" data-value="all">
+                All
+              </button>
+              <button type="button" class="tdm-item" data-value="paid">
+                Paid
+              </button>
+              <button type="button" class="tdm-item" data-value="unpaid">
+                Awaiting payment
+              </button>
+            </div>
+          </div>
+
+          <label class="toolbar-date" title="Placed on or after">
+            From
+            <input type="date" id="orderDateFrom" />
+          </label>
+          <label class="toolbar-date" title="Placed on or before">
+            To
+            <input type="date" id="orderDateTo" />
+          </label>
+
+          <div class="toolbar-dropdown">
             <button type="button" class="toolbar-dropdown-btn" id="sortByBtn">
               Sort by: <strong id="sortByLabel">Newest</strong>
               <i class="bi bi-chevron-down"></i>
@@ -213,6 +244,16 @@
               </button>
             </div>
           </div>
+        </div>
+
+        <div class="orders-summary">
+          <span id="ordersResultCount" class="text-muted">&nbsp;</span>
+          <button type="button" class="toolbar-link d-none" id="orderFiltersClear">
+            Clear filters
+          </button>
+          <button type="button" class="toolbar-dropdown-btn ms-auto" id="exportOrdersCsv">
+            <i class="bi bi-download"></i> Export CSV
+          </button>
         </div>
 
         <div class="bulk-action-bar d-none" id="bulkActionBar">

@@ -485,7 +485,7 @@ async function initUsers(role) {
 
   function renderGroup(tbody, list, emptyMsg) {
     if (list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-4">${emptyMsg}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">${emptyMsg}</td></tr>`;
       return;
     }
     tbody.innerHTML = list
@@ -494,6 +494,8 @@ async function initUsers(role) {
         <tr>
           <td>${escapeHtml(u.fullName || "—")}</td>
           <td>${escapeHtml(u.email || "—")}</td>
+          <td>${escapeHtml(u.country || "—")}</td>
+          <td>${u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString("en-PH") : "—"}</td>
           <td><select data-uid="${u.id}" class="role-select">${roleOptions(u)}</select></td>
         </tr>`,
       )
@@ -505,6 +507,8 @@ async function initUsers(role) {
           await updateDoc(doc(db, "users", select.dataset.uid), {
             role: select.value,
           });
+          const changed = allUsers.find((u) => u.id === select.dataset.uid);
+          if (changed) changed.role = select.value; // so later filtering uses the new role
           showToast("Role updated.");
         } catch (err) {
           console.error(err);
@@ -531,22 +535,64 @@ async function initUsers(role) {
     );
   }
 
-  renderAll(allUsers);
-
   const searchInput = document.getElementById("userMgmtSearch");
-  if (searchInput) {
-    searchInput.addEventListener("input", () => {
-      const term = searchInput.value.trim().toLowerCase();
-      const filtered = term
-        ? allUsers.filter(
-            (u) =>
-              (u.fullName || "").toLowerCase().includes(term) ||
-              (u.email || "").toLowerCase().includes(term),
-          )
-        : allUsers;
-      renderAll(filtered);
+  const roleSelect = document.getElementById("userRoleFilter");
+  const countrySelect = document.getElementById("userCountryFilter");
+  const fromInput = document.getElementById("userJoinedFrom");
+  const toInput = document.getElementById("userJoinedTo");
+  const clearBtn = document.getElementById("userFiltersClear");
+  const countEl = document.getElementById("usersResultCount");
+
+  // Countries that actually appear in the data.
+  [...new Set(allUsers.map((u) => u.country).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b))
+    .forEach((c) => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      countrySelect.appendChild(opt);
     });
+
+  const dayKey = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  function applyUserFilters() {
+    const term = searchInput.value.trim().toLowerCase();
+    const role = roleSelect.value;
+    const country = countrySelect.value;
+    const from = fromInput.value;
+    const to = toInput.value;
+    const filtered = allUsers.filter((u) => {
+      if (role !== "all" && (u.role || "user") !== role) return false;
+      if (country !== "all" && (u.country || "") !== country) return false;
+      if (from || to) {
+        const d = u.createdAt?.toDate ? u.createdAt.toDate() : null;
+        if (!d) return false;
+        if (from && dayKey(d) < from) return false;
+        if (to && dayKey(d) > to) return false;
+      }
+      return (
+        !term ||
+        (u.fullName || "").toLowerCase().includes(term) ||
+        (u.email || "").toLowerCase().includes(term)
+      );
+    });
+    const active = term || role !== "all" || country !== "all" || from || to;
+    clearBtn.classList.toggle("d-none", !active);
+    countEl.textContent = `Showing ${filtered.length} of ${allUsers.length} accounts`;
+    renderAll(filtered);
   }
+
+  [searchInput, fromInput, toInput].forEach((el) => el.addEventListener("input", applyUserFilters));
+  [roleSelect, countrySelect].forEach((el) => el.addEventListener("change", applyUserFilters));
+  clearBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    roleSelect.value = countrySelect.value = "all";
+    fromInput.value = toInput.value = "";
+    applyUserFilters();
+  });
+
+  applyUserFilters();
 }
 
 /* =====================================================
@@ -1506,6 +1552,9 @@ function initOrders() {
   let searchTerm = "";
   let statusFilterValue = "all";
   let paymentFilterValue = "all";
+  let paidFilterValue = "all";
+  let dateFrom = ""; // "YYYY-MM-DD" or ""
+  let dateTo = "";
   let sortValue = "date-desc";
   const selectedIds = new Set();
 
@@ -1518,12 +1567,43 @@ function initOrders() {
       paymentCode(o) !== paymentFilterValue
     )
       return false;
+    if (paidFilterValue === "paid" && o.paymentStatus !== "paid") return false;
+    if (paidFilterValue === "unpaid" && (o.paymentStatus === "paid" || status === "Cancelled"))
+      return false;
+    if (dateFrom || dateTo) {
+      const d = o.createdAt?.toDate ? o.createdAt.toDate() : null;
+      if (!d) return false;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (dateFrom && key < dateFrom) return false;
+      if (dateTo && key > dateTo) return false;
+    }
     if (searchTerm) {
-      const haystack =
-        `${o.id} ${o.shippingInfo?.fullName || ""} ${o.shippingInfo?.email || ""}`.toLowerCase();
+      const ship = o.shippingInfo || {};
+      const haystack = [
+        o.id,
+        o.invoiceNo,
+        ship.fullName,
+        ship.email,
+        ship.recipient,
+        ship.phone,
+        ...(o.items || []).map((i) => i.name),
+      ]
+        .join(" ")
+        .toLowerCase();
       if (!haystack.includes(searchTerm)) return false;
     }
     return true;
+  }
+
+  function filtersActive() {
+    return (
+      searchTerm ||
+      statusFilterValue !== "all" ||
+      paymentFilterValue !== "all" ||
+      paidFilterValue !== "all" ||
+      dateFrom ||
+      dateTo
+    );
   }
 
   function sortOrders(list) {
@@ -1567,6 +1647,9 @@ function initOrders() {
 
   function renderRows() {
     const filtered = sortOrders(allOrders.filter(matchesFilters));
+    document.getElementById("ordersResultCount").textContent =
+      `Showing ${filtered.length} of ${allOrders.length} order${allOrders.length === 1 ? "" : "s"}`;
+    document.getElementById("orderFiltersClear").classList.toggle("d-none", !filtersActive());
 
     if (filtered.length === 0) {
       tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No orders match these filters.</td></tr>`;
@@ -1772,6 +1855,98 @@ function initOrders() {
   wireToolbarDropdown("sortByBtn", "sortByMenu", "sortByLabel", (val) => {
     sortValue = val;
     renderRows();
+  });
+  wireToolbarDropdown("paidFilterBtn", "paidFilterMenu", "paidFilterLabel", (val) => {
+    paidFilterValue = val;
+    renderRows();
+  });
+
+  /* ---- Date range, clear filters, CSV export ---- */
+  const fromInput = document.getElementById("orderDateFrom");
+  const toInput = document.getElementById("orderDateTo");
+  fromInput.addEventListener("change", () => {
+    dateFrom = fromInput.value;
+    renderRows();
+  });
+  toInput.addEventListener("change", () => {
+    dateTo = toInput.value;
+    renderRows();
+  });
+
+  document.getElementById("orderFiltersClear").addEventListener("click", () => {
+    searchTerm = "";
+    statusFilterValue = paymentFilterValue = paidFilterValue = "all";
+    dateFrom = dateTo = "";
+    if (searchInput) searchInput.value = "";
+    fromInput.value = toInput.value = "";
+    [
+      ["statusFilterMenu", "statusFilterLabel"],
+      ["paymentFilterMenu", "paymentFilterLabel"],
+      ["paidFilterMenu", "paidFilterLabel"],
+    ].forEach(([menuId, labelId]) => {
+      document.querySelectorAll(`#${menuId} .tdm-item`).forEach((i, n) => i.classList.toggle("active", n === 0));
+      document.getElementById(labelId).textContent = "All";
+    });
+    renderRows();
+  });
+
+  // Spreadsheet formulas in customer-typed text (=, +, -, @) are defused.
+  const csvCell = (v) => {
+    let s = String(v ?? "");
+    if (/^[=@\t\r]/.test(s) || /^[+-][^\d\s().-]/.test(s)) s = `'${s}`;
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+
+  document.getElementById("exportOrdersCsv").addEventListener("click", () => {
+    const rows = sortOrders(allOrders.filter(matchesFilters));
+    if (!rows.length) {
+      showToast("No orders to export.");
+      return;
+    }
+    const header = [
+      "Invoice no.", "Order ID", "Date placed", "Customer", "Email", "Recipient", "Address", "Phone",
+      "Items", "Subtotal", "Shipping", "Discount", "Total", "Payment method", "Payment status", "Order status",
+    ];
+    const lines = rows.map((o) => {
+      const ship = o.shippingInfo || {};
+      const code = paymentCode(o);
+      const d = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString("en-PH") : "";
+      const payState =
+        o.paymentStatus === "paid"
+          ? code === "cod" ? "Cash collected" : "Paid"
+          : o.status === "Cancelled" ? "Not paid" : code === "cod" ? "To collect" : "Awaiting payment";
+      return [
+        o.invoiceNo || "",
+        o.id,
+        d,
+        ship.fullName,
+        ship.email,
+        ship.recipient,
+        ship.address,
+        ship.phone,
+        (o.items || []).map((i) => `${i.name} x${i.qty}`).join("; "),
+        o.subtotal ?? "",
+        o.shippingFee ?? "",
+        o.discount ?? 0,
+        o.total,
+        PAYMENT_LABELS[code] || code || "",
+        payState,
+        o.status === "New" ? "Pending" : o.status || "Pending",
+      ]
+        .map(csvCell)
+        .join(",");
+    });
+    // BOM so Excel reads the peso text and names as UTF-8.
+    const blob = new Blob(["\uFEFF" + [header.map(csvCell).join(","), ...lines].join("\r\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `kalingacare-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
   });
 
   /* ---- Select all + bulk cancel ---- */
