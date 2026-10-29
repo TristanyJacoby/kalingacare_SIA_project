@@ -64,6 +64,25 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    /* ---------- editable content (Admin > Content / Promotions) ---------- */
+    // Pages, the announcement bar, homepage text/banners/featured products
+    // are public to read; promo codes can be looked up one at a time (to
+    // validate a code a customer typed) but only staff can list them.
+    // All writes go through api/manage-content.js (Admin SDK).
+    match /pages/{slug} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /content/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /promos/{code} {
+      allow get: if true;
+      allow list: if isStaffUp();
+      allow write: if false;
+    }
+
     /* ---------- store settings ---------- */
     // Shipping fee and payment options: public to read (the store and the
     // apps show them), written only by api/save-settings.js (Admin SDK).

@@ -61,6 +61,24 @@ export async function manageUser(body) {
   return data;
 }
 
+// Admin > Content and Promotions (api/manage-content.js): savePage, saveHome,
+// savePromo, deletePromo, seedPromos.
+export async function manageContent(body) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please log in again.");
+  const res = await fetch("/api/manage-content", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${await user.getIdToken()}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Couldn't save that. Please try again.");
+  return data;
+}
+
 // Sends the customer to PayMongo's hosted payment page for this order.
 export async function startOnlinePayment(orderId) {
   const { checkoutUrl } = await callPaymentApi("/api/create-checkout", orderId);

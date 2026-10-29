@@ -22,8 +22,8 @@ const {
   getAdmin,
   sendError,
   HttpError,
-  PROMO_CODES,
 } = require("./_lib/payments");
+const { lookupPromo } = require("./_lib/promos");
 const { getStoreSettings, shippingFor } = require("./_lib/settings");
 const { notifyOrder } = require("./_lib/notify");
 const { logAudit, actorFrom, shortOrder } = require("./_lib/audit");
@@ -83,10 +83,13 @@ module.exports = async function handler(req, res) {
     const ids = [...wanted.keys()];
 
     // Promo code (same rules as the apps and api/create-checkout.js).
+    // Promo codes are managed in Admin > Promotions (Firestore collection promos).
     const promoCode = text(body.promoCode, 40).toUpperCase() || null;
-    const promo = promoCode ? PROMO_CODES[promoCode] : null;
+    let promo = null;
     if (promoCode) {
-      if (!promo) throw new HttpError(400, "That promo code isn't valid.");
+      const found = await lookupPromo(db, promoCode);
+      if (found.error) throw new HttpError(400, found.error);
+      promo = found.promo;
       if (promo.firstOrderOnly) {
         const earlier = await db.collection("orders").where("userId", "==", user.uid).limit(1).get();
         if (!earlier.empty) throw new HttpError(400, "That promo code is only for your first order.");

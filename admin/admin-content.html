@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KalingaCare | Content</title>
+    <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+  </head>
+
+  <body class="admin-body">
+    <!-- Shown if the logged-in user's role is below "staff" -->
+    <div
+      class="container access-denied"
+      id="accessDenied"
+      style="display: none"
+    >
+      <i class="bi bi-shield-lock"></i>
+      <h3>You don't have access to this page</h3>
+      <p class="text-muted">This area is restricted to KalingaCare staff.</p>
+      <a
+        href="../index.html"
+        class="hero-btn-primary"
+        style="text-decoration: none; display: inline-flex"
+        >Back to Home</a
+      >
+    </div>
+
+    <div class="admin-shell" id="adminShell" style="display: none">
+      <aside class="admin-sidebar">
+        <a href="../index.html" class="logo"
+          ><img
+            src="../assets/images/logo.png"
+            alt=""
+            class="navbar-logo-img"
+          />
+          KalingaCare</a
+        >
+
+        <ul class="admin-nav">
+          <li>
+            <a href="admin-dashboard.html" title="Dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="admin-products.html" title="Products"><i class="bi bi-box-seam"></i> Products<span class="nav-count d-none" data-low-stock title="Products low or out of stock"></span></a
+            >
+          </li>
+          <li>
+            <a href="admin-orders.html" title="Orders"><i class="bi bi-receipt"></i> Orders</a>
+          </li>
+          <li>
+            <a href="admin-messages.html" title="Messages"><i class="bi bi-envelope"></i> Messages<span class="nav-count d-none" data-unread-messages></span></a>
+          </li>
+          <li>
+            <a href="admin-promos.html" title="Promotions"><i class="bi bi-tag"></i> Promotions</a>
+          </li>
+          <li>
+            <a href="admin-content.html" class="active" title="Content"><i class="bi bi-layout-text-window"></i> Content</a>
+          </li>
+          <li>
+            <a href="admin-users.html" title="Users"><i class="bi bi-people"></i> Users</a
+            >
+          </li>
+          <li>
+            <a href="admin-audit.html" title="Audit Trail"><i class="bi bi-clock-history"></i> Audit Trail</a>
+          </li>
+          <li>
+            <a href="admin-settings.html" title="Settings"><i class="bi bi-gear"></i> Settings</a
+            >
+          </li>
+          <li>
+            <a href="../index.html" title="Back to Store"><i class="bi bi-arrow-left"></i> Back to Store</a
+            >
+          </li>
+        </ul>
+      </aside>
+
+      <main class="admin-main">
+        <div class="admin-header-bar">
+          <div class="admin-header-greeting" id="headerGreeting">
+            Welcome back!
+          </div>
+
+          <div class="admin-header-actions">
+            <div class="notif-bell-wrap">
+              <button type="button" class="icon-btn-round" id="notifBellBtn">
+                <i class="bi bi-bell"></i>
+                <span class="notif-dot d-none" id="notifDot"></span>
+              </button>
+              <div class="notif-dropdown d-none" id="notifDropdown">
+                <div class="notif-dropdown-header">Pending Orders</div>
+                <div id="notifList"><p class="notif-empty">Loading...</p></div>
+                <a href="admin-orders.html" class="notif-view-all"
+                  >View all orders</a
+                >
+              </div>
+            </div>
+
+            <div class="header-user-wrap">
+              <button type="button" class="header-user-btn" id="headerUserBtn">
+                <div class="avatar" id="headerAvatar">?</div>
+                <div class="header-user-info">
+                  <div class="name" id="headerName">—</div>
+                  <span class="role-badge" id="headerRole">—</span>
+                </div>
+                <i class="bi bi-chevron-down"></i>
+              </button>
+              <div class="header-user-dropdown d-none" id="headerUserDropdown">
+                <button type="button" id="headerLogoutBtn">
+                  <i class="bi bi-box-arrow-right"></i> Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-topbar">
+          <h1>Content</h1>
+        </div>
+
+        <div class="admin-panel d-none" id="contentRestricted">
+          <p class="text-muted mb-0" style="padding: 12px 0">
+            <i class="bi bi-shield-lock"></i> Content is managed by Admins and Super Admins.
+          </p>
+        </div>
+
+        <div id="contentContent" class="d-none">
+          <!-- Announcement bar + homepage -->
+          <div class="admin-panel" style="max-width: 760px">
+            <h2><i class="bi bi-megaphone"></i> Announcement Bar</h2>
+            <p class="text-muted" style="margin-top: -10px; font-size: 0.85rem">
+              A thin banner at the top of every page of the website.
+            </p>
+            <form class="admin-form" id="announceForm">
+              <label class="settings-check"><input type="checkbox" id="anEnabled" /> Show the announcement</label>
+              <input type="text" id="anText" maxlength="160" placeholder="Message, e.g. Free shipping on orders over ₱2,000" />
+              <div class="row g-2">
+                <div class="col-md-5"><input type="text" id="anLinkLabel" maxlength="30" placeholder="Link text (optional)" /></div>
+                <div class="col-md-7"><input type="text" id="anLinkUrl" maxlength="200" placeholder="Link, e.g. products.html or https://..." /></div>
+              </div>
+              <p class="auth-error" id="homeError" style="display:none"></p>
+            </form>
+          </div>
+
+          <div class="admin-panel" style="max-width: 760px">
+            <h2><i class="bi bi-house-heart"></i> Homepage Headline</h2>
+            <p class="text-muted" style="margin-top: -10px; font-size: 0.85rem">
+              Leave these empty to keep the original headline and text.
+            </p>
+            <form class="admin-form" id="heroForm">
+              <input type="text" id="heroTitle" maxlength="80" placeholder="Headline, e.g. Care Beyond Borders," />
+              <input type="text" id="heroAccent" maxlength="80" placeholder="Second line (highlighted), e.g. Because Every Family Matters." />
+              <textarea id="heroText" rows="3" maxlength="300" placeholder="Short paragraph under the headline"></textarea>
+            </form>
+          </div>
+
+          <div class="admin-panel" style="max-width: 760px">
+            <h2><i class="bi bi-stars"></i> Featured Products</h2>
+            <p class="text-muted" style="margin-top: -10px; font-size: 0.85rem">
+              Pick up to 6 products to show on the website's home page (and
+              first in the app). Leave all unticked to keep the original three.
+            </p>
+            <div id="featuredList" class="featured-picker"><p class="text-muted mb-0">Loading...</p></div>
+          </div>
+
+          <div class="admin-panel" style="max-width: 760px">
+            <h2><i class="bi bi-images"></i> App Banners</h2>
+            <p class="text-muted" style="margin-top: -10px; font-size: 0.85rem">
+              The sliding banners on the mobile app's home screen (up to 4). Add a
+              promo code to give the banner a "Copy Code" button. Leave empty to
+              keep the app's original banners.
+            </p>
+            <div id="bannerRows"></div>
+          </div>
+
+          <div class="d-flex gap-2 align-items-center mb-4" style="max-width: 760px">
+            <button type="button" class="btn-success" id="saveHomeBtn" style="padding: 10px 28px">Save Homepage &amp; Banners</button>
+            <span class="text-muted" id="homeSaved" style="font-size: 0.82rem"></span>
+          </div>
+
+          <!-- Pages -->
+          <div class="admin-panel" style="max-width: 760px">
+            <h2><i class="bi bi-file-earmark-text"></i> Pages</h2>
+            <p class="text-muted" style="margin-top: -10px; font-size: 0.85rem">
+              About, Contact, FAQs, Privacy Policy and Terms. Each one has
+              starter text until you edit it.
+            </p>
+            <form class="admin-form" id="pageForm">
+              <label class="stock-modal-label" for="pgSelect">Page</label>
+              <select id="pgSelect">
+                <option value="faqs">FAQs</option>
+                <option value="privacy">Privacy Policy</option>
+                <option value="terms">Terms &amp; Conditions</option>
+                <option value="about">About Us</option>
+                <option value="contact">Contact</option>
+              </select>
+              <label class="stock-modal-label" for="pgTitle">Title</label>
+              <input type="text" id="pgTitle" maxlength="80" required />
+              <label class="stock-modal-label" for="pgBody">Text</label>
+              <textarea id="pgBody" rows="16" maxlength="20000" required></textarea>
+              <p class="text-muted" style="font-size: 0.78rem">
+                Formatting: <code>## Heading</code>, <code>- bullet</code>,
+                <code>**bold**</code>, <code>[link text](page.html?p=faqs)</code>.
+                Leave a blank line between paragraphs.
+              </p>
+              <p class="auth-error" id="pgError" style="display:none"></p>
+              <div class="d-flex gap-2 flex-wrap align-items-center">
+                <button type="submit" class="btn-success" id="pgSave" style="padding: 10px 28px">Save Page</button>
+                <a href="../page.html?p=faqs" target="_blank" rel="noopener" id="pgView" class="toolbar-link">View page &rarr;</a>
+                <button type="button" class="toolbar-link" id="pgReset">Restore starter text</button>
+                <span class="text-muted" id="pgSaved" style="font-size: 0.82rem"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="../js/firebase.js"></script>
+    <script type="module" src="../js/admin.js"></script>
+  </body>
+</html>

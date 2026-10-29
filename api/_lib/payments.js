@@ -18,12 +18,6 @@ const PUBLIC_SITE_URL = (
   process.env.PUBLIC_SITE_URL || "https://kalingacare-drab.vercel.app"
 ).replace(/\/$/, "");
 
-// Same codes as mobile src/utils/promoCodes.ts. The server recomputes the
-// discount so a tampered order total can't lower the amount charged.
-const PROMO_CODES = {
-  WELCOME10: { type: "percent", value: 10, firstOrderOnly: true },
-  CARE50: { type: "flat", value: 50 },
-};
 
 const ALLOWED_ORIGINS = [
   /^https?:\/\/localhost(:\d+)?$/, // includes the Android app (https://localhost)
@@ -148,25 +142,10 @@ async function computeOrderTotal(orderId, order) {
     subtotal += price * qty;
   });
 
-  let discount = 0;
-  const promo = PROMO_CODES[String(order.promoCode || "").toUpperCase()];
-  if (order.promoCode && !promo) throw new HttpError(409, "The promo code on this order isn't valid.");
-  if (promo) {
-    if (promo.firstOrderOnly) {
-      const earlier = await db
-        .collection("orders")
-        .where("userId", "==", order.userId)
-        .limit(2)
-        .get();
-      if (earlier.docs.some((d) => d.id !== orderId)) {
-        throw new HttpError(409, "The promo code on this order is only valid on a first order.");
-      }
-    }
-    discount =
-      promo.type === "percent"
-        ? Math.round((subtotal * promo.value) / 100)
-        : Math.min(promo.value, subtotal);
-  }
+  // The discount was worked out and stored by place-order (promo codes are
+  // managed in Admin > Promotions and may have changed or expired since), so
+  // it is used as written, but never more than the items cost.
+  const discount = Math.min(Math.max(Number(order.discount) || 0, 0), subtotal);
 
   // The shipping fee on the order itself (set by place-order from the store
   // settings at the time), so a later settings change can't invalidate it.
@@ -256,7 +235,6 @@ function sendError(res, err) {
 
 module.exports = {
   SHIPPING_FEE,
-  PROMO_CODES,
   HttpError,
   getAdmin,
   handleCors,
