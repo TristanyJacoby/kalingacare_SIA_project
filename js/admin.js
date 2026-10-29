@@ -1593,7 +1593,7 @@ async function initStoreSettings(role) {
   }
 
   async function call(body) {
-    const res = await fetch("/api/save-settings", {
+    const res = await fetch("/api/manage-content", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1618,7 +1618,7 @@ async function initStoreSettings(role) {
     btn.disabled = true;
     try {
       const { settings } = await call({
-        action: "save",
+        action: "saveSettings",
         settings: {
           shippingFee: Number($("ssShippingFee").value),
           freeShippingOver: Number($("ssFreeShipping").value || 0),

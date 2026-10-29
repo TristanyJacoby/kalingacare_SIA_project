@@ -1,5 +1,5 @@
 // api/_lib/settings.js — the store's platform settings (Firestore doc
-// settings/store, edited on Admin > Settings through api/save-settings.js).
+// settings/store, edited on Admin > Settings through api/manage-content.js).
 // Clients read the same doc to show the shipping fee and payment options,
 // but the server is what actually applies them to an order.
 
