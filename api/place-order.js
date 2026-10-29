@@ -51,6 +51,9 @@ module.exports = async function handler(req, res) {
     const db = admin.firestore();
 
     const profile = await db.collection("users").doc(user.uid).get();
+    if (profile.get("disabled") === true) {
+      throw new HttpError(403, "Your account is suspended. Please contact support.");
+    }
     if (STAFF_ROLES.includes(profile.get("role"))) {
       throw new HttpError(403, "Staff accounts can't place orders.");
     }

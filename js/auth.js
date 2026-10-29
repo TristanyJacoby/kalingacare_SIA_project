@@ -350,7 +350,12 @@ async function handleGoogleSignIn(button) {
         document.getElementById("loginError") ||
         document.getElementById("signupError");
       if (errorEl)
-        showError(errorEl, "Couldn't sign in with Google. Please try again.");
+        showError(
+          errorEl,
+          err.code === "auth/user-disabled"
+            ? friendlyAuthError(err.code)
+            : "Couldn't sign in with Google. Please try again.",
+        );
     }
     button.disabled = false;
     button.innerHTML = originalText;
@@ -376,6 +381,8 @@ function friendlyAuthError(code) {
       return "An account already exists with this email.";
     case "auth/weak-password":
       return "Password should be at least 6 characters.";
+    case "auth/user-disabled":
+      return "This account has been suspended. Please contact kalingacaresupport@gmail.com.";
     default:
       return "Something went wrong. Please try again.";
   }

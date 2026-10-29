@@ -34,9 +34,14 @@ service cloud.firestore {
       allow create: if isOwner(userId)
                     && request.resource.data.role == "user";
 
+      // Super Admins edit anything. A user edits their own profile, but can't
+      // change their role or lift their own suspension (the real block is
+      // the Firebase Auth "disabled" flag, set only by api/manage-user.js).
       allow update: if isSuperAdmin()
                     || (isOwner(userId)
-                        && request.resource.data.role == resource.data.role);
+                        && request.resource.data.role == resource.data.role
+                        && request.resource.data.get("disabled", false)
+                           == resource.data.get("disabled", false));
 
       allow delete: if false;
     }

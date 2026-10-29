@@ -1873,7 +1873,17 @@ body.admin-body {
   overflow-wrap: anywhere;
 }
 
-.dash-two .dash-panel-header {
+.user-actions {
+  white-space: nowrap;
+}
+.user-suspended td {
+  opacity: 0.7;
+}
+.user-suspended td.user-actions {
+  opacity: 1;
+}
+
+.dash-panel-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
