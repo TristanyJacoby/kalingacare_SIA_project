@@ -34,7 +34,7 @@
 
       <ul class="admin-nav">
         <li><a href="admin-dashboard.html" class="active" title="Dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-        <li><a href="admin-products.html" title="Products"><i class="bi bi-box-seam"></i> Products</a></li>
+        <li><a href="admin-products.html" title="Products"><i class="bi bi-box-seam"></i> Products<span class="nav-count d-none" data-low-stock title="Products low or out of stock"></span></a></li>
         <li><a href="admin-orders.html" title="Orders"><i class="bi bi-receipt"></i> Orders</a></li>
           <li>
             <a href="admin-messages.html" title="Messages"><i class="bi bi-envelope"></i> Messages<span class="nav-count d-none" data-unread-messages></span></a>
@@ -113,6 +113,20 @@
           </div>
           <h2 id="kpiPending">0</h2>
           <p>Pending Orders</p>
+        </div>
+      </div>
+
+      <div class="dash-two">
+        <div class="admin-panel">
+          <div class="dash-panel-header">
+            <h3>Stock Alerts</h3>
+            <a href="admin-products.html" class="toolbar-link">Manage stock</a>
+          </div>
+          <div id="lowStockList"><p class="text-muted mb-0">Loading...</p></div>
+        </div>
+        <div class="admin-panel">
+          <div class="dash-panel-header"><h3>Customer Insights</h3></div>
+          <div id="customerInsights"><p class="text-muted mb-0">Loading...</p></div>
         </div>
       </div>
 

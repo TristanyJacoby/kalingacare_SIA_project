@@ -13,6 +13,7 @@
 import { auth, db } from "./firebase.js";
 import { showToast, resizeImageToDataUrl } from "./site.js";
 import { updateOrder } from "./payments.js";
+import { isActive, splitList, parseSpecs, specsToText, youtubeId } from "./product-constants.js";
 import {
   onAuthStateChanged,
   signOut,
@@ -113,6 +114,7 @@ onAuthStateChanged(auth, async (user) => {
   initHeaderDropdowns();
   initNotifBell();
   initUnreadMessagesCount();
+  initLowStockCount();
   initPageFor(role);
 });
 
@@ -387,6 +389,99 @@ function getMonthToDateRanges() {
   };
 }
 
+/* Products that are running out (active ones only, lowest stock first). */
+function renderStockAlerts(products) {
+  const el = document.getElementById("lowStockList");
+  if (!el) return;
+  const low = products
+    .filter((p) => isActive(p) && stockStatusOf(p.stock) !== "instock")
+    .sort((a, b) => (a.stock ?? 0) - (b.stock ?? 0));
+  if (!low.length) {
+    el.innerHTML = `<p class="text-muted mb-0"><i class="bi bi-check-circle"></i> Every product has more than ${LOW_STOCK_THRESHOLD} in stock.</p>`;
+    return;
+  }
+  const shown = low.slice(0, 8);
+  el.innerHTML =
+    shown
+      .map(
+        (p) => `
+        <div class="alert-row">
+          <span>${escapeHtml(p.name)}</span>
+          <span>${p.stock ?? 0} left ${stockBadge(stockStatusOf(p.stock))}</span>
+        </div>`,
+      )
+      .join("") +
+    (low.length > shown.length
+      ? `<p class="text-muted mb-0 mt-2" style="font-size:0.82rem">and ${low.length - shown.length} more.</p>`
+      : "");
+}
+
+/* Who the customers are and how they buy, from real users and orders. */
+function renderCustomerInsights(users, orders) {
+  const el = document.getElementById("customerInsights");
+  if (!el) return;
+  const customers = users.filter((u) => (u.role || "user") === "user");
+  const dayAgo30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const newCustomers = customers.filter((u) => (u.createdAt?.toMillis?.() || 0) >= dayAgo30).length;
+
+  const byUser = {};
+  orders.forEach((o) => {
+    if (!o.userId) return;
+    const entry = (byUser[o.userId] ||= { count: 0, spent: 0 });
+    entry.count += 1;
+    entry.spent += o.total || 0;
+  });
+  const buyers = Object.entries(byUser);
+  const repeat = buyers.filter(([, v]) => v.count >= 2).length;
+  const revenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const avgOrder = orders.length ? revenue / orders.length : 0;
+
+  const countries = {};
+  customers.forEach((u) => {
+    const c = u.country || "Not set";
+    countries[c] = (countries[c] || 0) + 1;
+  });
+  const topCountries = Object.entries(countries).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maxCountry = topCountries[0]?.[1] || 1;
+
+  const nameOf = Object.fromEntries(users.map((u) => [u.id, u.fullName || u.email || "Customer"]));
+  const topSpenders = buyers.sort((a, b) => b[1].spent - a[1].spent).slice(0, 5);
+
+  el.innerHTML = `
+    <div class="insight-stats">
+      <div class="insight-stat"><strong>${customers.length}</strong><span>Customers</span></div>
+      <div class="insight-stat"><strong>${newCustomers}</strong><span>New in the last 30 days</span></div>
+      <div class="insight-stat"><strong>${buyers.length ? Math.round((repeat / buyers.length) * 100) : 0}%</strong><span>Repeat buyers (${repeat} of ${buyers.length})</span></div>
+      <div class="insight-stat"><strong>${peso(Math.round(avgOrder))}</strong><span>Average order</span></div>
+    </div>
+    <p class="insight-title">Customers by country</p>
+    ${
+      topCountries.length
+        ? topCountries
+            .map(
+              ([c, n]) => `
+          <div class="insight-bar">
+            <span>${escapeHtml(c)}</span>
+            <span class="insight-bar-track"><i style="width:${Math.round((n / maxCountry) * 100)}%"></i></span>
+            <span>${n}</span>
+          </div>`,
+            )
+            .join("")
+        : `<p class="text-muted mb-0">No customers yet.</p>`
+    }
+    <p class="insight-title">Top customers by spend</p>
+    ${
+      topSpenders.length
+        ? topSpenders
+            .map(
+              ([uid, v]) => `
+          <div class="alert-row"><span>${escapeHtml(nameOf[uid] || "Customer")} <span class="text-muted">(${v.count} order${v.count === 1 ? "" : "s"})</span></span><strong>${peso(v.spent)}</strong></div>`,
+            )
+            .join("")
+        : `<p class="text-muted mb-0">No orders yet.</p>`
+    }`;
+}
+
 async function initDashboard(role) {
   const [ordersSnap, usersSnap, productsSnap] = await Promise.all([
     getDocs(collection(db, "orders")),
@@ -394,9 +489,14 @@ async function initDashboard(role) {
     getDocs(collection(db, "products")),
   ]);
 
-  const orders = ordersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Cancelled orders aren't sales: leave them out of orders, revenue and charts.
+  const orders = ordersSnap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((o) => o.status !== "Cancelled");
   const users = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const products = productsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  renderStockAlerts(products);
+  renderCustomerInsights(users, orders);
   const productCategoryOf = Object.fromEntries(
     products.map((p) => [p.id, p.category]),
   );
@@ -961,7 +1061,7 @@ function initProducts(role) {
         return `
           <tr>
             <td><img src="${thumb}" alt="${p.name}" /></td>
-            <td>${p.name}</td>
+            <td>${p.name}${isActive(p) ? "" : ` <span class="status-badge status-cancelled" title="Hidden from the store">Inactive</span>`}</td>
             <td>${p.category}<br><span class="text-muted" style="font-size:0.78rem;">${p.subcategory || ""}</span></td>
             <td>${peso(p.price)}</td>
             <td>${p.stock ?? "—"}</td>
@@ -991,6 +1091,11 @@ function initProducts(role) {
         document.getElementById("pDescription").value = p.description || "";
         document.getElementById("pPrice").value = p.price;
         document.getElementById("pStock").value = p.stock ?? "";
+        document.getElementById("pStatus").value = isActive(p) ? "active" : "inactive";
+        document.getElementById("pSizes").value = (p.sizes || []).join(", ");
+        document.getElementById("pColors").value = (p.colors || []).join(", ");
+        document.getElementById("pSpecs").value = specsToText(p.specs);
+        document.getElementById("pVideo").value = p.videoUrl || "";
         document.getElementById("pStock").disabled = true;
         document
           .getElementById("stockInlineAdjustWrap")
@@ -1331,6 +1436,11 @@ function initProducts(role) {
       // cards, cart, checkout, the admin table — keeps showing a photo
       // without needing its own update.
       const cover = canonicalImages[0] || "";
+      const videoUrl = document.getElementById("pVideo").value.trim();
+      if (videoUrl && !youtubeId(videoUrl)) {
+        showToast("The video link must be a YouTube link.");
+        return;
+      }
       const data = {
         name: document.getElementById("pName").value.trim(),
         category: document.getElementById("pCategory").value,
@@ -1338,6 +1448,11 @@ function initProducts(role) {
         description: document.getElementById("pDescription").value.trim(),
         price: Number(document.getElementById("pPrice").value),
         stock: Number(document.getElementById("pStock").value) || 0,
+        status: document.getElementById("pStatus").value === "inactive" ? "inactive" : "active",
+        sizes: splitList(document.getElementById("pSizes").value),
+        colors: splitList(document.getElementById("pColors").value),
+        specs: parseSpecs(document.getElementById("pSpecs").value),
+        videoUrl: videoUrl,
         images: canonicalImages,
         img: cover.startsWith("data:") ? "" : cover,
         imgBase64: cover.startsWith("data:") ? cover : null,
@@ -1349,7 +1464,7 @@ function initProducts(role) {
           await updateDoc(doc(db, "products", editingIdField.value), data);
           showToast(`${data.name} updated.`);
         } else {
-          await addDoc(productsRef, { ...data, createdAt: serverTimestamp() });
+          await addDoc(productsRef, { ...data, soldCount: 0, createdAt: serverTimestamp() });
           showToast(`${data.name} added.`);
         }
         productModalInstance.hide();
@@ -1703,6 +1818,7 @@ function initOrders() {
                 <div class="row-action-menu d-none">
                   <button type="button" class="row-view-details" data-id="${o.id}"><i class="bi bi-eye"></i> View Details</button>
                   <button type="button" class="row-print-invoice" data-id="${o.id}"><i class="bi bi-printer"></i> Print Invoice</button>
+                  <button type="button" class="row-print-packing" data-id="${o.id}"><i class="bi bi-box-seam"></i> Print Packing Slip</button>
                   ${CANCELLABLE_STATUSES.includes(status) ? `<button type="button" class="row-cancel-order danger" data-id="${o.id}"><i class="bi bi-x-circle"></i> Cancel Order</button>` : ""}
                 </div>
               </div>
@@ -1775,6 +1891,14 @@ function initOrders() {
         e.stopPropagation();
         btn.closest(".row-action-menu").classList.add("d-none");
         openInvoices([btn.dataset.id]);
+      });
+    });
+
+    tbody.querySelectorAll(".row-print-packing").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        btn.closest(".row-action-menu").classList.add("d-none");
+        openInvoices([btn.dataset.id], "packing");
       });
     });
 
@@ -1961,10 +2085,25 @@ function initOrders() {
   }
 
   // Opens the printable invoice page (one tab, one invoice per page).
-  function openInvoices(orderIds) {
+  function openInvoices(orderIds, type = "invoice") {
     const q = orderIds.length === 1 ? `id=${orderIds[0]}` : `ids=${orderIds.join(",")}`;
-    window.open(`../invoice.html?${q}&print=1`, "_blank");
+    window.open(`../invoice.html?${q}&print=1${type === "packing" ? "&type=packing" : ""}`, "_blank");
   }
+
+  document.getElementById("bulkPackingBtn")?.addEventListener("click", () => {
+    const chosen = allOrders.filter((o) => selectedIds.has(o.id)).map((o) => o.id);
+    if (!chosen.length) return;
+    if (chosen.length > 30) {
+      showToast("Select up to 30 orders to print at once.");
+      return;
+    }
+    openInvoices(chosen, "packing");
+  });
+
+  document.getElementById("odPackingBtn")?.addEventListener("click", () => {
+    const id = document.getElementById("odCancelOrderBtn").dataset.id;
+    if (id) openInvoices([id], "packing");
+  });
 
   document.getElementById("bulkPrintBtn")?.addEventListener("click", () => {
     const chosen = allOrders.filter((o) => selectedIds.has(o.id)).map((o) => o.id);
@@ -2205,6 +2344,24 @@ function initOrders() {
 ===================================================== */
 
 // Unread count next to "Messages" in the sidebar, live on every admin page.
+// Number of products at or below the low-stock level, next to "Products"
+// in the sidebar on every admin page.
+function initLowStockCount() {
+  const badges = document.querySelectorAll("[data-low-stock]");
+  if (!badges.length) return;
+  onSnapshot(
+    collection(db, "products"),
+    (snap) => {
+      const n = snap.docs.filter((d) => isActive(d.data()) && stockStatusOf(d.data().stock) !== "instock").length;
+      badges.forEach((b) => {
+        b.textContent = n > 99 ? "99+" : String(n);
+        b.classList.toggle("d-none", n === 0);
+      });
+    },
+    (err) => console.error("Couldn't load low stock count:", err),
+  );
+}
+
 function initUnreadMessagesCount() {
   const badges = document.querySelectorAll("[data-unread-messages]");
   if (!badges.length) return;

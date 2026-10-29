@@ -149,7 +149,9 @@ export function saveCart(cart) {
 }
 
 // Products without a stock number aren't limited (the server checks too).
+// Inactive products (hidden by staff) can't be bought, so their limit is 0.
 export function stockLimit(product) {
+  if (product?.status === "inactive") return 0;
   return typeof product?.stock === "number" ? Math.max(0, product.stock) : Infinity;
 }
 
@@ -166,7 +168,7 @@ export function addToCart(product, qty = 1) {
   if (added === 0) {
     showToast(
       stock === 0
-        ? `${product.name} is out of stock.`
+        ? `${product.name} isn't available right now.`
         : `You already have all ${stock} in stock in your cart.`,
       2400,
     );

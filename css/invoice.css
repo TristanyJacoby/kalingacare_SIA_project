@@ -239,6 +239,26 @@ body {
   color: var(--inv-muted);
 }
 
+.inv-checkbox {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--inv-ink);
+  border-radius: 3px;
+}
+.inv-sign {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin-top: 40px;
+}
+.inv-sign span {
+  padding-top: 6px;
+  border-top: 1px solid var(--inv-ink);
+  font-size: 0.78rem;
+  color: var(--inv-muted);
+}
+
 .inv-stamp {
   position: absolute;
   top: 120px;

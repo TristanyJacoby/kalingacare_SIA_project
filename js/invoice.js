@@ -19,6 +19,8 @@ const ids = [
   ),
 ].slice(0, MAX_INVOICES);
 const autoPrint = params.has("print");
+// ?type=packing prints the packing slip (what to pack, no prices) instead.
+const packing = params.get("type") === "packing";
 
 const stage = document.getElementById("invoiceStage");
 const printBtn = document.getElementById("invPrintBtn");
@@ -88,6 +90,79 @@ function paymentRows(order) {
     }
   }
   return rows;
+}
+
+// For the warehouse: what goes in the box, where it goes, and whether to
+// collect cash. No prices.
+function packingSlipHtml(order) {
+  const ship = order.shippingInfo || {};
+  const shortId = order.id.slice(0, 8).toUpperCase();
+  const items = Array.isArray(order.items) ? order.items : [];
+  const online = ship.paymentMethod === "online";
+  const collect =
+    !online && order.paymentStatus !== "paid"
+      ? `<span class="inv-unpaid">Collect ${money(order.total)} in cash on delivery</span>`
+      : `<span class="inv-paid">Already paid &mdash; do not collect</span>`;
+  const units = items.reduce((sum, i) => sum + (Number(i.qty) || 0), 0);
+
+  return `
+    <article class="invoice">
+      ${order.status === "Cancelled" ? `<div class="inv-stamp">CANCELLED</div>` : ""}
+      <div class="inv-head">
+        <div class="inv-brand">
+          <img src="assets/images/logo.png" alt="" />
+          <div>
+            <h1>KalingaCare</h1>
+            <p>Care Beyond Borders</p>
+            <p>938 Aurora Blvd, Cubao, Quezon City</p>
+          </div>
+        </div>
+        <div class="inv-title">
+          <h2>PACKING SLIP</h2>
+          <p>Order <strong>#${shortId}</strong></p>
+          ${order.invoiceNo ? `<p>Invoice no. <strong>${escapeHtml(order.invoiceNo)}</strong></p>` : ""}
+          <p>Placed <strong>${longDate(order.createdAt)}</strong></p>
+        </div>
+      </div>
+
+      <div class="inv-parties">
+        <div class="inv-party">
+          <p class="inv-label">Deliver to</p>
+          <p class="inv-name">${escapeHtml(ship.recipient || "\u2014")}</p>
+          <p>${escapeHtml(ship.address || "")}</p>
+          <p>${escapeHtml(ship.phone || "")}</p>
+        </div>
+        <div class="inv-party">
+          <p class="inv-label">Driver note</p>
+          <p>${ship.note ? escapeHtml(ship.note) : "&mdash;"}</p>
+          <p class="inv-label" style="margin-top:10px">Payment</p>
+          <p>${collect}</p>
+        </div>
+      </div>
+
+      <table class="inv-items">
+        <thead>
+          <tr><th style="width:44px">Packed</th><th>Item</th><th class="num">Qty</th></tr>
+        </thead>
+        <tbody>
+          ${items
+            .map(
+              (i) => `
+            <tr>
+              <td><span class="inv-checkbox"></span></td>
+              <td>${escapeHtml(i.name)}</td>
+              <td class="num">${Number(i.qty) || 0}</td>
+            </tr>`,
+            )
+            .join("")}
+        </tbody>
+      </table>
+      <p class="inv-note">${items.length} product${items.length === 1 ? "" : "s"}, ${units} unit${units === 1 ? "" : "s"} in total.</p>
+
+      <div class="inv-sign">
+        <span>Packed by</span><span>Checked by</span><span>Date</span>
+      </div>
+    </article>`;
 }
 
 function invoiceHtml(order) {
@@ -213,11 +288,12 @@ async function loadInvoices() {
     return;
   }
   orders.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
-  stage.innerHTML = orders.map(invoiceHtml).join("");
+  stage.innerHTML = orders.map(packing ? packingSlipHtml : invoiceHtml).join("");
+  const noun = packing ? "Packing slip" : "Invoice";
   document.title =
     orders.length === 1
-      ? `Invoice ${orders[0].invoiceNo || orders[0].id.slice(0, 8).toUpperCase()}`
-      : `${orders.length} invoices`;
+      ? `${noun} ${orders[0].invoiceNo || orders[0].id.slice(0, 8).toUpperCase()}`
+      : `${orders.length} ${noun.toLowerCase()}s`;
   document.getElementById("invToolbarTitle").textContent = document.title;
   printBtn.disabled = false;
   if (autoPrint) setTimeout(() => window.print(), 400);

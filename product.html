@@ -205,6 +205,13 @@
 
               <p id="pdDescription" class="pd-description"></p>
 
+              <dl class="pd-options d-none" id="pdOptions"></dl>
+
+              <section class="pd-specs d-none" id="pdSpecs" aria-labelledby="pdSpecsTitle">
+                <h2 class="pd-section-title" id="pdSpecsTitle">Specifications</h2>
+                <table class="pd-specs-table"><tbody id="pdSpecsBody"></tbody></table>
+              </section>
+
               <div class="d-flex align-items-center gap-3 mt-4">
                 <div class="qty-stepper">
                   <button type="button" id="pdQtyMinus">&minus;</button>
@@ -220,6 +227,12 @@
               </div>
             </div>
           </div>
+
+          <!-- Product video (YouTube link set by staff) -->
+          <section class="pd-video-section d-none" id="pdVideoSection" aria-labelledby="pdVideoTitle">
+            <h2 class="pd-section-title" id="pdVideoTitle">Product Video</h2>
+            <div class="pd-video-frame" id="pdVideoFrame"></div>
+          </section>
 
           <!-- Related products -->
           <section class="pd-related-section" id="pdRelatedSection">

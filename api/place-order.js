@@ -119,6 +119,9 @@ module.exports = async function handler(req, res) {
         if (!snap.exists || !Number.isFinite(price) || price < 0) {
           throw new HttpError(409, "An item in your cart is no longer available. Please remove it and try again.");
         }
+        if (snap.get("status") === "inactive") {
+          throw new HttpError(409, `${snap.get("name") || "An item"} is no longer available. Please remove it and try again.`);
+        }
         const qty = wanted.get(ids[i]);
         const stock = snap.get("stock");
         if (typeof stock === "number" && stock <= 0) {
@@ -146,7 +149,9 @@ module.exports = async function handler(req, res) {
 
       snaps.forEach((snap, i) => {
         const stock = snap.get("stock");
-        if (typeof stock === "number") t.update(snap.ref, { stock: stock - items[i].qty });
+        const update = { soldCount: (Number(snap.get("soldCount")) || 0) + items[i].qty };
+        if (typeof stock === "number") update.stock = stock - items[i].qty;
+        t.update(snap.ref, update);
       });
       t.set(counterRef, { last: seq });
       t.set(orderRef, {

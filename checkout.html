@@ -236,6 +236,13 @@
         <div class="row g-4">
           <div class="col-lg-7">
             <form id="checkoutForm" class="checkout-form">
+              <ol class="ck-stepper" id="ckStepper" aria-label="Checkout steps">
+                <li class="active" data-stepper="1"><span>1</span> Shipping</li>
+                <li data-stepper="2"><span>2</span> Payment</li>
+                <li data-stepper="3"><span>3</span> Review</li>
+              </ol>
+
+              <div class="ck-step" data-step="1">
               <div class="mb-3">
                 <label class="form-label">Full Name</label>
                 <input type="text" class="form-control" id="ckName" required />
@@ -293,17 +300,18 @@
                   maxlength="300"
                 ></textarea>
               </div>
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Contact Number</label>
-                  <input
-                    type="tel"
-                    class="form-control"
-                    id="ckPhone"
-                    required
-                  />
-                </div>
-                <div class="col-md-6 mb-3">
+              <div class="mb-3">
+                <label class="form-label" for="ckPhone">Contact Number</label>
+                <input type="tel" class="form-control" id="ckPhone" required />
+              </div>
+              <div class="auth-error" id="ckStep1Error"></div>
+              <div class="ck-nav">
+                <button type="button" class="btn-auth" data-ck-next>Continue to Payment</button>
+              </div>
+              </div>
+
+              <div class="ck-step" data-step="2" hidden>
+                <div class="mb-3">
                   <label class="form-label" for="ckPayment">Payment Method</label>
                   <select class="form-control" id="ckPayment" aria-describedby="ckPaymentNote">
                     <option value="cod">Cash on Delivery</option>
@@ -319,11 +327,22 @@
                   <strong>Test mode:</strong> no real money is charged. Use a
                   PayMongo test card such as 4343&nbsp;4343&nbsp;4343&nbsp;4345.
                 </p>
+                <div class="ck-nav">
+                  <button type="button" class="ck-back-btn" data-ck-back>Back</button>
+                  <button type="button" class="btn-auth" data-ck-next>Review Order</button>
+                </div>
               </div>
-              <div class="auth-error" id="checkoutError"></div>
-              <button type="submit" class="btn-auth" id="placeOrderBtn">
-                Place Order
-              </button>
+
+              <div class="ck-step" data-step="3" hidden>
+                <div class="ck-review" id="ckReview"></div>
+                <div class="auth-error" id="checkoutError"></div>
+                <div class="ck-nav">
+                  <button type="button" class="ck-back-btn" data-ck-back>Back</button>
+                  <button type="submit" class="btn-auth" id="placeOrderBtn">
+                    Place Order
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
 

@@ -23,7 +23,7 @@ import {
   toggleFavorite,
 } from "./site.js";
 import { getRates, formatCurrency } from "./currency.js";
-import { CATEGORY_LABELS, CATEGORY_BADGE_CLASS } from "./product-constants.js";
+import { CATEGORY_LABELS, CATEGORY_BADGE_CLASS, isActive } from "./product-constants.js";
 
 const grid = document.getElementById("productsGrid");
 const loadingEl = document.getElementById("productsLoading");
@@ -99,6 +99,52 @@ function matchesPriceRange(price, range) {
   return price >= min && price < max;
 }
 
+// Size and color filters are built from what the products actually offer.
+const selectedOptions = { size: new Set(), color: new Set() };
+
+function renderOptionFilters() {
+  [
+    ["size", "sizes", "sizeFilterGroup", "sizeFilterOptions"],
+    ["color", "colors", "colorFilterGroup", "colorFilterOptions"],
+  ].forEach(([kind, field, groupId, optionsId]) => {
+    const values = new Map(); // lowercase -> label as typed first
+    allProducts.forEach((p) =>
+      (p[field] || []).forEach((v) => {
+        if (!values.has(v.toLowerCase())) values.set(v.toLowerCase(), v);
+      }),
+    );
+    // Forget selections that no product offers any more.
+    [...selectedOptions[kind]].forEach((v) => {
+      if (!values.has(v)) selectedOptions[kind].delete(v);
+    });
+    document.getElementById(groupId).classList.toggle("d-none", values.size === 0);
+    document.getElementById(optionsId).innerHTML = [...values]
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(
+        ([key, label]) => `
+        <label class="filter-checkbox-row">
+          <input type="checkbox" data-option-kind="${kind}" value="${key}" ${selectedOptions[kind].has(key) ? "checked" : ""} />
+          ${label.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c])}
+        </label>`,
+      )
+      .join("");
+  });
+}
+
+document.querySelector(".filters-sidebar").addEventListener("change", (e) => {
+  const box = e.target.closest("input[data-option-kind]");
+  if (!box) return;
+  const set = selectedOptions[box.dataset.optionKind];
+  if (box.checked) set.add(box.value);
+  else set.delete(box.value);
+  renderProducts();
+});
+
+function offers(p, field, selected) {
+  if (selected.size === 0) return true;
+  return (p[field] || []).some((v) => selected.has(v.toLowerCase()));
+}
+
 function renderProducts() {
   const activeCategories = Array.from(categoryCheckboxes)
     .filter((cb) => cb.checked)
@@ -115,12 +161,22 @@ function renderProducts() {
     const matchesPrice =
       !activePriceRange || matchesPriceRange(p.price, activePriceRange);
     const matchesKeyword = p.name.toLowerCase().includes(keyword);
-    return matchesCategory && matchesPrice && matchesKeyword;
+    return (
+      matchesCategory &&
+      matchesPrice &&
+      matchesKeyword &&
+      offers(p, "sizes", selectedOptions.size) &&
+      offers(p, "colors", selectedOptions.color)
+    );
   });
 
+  const addedAt = (p) => p.createdAt?.toMillis?.() || 0;
   visible = visible.sort((a, b) => {
     if (sortBy === "price-asc") return a.price - b.price;
     if (sortBy === "price-desc") return b.price - a.price;
+    if (sortBy === "newest") return addedAt(b) - addedAt(a) || a.name.localeCompare(b.name);
+    // Most units sold first; ties fall back to the name.
+    if (sortBy === "popular") return (b.soldCount || 0) - (a.soldCount || 0) || a.name.localeCompare(b.name);
     return a.name.localeCompare(b.name);
   });
 
@@ -178,7 +234,9 @@ function renderProducts() {
 // deletes a product, no page refresh needed.
 onSnapshot(query(collection(db, "products"), orderBy("name")), (snap) => {
   loadingEl.remove(); // only relevant on first load; harmless if already gone
-  allProducts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  // Inactive products are hidden from the store.
+  allProducts = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter(isActive);
+  renderOptionFilters();
   renderProducts();
 });
 
@@ -194,6 +252,9 @@ priceRadios.forEach((radio) =>
 clearFiltersBtn?.addEventListener("click", () => {
   categoryCheckboxes.forEach((cb) => (cb.checked = false));
   priceRadios.forEach((radio) => (radio.checked = false));
+  selectedOptions.size.clear();
+  selectedOptions.color.clear();
+  document.querySelectorAll("input[data-option-kind]").forEach((box) => (box.checked = false));
   searchInput.value = "";
   renderProducts();
 });
