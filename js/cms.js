@@ -64,6 +64,9 @@ Yes, while it is Pending or Processing: go to Profile > My Orders and choose Can
 ## How do I track my order?
 Go to Profile > My Orders and choose Track Order to see its status and route. You'll also get emails when the order is placed, shipped and delivered.
 
+## Can I return something?
+Yes. Within 7 days of delivery, open Profile > My Orders and choose Request a Return. Tell us what's wrong and which items, and our team will review it. If it's approved and you paid online, the refund goes back to your original payment method; for Cash on Delivery orders we arrange it with you directly. Shipping isn't refunded.
+
 ## Can I leave a review?
 Yes, once an order is marked Delivered. Open Profile > My Orders and choose Leave a Review. A review can be written once and cannot be edited afterwards.
 
@@ -119,6 +122,9 @@ We deliver within the Philippines. Delivery times depend on the address and the 
 
 ## Cancellations and refunds
 You can cancel an order while it is Pending or Processing. Once an order has shipped it can no longer be cancelled. If you paid online and need a refund, contact us.
+
+## Returns
+You can ask to return items within 7 days of delivery from Profile > My Orders. We review each request, and approved returns are refunded for the price of the returned items (any promo discount is shared out in proportion). Shipping isn't refunded.
 
 ## Reviews
 Only customers who received a product can review it. Reviews must be honest and respectful, and we may remove reviews that are not.

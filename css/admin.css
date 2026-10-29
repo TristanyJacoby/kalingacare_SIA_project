@@ -1904,6 +1904,7 @@ body.admin-body {
 .audit-settings { background: #ede7f6; color: #4527a0; }
 .audit-payment { background: #e0f7f4; color: #0f6a5f; }
 .audit-message { background: #fde8ea; color: #a12a3f; }
+.audit-return { background: #fce4ec; color: #ad1457; }
 .audit-content { background: #e8eaf6; color: #283593; }
 .audit-promo { background: #fff3e0; color: #b45309; }
 

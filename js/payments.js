@@ -61,6 +61,23 @@ export async function manageUser(body) {
   return data;
 }
 
+// Returns and refunds (api/manage-return.js): request, cancel, decide, refund.
+export async function manageReturn(body) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please log in again.");
+  const res = await fetch("/api/manage-return", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${await user.getIdToken()}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Couldn't complete that. Please try again.");
+  return data;
+}
+
 // Admin > Content and Promotions (api/manage-content.js): savePage, saveHome,
 // savePromo, deletePromo, seedPromos.
 export async function manageContent(body) {

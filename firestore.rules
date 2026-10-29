@@ -46,6 +46,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    /* ---------- returns and refunds ---------- */
+    // A customer asks to return items from a delivered order; staff approve
+    // or reject, an admin issues the refund. Everything is written by
+    // api/manage-return.js (Admin SDK); the customer reads their own, staff
+    // read all.
+    match /returns/{returnId} {
+      allow read: if isSignedIn()
+                  && (resource.data.userId == request.auth.uid || isStaffUp());
+      allow write: if false;
+    }
+
     /* ---------- audit trail ---------- */
     // Who changed what, and when. Server functions write most entries (Admin
     // SDK); product changes are written from the admin page, so an admin may

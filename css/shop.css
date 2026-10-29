@@ -999,3 +999,28 @@
     gap: 5px;
   }
 }
+
+/* Returns on My Orders */
+.return-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--primary-light, #f2f9ff);
+  font-size: 0.85rem;
+}
+.return-note strong {
+  color: var(--dark);
+}
+.return-note span {
+  color: var(--gray);
+}
+.return-refunded {
+  background: #e6f4ea;
+}
+.return-rejected {
+  background: #fde8ea;
+}

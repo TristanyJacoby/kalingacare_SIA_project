@@ -156,4 +156,68 @@ async function sendSampleEmail(to, name) {
   }
 }
 
-module.exports = { notifyOrder, sendSampleEmail };
+// Return and refund emails: requested, approved, rejected, refunded. They
+// go to the account email, and can be switched off (emailReturns).
+const RETURN_COPY = {
+  requested: {
+    subject: (r) => `We received your return request for ${r.ref}`,
+    title: "We received your return request",
+    lead: "Our team will review it and email you with a decision, usually within a few days.",
+  },
+  approved: {
+    subject: (r) => `Your return for ${r.ref} was approved`,
+    title: "Your return was approved",
+    lead: "We approved your return. Please keep the items ready; we'll confirm once they reach us and your refund is issued.",
+  },
+  rejected: {
+    subject: (r) => `Your return request for ${r.ref} was declined`,
+    title: "Your return request was declined",
+    lead: "We're sorry, we couldn't approve this return.",
+  },
+  refunded: {
+    subject: (r) => `Your refund for ${r.ref} has been issued`,
+    title: "Your refund has been issued",
+    lead: "Your refund is on its way.",
+  },
+};
+
+async function notifyReturn(admin, kind, ret) {
+  try {
+    const settings = await getStoreSettings(admin.firestore());
+    if (!settings.emailReturns || !ret.userId) return false;
+    const account = await admin.auth().getUser(ret.userId);
+    const t = transport();
+    if (!account.email || !t) return false;
+    const copy = RETURN_COPY[kind];
+    const r = { ...ret, ref: `#${String(ret.orderId).slice(0, 8).toUpperCase()}` };
+    const items = (r.items || []).map((i) => `<tr><td style="padding:5px 0;">${esc(i.name)} &times; ${Number(i.qty) || 0}</td></tr>`).join("");
+    const refundLine =
+      kind === "refunded"
+        ? `<p style="font-size:14px;"><strong>Refund:</strong> ${money(r.refundAmount)} ${r.refundMode === "paymongo" ? "back to your original payment method (it can take a few days to show)" : "arranged directly with the store"}.</p>`
+        : kind === "approved" && r.refundAmount
+          ? `<p style="font-size:14px;"><strong>Expected refund:</strong> ${money(r.refundAmount)} (shipping isn't refunded).</p>`
+          : "";
+    const noteLine = r.staffNote ? `<p style="font-size:14px;"><strong>Note from our team:</strong> ${esc(r.staffNote)}</p>` : "";
+    const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f2f9ff;font-family:Poppins,Arial,sans-serif;color:#1e293b;">
+  <div style="max-width:540px;margin:0 auto;background:#fff;border:1px solid #dce8f0;border-radius:18px;padding:32px;">
+    <div style="font-size:22px;font-weight:bold;color:#1778ad;">KalingaCare</div>
+    <h1 style="font-size:20px;margin:16px 0 8px;">${esc(copy.title)}</h1>
+    <p style="font-size:15px;line-height:1.6;">${esc(copy.lead)}</p>
+    <p style="font-size:13px;color:#5c6b7f;">Order <strong>${esc(r.ref)}</strong>${r.invoiceNo ? ` &middot; Invoice ${esc(r.invoiceNo)}` : ""}</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-top:1px solid #dce8f0;border-bottom:1px solid #dce8f0;">${items}</table>
+    ${refundLine}${noteLine}
+    <p style="text-align:center;margin:24px 0 8px;"><a href="${PUBLIC_SITE_URL}/profile.html" style="background:#1778ad;color:#fff;text-decoration:none;font-weight:bold;padding:12px 30px;border-radius:999px;display:inline-block;">View my orders</a></p>
+    <p style="font-size:12px;color:#5c6b7f;">Questions? Reply to this email or write to kalingacaresupport@gmail.com.</p>
+  </div></body></html>`;
+    const text = `${copy.title}\n${copy.lead}\nOrder ${r.ref}\n${(r.items || []).map((i) => `- ${i.name} x ${i.qty}`).join("\n")}${kind === "refunded" ? `\nRefund: ${money(r.refundAmount)}` : ""}${r.staffNote ? `\nNote: ${r.staffNote}` : ""}`;
+    return await Promise.race([
+      t.mailer.sendMail({ from: `"KalingaCare" <${t.user}>`, to: account.email, subject: copy.subject(r), text, html }).then(() => true),
+      new Promise((resolve) => setTimeout(() => resolve(false), 8000)),
+    ]);
+  } catch (err) {
+    console.error(`Return ${kind} email failed:`, err);
+    return false;
+  }
+}
+
+module.exports = { notifyOrder, notifyReturn, sendSampleEmail };

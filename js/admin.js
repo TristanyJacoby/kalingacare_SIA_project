@@ -12,7 +12,7 @@
 
 import { auth, db } from "./firebase.js";
 import { showToast, resizeImageToDataUrl } from "./site.js";
-import { updateOrder, manageUser, manageContent } from "./payments.js";
+import { updateOrder, manageUser, manageContent, manageReturn } from "./payments.js";
 import { DEFAULT_PAGES } from "./cms.js";
 import { COUNTRY_CURRENCY, populateCountrySelect } from "./currency.js";
 import { isActive, splitList, parseSpecs, specsToText, youtubeId } from "./product-constants.js";
@@ -118,6 +118,7 @@ onAuthStateChanged(auth, async (user) => {
   initNotifBell();
   initUnreadMessagesCount();
   initLowStockCount();
+  initOpenReturnsCount();
   initPageFor(role);
 });
 
@@ -297,6 +298,7 @@ function initPageFor(role) {
   if (document.getElementById("storeSettingsForm")) initStoreSettings(role);
   if (document.getElementById("auditBody")) initAudit(role);
   if (document.getElementById("promoBody")) initPromos(role);
+  if (document.getElementById("returnBody")) initReturns(role);
   if (document.getElementById("announceForm")) initContent(role);
   if (document.getElementById("messagesList")) initMessages();
 }
@@ -518,16 +520,18 @@ async function initDashboard(role) {
   let revenueLastMonth = 0;
 
   orders.forEach((o) => {
-    revenue += o.total || 0;
+    // Money refunded for returns isn't revenue.
+    const netTotal = (o.total || 0) - (o.refundedAmount || 0);
+    revenue += netTotal;
     if (["New", "Pending"].includes(o.status || "Pending")) pending += 1;
     const d = o.createdAt?.toDate ? o.createdAt.toDate() : null;
     if (!d) return;
     if (inThisMonthToDate(d)) {
       ordersThisMonth += 1;
-      revenueThisMonth += o.total || 0;
+      revenueThisMonth += netTotal;
     } else if (inLastMonthToDate(d)) {
       ordersLastMonth += 1;
-      revenueLastMonth += o.total || 0;
+      revenueLastMonth += netTotal;
     }
   });
 
@@ -860,6 +864,175 @@ async function initUsers(role) {
 /* =====================================================
    SETTINGS — the logged-in admin's own name + photo.
 ===================================================== */
+/* =====================================================
+   RETURNS & REFUNDS — staff review requests, admins issue refunds
+   (everything is saved by api/manage-return.js)
+===================================================== */
+const RETURN_STATUS_BADGE = {
+  Requested: ["Waiting", "status-pending"],
+  Approved: ["Approved", "status-processing"],
+  Refunding: ["Refunding", "status-processing"],
+  Refunded: ["Refunded", "status-delivered"],
+  Rejected: ["Declined", "status-cancelled"],
+  Cancelled: ["Withdrawn", "status-cancelled"],
+};
+
+function initReturns(role) {
+  const content = document.getElementById("returnsContent");
+  content.classList.remove("d-none");
+  const isAdminRole = ["admin", "superadmin"].includes(role);
+  const $ = (id) => document.getElementById(id);
+  const modal = new bootstrap.Modal($("returnDetailModal"));
+  let returns = [];
+  let tab = "all";
+  let openId = null;
+
+  const when = (ts) => (ts?.toDate ? ts.toDate().toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) : "—");
+
+  function rows() {
+    const term = $("returnSearch").value.trim().toLowerCase();
+    return returns
+      .filter((r) => r.status !== "Cancelled")
+      .filter((r) => tab === "all" || r.status === tab || (tab === "Approved" && r.status === "Refunding"))
+      .filter((r) => {
+        if (!term) return true;
+        return [r.orderId, r.invoiceNo, r.customerName, r.reasonLabel, ...(r.items || []).map((i) => i.name)].join(" ").toLowerCase().includes(term);
+      });
+  }
+
+  function render() {
+    const waiting = returns.filter((r) => r.status === "Requested").length;
+    $("rtCountRequested").textContent = waiting ? `(${waiting})` : "";
+    const list = rows();
+    if (!list.length) {
+      $("returnBody").innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">${returns.length ? "No returns match." : "No return requests yet."}</td></tr>`;
+      return;
+    }
+    $("returnBody").innerHTML = list
+      .map((r) => {
+        const [label, cls] = RETURN_STATUS_BADGE[r.status] || [r.status, ""];
+        return `
+        <tr>
+          <td class="audit-when">${when(r.requestedAt)}</td>
+          <td>#${escapeHtml(r.orderId.slice(0, 8).toUpperCase())}${r.invoiceNo ? `<br><span class="text-muted" style="font-size:0.78rem">${escapeHtml(r.invoiceNo)}</span>` : ""}</td>
+          <td>${escapeHtml(r.customerName || "—")}</td>
+          <td>${(r.items || []).map((i) => `${escapeHtml(i.name)} &times; ${i.qty}`).join("<br>")}</td>
+          <td>${escapeHtml(r.reasonLabel || "")}</td>
+          <td>${peso(r.refundAmount)}</td>
+          <td><span class="status-badge ${cls}">${label}</span></td>
+          <td><button type="button" class="icon-btn return-open" data-id="${r.id}" title="Review"><i class="bi bi-eye"></i></button></td>
+        </tr>`;
+      })
+      .join("");
+  }
+
+  function detail(r) {
+    const online = r.paymentMethod === "online";
+    const [label, cls] = RETURN_STATUS_BADGE[r.status] || [r.status, ""];
+    let actions = "";
+    if (r.status === "Requested") {
+      actions = `
+        <label class="stock-modal-label" for="rdNote">Note to the customer ${"(required if you decline)"}</label>
+        <textarea id="rdNote" rows="2" maxlength="500" class="form-control mb-2"></textarea>
+        <div class="d-flex gap-2 flex-wrap">
+          <button type="button" class="btn-success" id="rdApprove">Approve return</button>
+          <button type="button" class="stock-modal-btn-secondary" id="rdReject">Decline</button>
+        </div>`;
+    } else if (r.status === "Approved") {
+      actions = isAdminRole
+        ? `
+        <p class="mb-2" style="font-size:0.9rem">${
+          online && r.paid
+            ? `The customer paid online, so <strong>${peso(r.refundAmount)}</strong> goes back to their original payment method through PayMongo.`
+            : `Refund <strong>${peso(r.refundAmount)}</strong> to the customer yourself (cash or bank transfer), then mark it refunded here.`
+        }</p>
+        <label class="settings-check mb-2"><input type="checkbox" id="rdRestock" checked /> Put the returned items back in stock</label>
+        ${online && r.paid ? "" : `<input type="text" id="rdRef" class="form-control mb-2" maxlength="120" placeholder="Reference, e.g. GCash ref no. (optional)" />`}
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+          <button type="button" class="btn-success" id="rdRefund">${online && r.paid ? "Refund through PayMongo" : "Mark as refunded"}</button>
+          ${online && r.paid ? `<button type="button" class="toolbar-link" id="rdManual">I refunded it another way</button>` : ""}
+        </div>`
+        : `<p class="text-muted mb-0">Only an Admin can issue the refund.</p>`;
+    }
+    $("rdTitle").textContent = `Return for order #${r.orderId.slice(0, 8).toUpperCase()}`;
+    $("rdBody").innerHTML = `
+      <div class="d-flex flex-wrap gap-3 mb-3 align-items-center">
+        <span class="status-badge ${cls}">${label}</span>
+        <span class="text-muted" style="font-size:0.85rem">Requested ${when(r.requestedAt)} by ${escapeHtml(r.customerName || "the customer")}</span>
+      </div>
+      <p class="insight-title" style="margin-top:0">Items to return</p>
+      ${(r.items || []).map((i) => `<div class="alert-row"><span>${escapeHtml(i.name)} &times; ${i.qty}</span><span>${peso(i.price * i.qty)}</span></div>`).join("")}
+      <div class="alert-row"><strong>Refund (shipping isn't refunded)</strong><strong>${peso(r.refundAmount)}</strong></div>
+      <p class="insight-title">Why</p>
+      <p class="mb-1">${escapeHtml(r.reasonLabel || "")}</p>
+      ${r.note ? `<p class="text-muted" style="font-size:0.9rem">"${escapeHtml(r.note)}"</p>` : ""}
+      <p class="insight-title">Payment</p>
+      <p class="mb-3">${online ? (r.paid ? "Paid online (PayMongo)" : "Online payment, not marked paid") : "Cash on Delivery"}</p>
+      ${r.decidedAt ? `<p class="text-muted" style="font-size:0.85rem">${r.status === "Rejected" ? "Declined" : "Approved"} by ${escapeHtml(r.decidedByName || "staff")} on ${when(r.decidedAt)}${r.staffNote ? `: "${escapeHtml(r.staffNote)}"` : ""}</p>` : ""}
+      ${r.refundedAt ? `<p class="text-muted" style="font-size:0.85rem">Refunded ${peso(r.refundAmount)} by ${escapeHtml(r.refundedByName || "an admin")} on ${when(r.refundedAt)} (${r.refundMode === "paymongo" ? "through PayMongo" : "manually"}${r.refundReference ? `, ref ${escapeHtml(r.refundReference)}` : ""})${r.restocked ? "; items back in stock" : ""}.</p>` : ""}
+      <p class="auth-error" id="rdError" style="display:none"></p>
+      ${actions}`;
+
+    const run = async (body, button, okMessage) => {
+      const err = $("rdError");
+      err.style.display = "none";
+      document.querySelectorAll("#rdBody button").forEach((b) => (b.disabled = true));
+      try {
+        await manageReturn({ returnId: r.id, ...body });
+        showToast(okMessage);
+        modal.hide();
+      } catch (e) {
+        err.textContent = e.message;
+        err.style.display = "block";
+        document.querySelectorAll("#rdBody button").forEach((b) => (b.disabled = false));
+      }
+    };
+    $("rdApprove")?.addEventListener("click", () => run({ action: "decide", decision: "approve", staffNote: $("rdNote").value }, null, "Return approved."));
+    $("rdReject")?.addEventListener("click", () => run({ action: "decide", decision: "reject", staffNote: $("rdNote").value }, null, "Return declined."));
+    $("rdRefund")?.addEventListener("click", () => {
+      if (!confirm(`Issue a refund of ${peso(r.refundAmount)}? This can't be undone.`)) return;
+      run({ action: "refund", restock: $("rdRestock").checked, reference: $("rdRef")?.value || "" }, null, "Refund issued.");
+    });
+    $("rdManual")?.addEventListener("click", () => {
+      if (!confirm("Mark this refunded without sending money through PayMongo? Only do this if you already refunded the customer another way.")) return;
+      run({ action: "refund", manual: true, restock: $("rdRestock").checked }, null, "Marked as refunded.");
+    });
+  }
+
+  $("returnBody").addEventListener("click", (e) => {
+    const btn = e.target.closest(".return-open");
+    if (!btn) return;
+    openId = btn.dataset.id;
+    detail(returns.find((r) => r.id === openId));
+    modal.show();
+  });
+  $("returnTabs").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-rt]");
+    if (!b) return;
+    tab = b.dataset.rt;
+    document.querySelectorAll("#returnTabs .filter-tab").forEach((t) => t.classList.toggle("active", t === b));
+    render();
+  });
+  $("returnSearch").addEventListener("input", render);
+
+  onSnapshot(
+    query(collection(db, "returns"), orderBy("requestedAt", "desc"), limit(200)),
+    (snap) => {
+      returns = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      render();
+      // Keep an open review in step with changes made by someone else.
+      if (openId && $("returnDetailModal").classList.contains("show")) {
+        const r = returns.find((x) => x.id === openId);
+        if (r && document.activeElement?.id !== "rdNote" && document.activeElement?.id !== "rdRef") detail(r);
+      }
+    },
+    (err) => {
+      console.error("Couldn't load returns:", err);
+      $("returnBody").innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">Couldn't load the returns.</td></tr>`;
+    },
+  );
+}
+
 /* =====================================================
    PROMOTIONS — promo codes (Firestore promos, saved by api/manage-content.js)
 ===================================================== */
@@ -1206,6 +1379,11 @@ const AUDIT_ACTIONS = {
   "user.delete": "Account deleted",
   "settings.update": "Settings changed",
   "message.reply": "Message reply",
+  "return.request": "Return requested",
+  "return.cancel": "Return withdrawn",
+  "return.approve": "Return approved",
+  "return.reject": "Return declined",
+  "return.refund": "Refund issued",
   "content.page": "Page edited",
   "content.home": "Homepage edited",
   "promo.save": "Promo code saved",
@@ -1399,6 +1577,8 @@ async function initStoreSettings(role) {
     $("ssEmailShipped").checked = s.emailShipped !== false;
     $("ssEmailDelivered").checked = s.emailDelivered !== false;
     $("ssEmailCancelled").checked = s.emailCancelled !== false;
+    $("ssEmailReturns").checked = s.emailReturns !== false;
+    $("ssReturnDays").value = s.returnWindowDays ?? 7;
     $("ssUpdated").textContent = s.updatedAt?.toDate
       ? `Last saved ${s.updatedAt.toDate().toLocaleString("en-PH")}.`
       : "";
@@ -1448,6 +1628,8 @@ async function initStoreSettings(role) {
           emailShipped: $("ssEmailShipped").checked,
           emailDelivered: $("ssEmailDelivered").checked,
           emailCancelled: $("ssEmailCancelled").checked,
+          emailReturns: $("ssEmailReturns").checked,
+          returnWindowDays: Number($("ssReturnDays").value === "" ? 7 : $("ssReturnDays").value),
         },
       });
       fill(settings);
@@ -3052,6 +3234,12 @@ function initOrders() {
     document.getElementById("odPlacedDate").textContent =
       `Placed on ${placedDate}`;
 
+    const returnLine = document.getElementById("odReturn");
+    returnLine.classList.toggle("d-none", !o.returnStatus);
+    if (o.returnStatus) {
+      returnLine.innerHTML = `Return: <strong>${escapeHtml(o.returnStatus)}</strong>${o.refundedAmount ? ` (${peso(o.refundedAmount)} refunded)` : ""} &middot; <a href="admin-returns.html">Open Returns</a>`;
+    }
+
     document.getElementById("odCustomerAvatar").textContent = initials(
       o.shippingInfo?.fullName,
     );
@@ -3186,6 +3374,22 @@ function initOrders() {
 ===================================================== */
 
 // Unread count next to "Messages" in the sidebar, live on every admin page.
+// Return requests waiting for review, next to "Returns" in the sidebar.
+function initOpenReturnsCount() {
+  const badges = document.querySelectorAll("[data-open-returns]");
+  if (!badges.length) return;
+  onSnapshot(
+    query(collection(db, "returns"), where("status", "==", "Requested")),
+    (snap) => {
+      badges.forEach((b) => {
+        b.textContent = snap.size > 99 ? "99+" : String(snap.size);
+        b.classList.toggle("d-none", snap.size === 0);
+      });
+    },
+    (err) => console.error("Couldn't load the open returns count:", err),
+  );
+}
+
 // Number of products at or below the low-stock level, next to "Products"
 // in the sidebar on every admin page.
 function initLowStockCount() {

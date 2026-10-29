@@ -66,6 +66,9 @@
             <a href="admin-orders.html" title="Orders"><i class="bi bi-receipt"></i> Orders</a>
           </li>
           <li>
+            <a href="admin-returns.html" title="Returns"><i class="bi bi-arrow-return-left"></i> Returns<span class="nav-count d-none" data-open-returns title="Return requests waiting for review"></span></a>
+          </li>
+          <li>
             <a href="admin-messages.html" title="Messages"><i class="bi bi-envelope"></i> Messages<span class="nav-count d-none" data-unread-messages></span></a>
           </li>
           <li>
@@ -240,11 +243,17 @@
             <label class="settings-check"><input type="checkbox" id="ssCod" /> Cash on Delivery</label>
             <label class="settings-check"><input type="checkbox" id="ssOnline" /> Pay online (card, GCash, Maya &mdash; PayMongo test mode)</label>
 
+            <h3 class="settings-group-title">Returns</h3>
+            <label class="stock-modal-label" for="ssReturnDays">Days after delivery a customer can ask for a return</label>
+            <input type="number" id="ssReturnDays" min="0" max="60" step="1" />
+            <p class="text-muted" style="font-size: 0.8rem; margin-top: -4px">Set to 0 to stop accepting returns. Shipping isn't refunded.</p>
+
             <h3 class="settings-group-title">Automatic emails to customers</h3>
             <label class="settings-check"><input type="checkbox" id="ssEmailConfirm" /> Order confirmation, when an order is placed</label>
             <label class="settings-check"><input type="checkbox" id="ssEmailShipped" /> When an order is shipped</label>
             <label class="settings-check"><input type="checkbox" id="ssEmailDelivered" /> When an order is delivered</label>
             <label class="settings-check"><input type="checkbox" id="ssEmailCancelled" /> When an order is cancelled</label>
+            <label class="settings-check"><input type="checkbox" id="ssEmailReturns" /> About returns (request received, approved, declined, refunded)</label>
 
             <p class="auth-error" id="ssError" style="display:none"></p>
             <div class="d-flex gap-2 flex-wrap">
