@@ -24,6 +24,25 @@ async function callPaymentApi(path, orderId) {
   return data;
 }
 
+// Changes an order through the server (api/update-order.js), which enforces
+// the order process and puts stock back on cancel. action is "cancel" or
+// "status" (staff only, with the next status).
+export async function updateOrder(orderId, action, status) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please log in again.");
+  const res = await fetch("/api/update-order", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${await user.getIdToken()}`,
+    },
+    body: JSON.stringify({ orderId, action, status }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Couldn't update the order. Please try again.");
+  return data;
+}
+
 // Sends the customer to PayMongo's hosted payment page for this order.
 export async function startOnlinePayment(orderId) {
   const { checkoutUrl } = await callPaymentApi("/api/create-checkout", orderId);

@@ -12,6 +12,7 @@
 
 import { auth, db } from "./firebase.js";
 import { showToast, resizeImageToDataUrl } from "./site.js";
+import { updateOrder } from "./payments.js";
 import {
   onAuthStateChanged,
   signOut,
@@ -1477,14 +1478,29 @@ function wireToolbarDropdown(btnId, menuId, labelId, onSelect) {
 
 function initOrders() {
   const tbody = document.querySelector("#adminOrdersTable tbody");
-  const statuses = [
-    "New",
-    "Pending",
-    "Processing",
-    "Shipped",
-    "Delivered",
-    "Cancelled",
-  ];
+  // The order process is enforced by the server (api/update-order.js):
+  // statuses move one step at a time and Cancelled is a separate action.
+  const NEXT_STATUS = {
+    New: "Pending",
+    Pending: "Processing",
+    Processing: "Shipped",
+    Shipped: "Delivered",
+  };
+
+  function statusOptionsHtml(status) {
+    const choices = [status];
+    if (NEXT_STATUS[status]) choices.push(NEXT_STATUS[status]);
+    if (CANCELLABLE_STATUSES.includes(status)) choices.push("Cancelled");
+    return choices
+      .map((s) => `<option value="${s}" ${status === s ? "selected" : ""}>${s}</option>`)
+      .join("");
+  }
+
+  function changeOrderStatus(orderId, newStatus) {
+    return newStatus === "Cancelled"
+      ? updateOrder(orderId, "cancel")
+      : updateOrder(orderId, "status", newStatus);
+  }
 
   let allOrders = [];
   let searchTerm = "";
@@ -1570,13 +1586,10 @@ function initOrders() {
         const payment =
           code === "online"
             ? `${PAYMENT_LABELS.online}<br><span class="payment-state ${o.paymentStatus === "paid" ? "paid" : "pending"}">${o.paymentStatus === "paid" ? "Paid" : "Awaiting payment"}</span>`
-            : PAYMENT_LABELS[code] || "—";
-        const options = statuses
-          .map(
-            (s) =>
-              `<option value="${s}" ${status === s ? "selected" : ""}>${s}</option>`,
-          )
-          .join("");
+            : code === "cod"
+              ? `${PAYMENT_LABELS.cod}<br><span class="payment-state ${o.paymentStatus === "paid" ? "paid" : "pending"}">${o.paymentStatus === "paid" ? "Cash collected" : "To collect"}</span>`
+              : PAYMENT_LABELS[code] || "—";
+        const options = statusOptionsHtml(status);
         return `
           <tr data-order-row="${o.id}">
             <td><input type="checkbox" class="order-row-check" data-id="${o.id}" ${selectedIds.has(o.id) ? "checked" : ""} /></td>
@@ -1630,15 +1643,12 @@ function initOrders() {
         const newStatus = select.value;
         select.className = `status-select status-${newStatus.toLowerCase()}`;
         try {
-          await updateDoc(doc(db, "orders", select.dataset.id), {
-            status: newStatus,
-            // When it changed: the mobile app's order notifications show it.
-            statusUpdatedAt: serverTimestamp(),
-          });
+          await changeOrderStatus(select.dataset.id, newStatus);
         } catch (err) {
           console.error(err);
-          select.className = previousClass; // revert visual change since the write failed
-          showToast("Couldn't update status — see console for details.");
+          select.className = previousClass;
+          showToast(err.message || "Couldn't update status.");
+          renderRows(); // put the dropdown back to the real status
         }
       });
     });
@@ -1682,14 +1692,11 @@ function initOrders() {
         btn.closest(".row-action-menu").classList.add("d-none");
         if (!confirm("Cancel this order?")) return;
         try {
-          await updateDoc(doc(db, "orders", btn.dataset.id), {
-            status: "Cancelled",
-            statusUpdatedAt: serverTimestamp(),
-          });
+          await updateOrder(btn.dataset.id, "cancel");
           showToast("Order cancelled.");
         } catch (err) {
           console.error(err);
-          showToast("Couldn't cancel this order — see console for details.");
+          showToast(err.message || "Couldn't cancel this order.");
         }
       });
     });
@@ -1796,14 +1803,7 @@ function initOrders() {
         return;
 
       try {
-        await Promise.all(
-          cancellable.map((o) =>
-            updateDoc(doc(db, "orders", o.id), {
-              status: "Cancelled",
-              statusUpdatedAt: serverTimestamp(),
-            }),
-          ),
-        );
+        await Promise.all(cancellable.map((o) => updateOrder(o.id, "cancel")));
         selectedIds.clear();
         showToast(
           skipped > 0
@@ -1843,7 +1843,7 @@ function initOrders() {
       status = "Pending";
       o.status = "Pending";
       try {
-        await updateDoc(doc(db, "orders", orderId), { status: "Pending" });
+        await updateOrder(orderId, "status", "Pending");
       } catch (err) {
         console.error("Couldn't mark order as viewed:", err);
         showToast(
@@ -1926,12 +1926,7 @@ function initOrders() {
     } else {
       statusUpdateWrap.classList.remove("d-none");
       terminalNote.classList.add("d-none");
-      statusSelect.innerHTML = statuses
-        .map(
-          (s) =>
-            `<option value="${s}" ${status === s ? "selected" : ""}>${s}</option>`,
-        )
-        .join("");
+      statusSelect.innerHTML = statusOptionsHtml(status);
       statusSelect.className = `status-select status-${status.toLowerCase()}`;
       statusSelect.dataset.id = o.id;
     }
@@ -1959,10 +1954,7 @@ function initOrders() {
       const newStatus = e.target.value;
       e.target.className = `status-select status-${newStatus.toLowerCase()}`;
       try {
-        await updateDoc(doc(db, "orders", e.target.dataset.id), {
-          status: newStatus,
-          statusUpdatedAt: serverTimestamp(),
-        });
+        await changeOrderStatus(e.target.dataset.id, newStatus);
         const badge = document.getElementById("odStatusBadge");
         badge.textContent = newStatus;
         badge.className = `status-badge status-${newStatus.toLowerCase()}`;
@@ -1983,7 +1975,8 @@ function initOrders() {
       } catch (err) {
         console.error(err);
         e.target.className = previousClass;
-        showToast("Couldn't update status — see console for details.");
+        e.target.value = (allOrders.find((x) => x.id === e.target.dataset.id)?.status) || "Pending";
+        showToast(err.message || "Couldn't update status.");
       }
     });
 
@@ -1992,15 +1985,12 @@ function initOrders() {
     .addEventListener("click", async (e) => {
       if (!confirm("Cancel this order?")) return;
       try {
-        await updateDoc(doc(db, "orders", e.target.dataset.id), {
-          status: "Cancelled",
-          statusUpdatedAt: serverTimestamp(),
-        });
+        await updateOrder(e.target.dataset.id, "cancel");
         showToast("Order cancelled.");
         closeOrderDetail();
       } catch (err) {
         console.error(err);
-        showToast("Couldn't cancel this order — see console for details.");
+        showToast(err.message || "Couldn't cancel this order.");
       }
     });
 }

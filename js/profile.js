@@ -5,7 +5,7 @@
 // js/settings.js.
 
 import { auth, db } from "./firebase.js";
-import { startOnlinePayment, PAYMENT_CHANNEL_LABELS } from "./payments.js";
+import { startOnlinePayment, updateOrder, PAYMENT_CHANNEL_LABELS } from "./payments.js";
 import {
   onAuthStateChanged,
   signOut,
@@ -419,12 +419,10 @@ document
     btn.textContent = "Cancelling...";
 
     try {
-      await updateDoc(doc(db, "orders", btn.dataset.id), {
-        status: "Cancelled",
-      });
+      await updateOrder(btn.dataset.id, "cancel");
       loadOrderHistory(auth.currentUser.uid);
     } catch (err) {
-      alert("Couldn't cancel this order. Please try again.");
+      alert(err.message || "Couldn't cancel this order. Please try again.");
       btn.disabled = false;
       btn.innerHTML = '<i class="bi bi-x-circle"></i> Cancel Order';
     }
