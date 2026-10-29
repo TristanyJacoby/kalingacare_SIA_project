@@ -13,6 +13,7 @@
 
 const nodemailer = require("nodemailer");
 const { handleCors, readJsonBody, requireUser, getAdmin, sendError, HttpError } = require("./_lib/payments");
+const { logAudit, actorFrom } = require("./_lib/audit");
 
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "kalingacaresupport@gmail.com";
 const STAFF_ROLES = ["staff", "admin", "superadmin"];
@@ -108,6 +109,15 @@ ${msg.message || ""}`;
       replies: admin.firestore.FieldValue.arrayUnion(entry),
       repliedAt: admin.firestore.FieldValue.serverTimestamp(),
       read: true,
+    });
+
+    await logAudit(admin, {
+      actor: actorFrom(decoded.uid, decoded, staffSnap, "staff"),
+      action: "message.reply",
+      targetType: "message",
+      targetId: messageId,
+      targetLabel: `Message from ${customerName}`,
+      summary: `Replied by email to ${customerName} (${msg.email}): "${reply.slice(0, 80)}${reply.length > 80 ? "\u2026" : ""}"`,
     });
 
     res.status(200).json({ sent: true });

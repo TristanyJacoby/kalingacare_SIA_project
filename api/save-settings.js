@@ -11,6 +11,7 @@
 const { handleCors, readJsonBody, requireUser, getAdmin, sendError, HttpError } = require("./_lib/payments");
 const { DEFAULT_SETTINGS, sanitizeSettings, clearSettingsCache } = require("./_lib/settings");
 const { sendSampleEmail } = require("./_lib/notify");
+const { logAudit, actorFrom } = require("./_lib/audit");
 
 module.exports = async function handler(req, res) {
   if (!handleCors(req, res)) return;
@@ -54,12 +55,27 @@ module.exports = async function handler(req, res) {
     }
 
     const settings = sanitizeSettings({ ...DEFAULT_SETTINGS, ...input, shippingFee: fee, freeShippingOver: free });
+    const before = sanitizeSettings((await db.collection("settings").doc("store").get()).data());
+    const changes = Object.keys(settings)
+      .filter((k) => settings[k] !== before[k])
+      .map((k) => `${k}: ${before[k]} \u2192 ${settings[k]}`);
     await db.collection("settings").doc("store").set({
       ...settings,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedBy: caller.uid,
     });
     clearSettingsCache();
+    if (changes.length) {
+      await logAudit(admin, {
+        actor: actorFrom(caller.uid, caller, profile, "admin"),
+        action: "settings.update",
+        targetType: "settings",
+        targetId: "store",
+        targetLabel: "Store settings",
+        summary: `Changed store settings: ${changes.join(", ")}.`,
+        details: { changes },
+      });
+    }
     res.status(200).json({ settings });
   } catch (err) {
     sendError(res, err);

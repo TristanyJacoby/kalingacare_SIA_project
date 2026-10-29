@@ -17,6 +17,7 @@
 
 const { handleCors, readJsonBody, requireUser, getAdmin, sendError, HttpError } = require("./_lib/payments");
 const { notifyOrder } = require("./_lib/notify");
+const { logAudit, actorFrom, shortOrder } = require("./_lib/audit");
 
 const STAFF_ROLES = ["staff", "admin", "superadmin"];
 const CANCELLABLE = ["New", "Pending", "Processing"];
@@ -127,7 +128,26 @@ module.exports = async function handler(req, res) {
       }
 
       t.update(orderRef, update);
-      return { status: update.status, paymentStatus, order: { ...order, paymentStatus } };
+      return {
+        status: update.status,
+        paymentStatus,
+        order: { ...order, paymentStatus },
+        from: current,
+        restocked: update.stockRestored === true,
+      };
+    });
+
+    await logAudit(admin, {
+      actor: actorFrom(user.uid, user, profile),
+      action: action === "cancel" ? "order.cancel" : "order.status",
+      targetType: "order",
+      targetId: orderId,
+      targetLabel: `Order ${shortOrder(orderId)}${result.order.invoiceNo ? ` (${result.order.invoiceNo})` : ""}`,
+      summary:
+        action === "cancel"
+          ? `Cancelled order ${shortOrder(orderId)} (was ${result.from})${isStaff ? "" : " by the customer"}${result.restocked ? "; stock put back" : ""}.`
+          : `Order ${shortOrder(orderId)}: ${result.from} \u2192 ${result.status}${result.paymentStatus === "paid" && result.status === "Delivered" && result.order.shippingInfo?.paymentMethod !== "online" ? "; cash collected" : ""}.`,
+      details: { from: result.from, to: result.status, restocked: result.restocked },
     });
 
     // Shipped / Delivered / Cancelled emails (each can be switched off in

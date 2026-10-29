@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KalingaCare | Audit Trail</title>
+    <link rel="icon" type="image/png" href="../assets/images/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/admin.css" />
+  </head>
+
+  <body class="admin-body">
+    <!-- Shown if the logged-in user's role is below "staff" -->
+    <div
+      class="container access-denied"
+      id="accessDenied"
+      style="display: none"
+    >
+      <i class="bi bi-shield-lock"></i>
+      <h3>You don't have access to this page</h3>
+      <p class="text-muted">This area is restricted to KalingaCare staff.</p>
+      <a
+        href="../index.html"
+        class="hero-btn-primary"
+        style="text-decoration: none; display: inline-flex"
+        >Back to Home</a
+      >
+    </div>
+
+    <div class="admin-shell" id="adminShell" style="display: none">
+      <aside class="admin-sidebar">
+        <a href="../index.html" class="logo"
+          ><img
+            src="../assets/images/logo.png"
+            alt=""
+            class="navbar-logo-img"
+          />
+          KalingaCare</a
+        >
+
+        <ul class="admin-nav">
+          <li>
+            <a href="admin-dashboard.html" title="Dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="admin-products.html" title="Products"><i class="bi bi-box-seam"></i> Products<span class="nav-count d-none" data-low-stock title="Products low or out of stock"></span></a
+            >
+          </li>
+          <li>
+            <a href="admin-orders.html" title="Orders"><i class="bi bi-receipt"></i> Orders</a>
+          </li>
+          <li>
+            <a href="admin-messages.html" title="Messages"><i class="bi bi-envelope"></i> Messages<span class="nav-count d-none" data-unread-messages></span></a>
+          </li>
+          <li>
+            <a href="admin-users.html" title="Users"><i class="bi bi-people"></i> Users</a
+            >
+          </li>
+          <li>
+            <a href="admin-audit.html" class="active" title="Audit Trail"><i class="bi bi-clock-history"></i> Audit Trail</a>
+          </li>
+          <li>
+            <a href="admin-settings.html" title="Settings"><i class="bi bi-gear"></i> Settings</a
+            >
+          </li>
+          <li>
+            <a href="../index.html" title="Back to Store"><i class="bi bi-arrow-left"></i> Back to Store</a
+            >
+          </li>
+        </ul>
+      </aside>
+
+      <main class="admin-main">
+        <div class="admin-header-bar">
+          <div class="admin-header-greeting" id="headerGreeting">
+            Welcome back!
+          </div>
+
+          <div class="admin-header-actions">
+            <div class="notif-bell-wrap">
+              <button type="button" class="icon-btn-round" id="notifBellBtn">
+                <i class="bi bi-bell"></i>
+                <span class="notif-dot d-none" id="notifDot"></span>
+              </button>
+              <div class="notif-dropdown d-none" id="notifDropdown">
+                <div class="notif-dropdown-header">Pending Orders</div>
+                <div id="notifList"><p class="notif-empty">Loading...</p></div>
+                <a href="admin-orders.html" class="notif-view-all"
+                  >View all orders</a
+                >
+              </div>
+            </div>
+
+            <div class="header-user-wrap">
+              <button type="button" class="header-user-btn" id="headerUserBtn">
+                <div class="avatar" id="headerAvatar">?</div>
+                <div class="header-user-info">
+                  <div class="name" id="headerName">—</div>
+                  <span class="role-badge" id="headerRole">—</span>
+                </div>
+                <i class="bi bi-chevron-down"></i>
+              </button>
+              <div class="header-user-dropdown d-none" id="headerUserDropdown">
+                <button type="button" id="headerLogoutBtn">
+                  <i class="bi bi-box-arrow-right"></i> Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-topbar">
+          <h1>Audit Trail</h1>
+        </div>
+
+        <!-- Admins and Super Admins only -->
+        <div class="admin-panel d-none" id="auditRestrictedNotice">
+          <p class="text-muted mb-0" style="padding: 12px 0">
+            <i class="bi bi-shield-lock"></i> The audit trail is restricted to
+            Admins and Super Admins.
+          </p>
+        </div>
+
+        <div id="auditContent" class="d-none">
+          <p class="text-muted" style="font-size: 0.85rem; max-width: 760px">
+            A permanent record of who did what, and when: orders, products,
+            accounts, store settings, replies and online payments. Entries
+            can't be edited or deleted.
+          </p>
+
+          <div class="orders-toolbar">
+            <div class="admin-search orders-search">
+              <i class="bi bi-search"></i>
+              <input
+                type="text"
+                id="auditSearch"
+                placeholder="Search person, order, product or detail..."
+              />
+            </div>
+            <label class="toolbar-date">
+              Area
+              <select id="auditArea">
+                <option value="all">All</option>
+                <option value="order">Orders</option>
+                <option value="payment">Payments</option>
+                <option value="product">Products</option>
+                <option value="user">Accounts</option>
+                <option value="settings">Settings</option>
+                <option value="message">Messages</option>
+              </select>
+            </label>
+            <label class="toolbar-date">
+              By
+              <select id="auditActor">
+                <option value="all">Everyone</option>
+              </select>
+            </label>
+            <label class="toolbar-date" title="On or after">
+              From
+              <input type="date" id="auditFrom" />
+            </label>
+            <label class="toolbar-date" title="On or before">
+              To
+              <input type="date" id="auditTo" />
+            </label>
+          </div>
+          <div class="orders-summary">
+            <span id="auditCount" class="text-muted">&nbsp;</span>
+            <button type="button" class="toolbar-link d-none" id="auditClear">Clear filters</button>
+            <button type="button" class="toolbar-dropdown-btn ms-auto" id="auditExport">
+              <i class="bi bi-download"></i> Export CSV
+            </button>
+          </div>
+
+          <div class="admin-panel">
+            <table class="admin-table audit-table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Who</th>
+                  <th>Action</th>
+                  <th>What happened</th>
+                </tr>
+              </thead>
+              <tbody id="auditBody">
+                <tr><td colspan="4" class="text-center text-muted py-4">Loading...</td></tr>
+              </tbody>
+            </table>
+            <div class="text-center mt-3">
+              <button type="button" class="stock-modal-btn-secondary d-none" id="auditMore">Load older entries</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="../js/firebase.js"></script>
+    <script type="module" src="../js/admin.js"></script>
+  </body>
+</html>

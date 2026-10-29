@@ -10,6 +10,7 @@
 //   PUBLIC_SITE_URL          default https://kalingacare-drab.vercel.app
 
 const admin = require("firebase-admin");
+const { logAudit } = require("./audit");
 
 const PAYMONGO_API = "https://api.paymongo.com/v1";
 const SHIPPING_FEE = 150; // keep in sync with js/site.js and mobile Checkout.tsx
@@ -206,7 +207,9 @@ async function syncPaymentFromSession(orderRef, session) {
   if (!paid) return null;
 
   const db = getAdmin().firestore();
-  return db.runTransaction(async (tx) => {
+  let newlyPaid = null;
+  const status = await db.runTransaction(async (tx) => {
+    newlyPaid = null;
     const snap = await tx.get(orderRef);
     if (!snap.exists) return null;
     if (snap.get("paymentStatus") === "paid") return "paid";
@@ -227,8 +230,20 @@ async function syncPaymentFromSession(orderRef, session) {
         paidAt: admin.firestore.FieldValue.serverTimestamp(),
       },
     });
+    newlyPaid = { amount: amountPaid, channel: paid.attributes.source?.type || "online", invoiceNo: snap.get("invoiceNo") || "" };
     return "paid";
   });
+  if (newlyPaid) {
+    await logAudit(admin, {
+      actor: { id: "system", name: "PayMongo", role: "system" },
+      action: "payment.paid",
+      targetType: "order",
+      targetId: orderRef.id,
+      targetLabel: `Order #${orderRef.id.slice(0, 8).toUpperCase()}${newlyPaid.invoiceNo ? ` (${newlyPaid.invoiceNo})` : ""}`,
+      summary: `Online payment of \u20B1${newlyPaid.amount} received (${newlyPaid.channel}).`,
+    });
+  }
+  return status;
 }
 
 function sendError(res, err) {
