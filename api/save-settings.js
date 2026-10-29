@@ -4,7 +4,8 @@
 //
 // POST with "Authorization: Bearer <Firebase ID token>":
 //   { action: "save", settings: { shippingFee, freeShippingOver, codEnabled, onlineEnabled,
-//                                 emailOrderConfirmation, emailShipped, emailDelivered, emailCancelled } }
+//                                 emailOrderConfirmation, emailShipped, emailDelivered, emailCancelled,
+//                                 returnWindowDays, emailReturns } }
 //   { action: "testEmail" }   sends a sample order confirmation to the signed-in admin
 // Returns { settings } or { sent }.
 
@@ -50,11 +51,15 @@ module.exports = async function handler(req, res) {
     if (!Number.isFinite(free) || free < 0 || free > 1000000) {
       throw new HttpError(400, "The free-shipping amount must be 0 (off) or more.");
     }
+    const windowDays = Number(input.returnWindowDays ?? 7);
+    if (!Number.isInteger(windowDays) || windowDays < 0 || windowDays > 60) {
+      throw new HttpError(400, "The return window must be a whole number of days from 0 (no returns) to 60.");
+    }
     if (input.codEnabled !== true && input.onlineEnabled !== true) {
       throw new HttpError(400, "Keep at least one payment option turned on.");
     }
 
-    const settings = sanitizeSettings({ ...DEFAULT_SETTINGS, ...input, shippingFee: fee, freeShippingOver: free });
+    const settings = sanitizeSettings({ ...DEFAULT_SETTINGS, ...input, shippingFee: fee, freeShippingOver: free, returnWindowDays: windowDays });
     const before = sanitizeSettings((await db.collection("settings").doc("store").get()).data());
     const changes = Object.keys(settings)
       .filter((k) => settings[k] !== before[k])

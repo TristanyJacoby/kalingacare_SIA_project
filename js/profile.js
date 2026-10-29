@@ -5,7 +5,7 @@
 // js/settings.js.
 
 import { auth, db } from "./firebase.js";
-import { startOnlinePayment, updateOrder, PAYMENT_CHANNEL_LABELS } from "./payments.js";
+import { startOnlinePayment, updateOrder, manageReturn, PAYMENT_CHANNEL_LABELS } from "./payments.js";
 import {
   onAuthStateChanged,
   signOut,
@@ -25,6 +25,7 @@ import {
   HQ_LOCATION,
   DEMO_MAP_ID,
   resizeImageToDataUrl,
+  loadStoreSettings,
 } from "./site.js";
 
 const authGate = document.getElementById("authGate");
@@ -177,6 +178,20 @@ async function loadOrderHistory(uid) {
 
     const CANCELLABLE = ["new", "pending", "processing"];
 
+    // Returns this customer has asked for, by order, and the return window.
+    const returnsByOrder = {};
+    try {
+      const rs = await getDocs(query(collection(db, "returns"), where("userId", "==", uid)));
+      rs.docs.forEach((d) => {
+        const r = { id: d.id, ...d.data() };
+        if (r.status !== "Cancelled") returnsByOrder[r.orderId] = r;
+      });
+    } catch (err) {
+      console.warn("Couldn't load returns:", err);
+    }
+    const { returnWindowDays } = await loadStoreSettings();
+    window.__returnsByOrder = returnsByOrder;
+
     list.innerHTML = orders
       .map((order) => {
         const date = order.createdAt?.toDate
@@ -253,6 +268,7 @@ async function loadOrderHistory(uid) {
                 </a>
                 ${canCancel ? `<button type="button" class="remove-item cancel-order-btn" data-id="${order.id}"><i class="bi bi-x-circle"></i> Cancel Order</button>` : ""}
               </div>
+              ${returnBlock(order, returnsByOrder[order.id], returnWindowDays)}
               <div class="tracking-panel d-none" id="tracking-${order.id}"></div>
               ${itemRows}
             </div>
@@ -306,6 +322,109 @@ document.getElementById("orderFilterClear").addEventListener("click", () => {
   document.getElementById("orderFilterFrom").value = "";
   document.getElementById("orderFilterTo").value = "";
   applyOrderFilters();
+});
+
+/* ===== Returns and refunds =====
+   A delivered order can be returned within the return window (Admin >
+   Settings). The server enforces it; this only decides what to show. */
+const RETURN_STATUS_TEXT = {
+  Requested: ["Return requested", "We're reviewing your request. We'll email you."],
+  Approved: ["Return approved", "We'll refund you once the items reach us."],
+  Refunding: ["Refund in progress", "Your refund is being issued."],
+  Rejected: ["Return declined", ""],
+  Refunded: ["Refunded", ""],
+};
+
+function returnBlock(order, ret, windowDays) {
+  const delivered = (order.status || "") === "Delivered";
+  if (ret) {
+    const [label, hint] = RETURN_STATUS_TEXT[ret.status] || [ret.status, ""];
+    const detail =
+      ret.status === "Refunded"
+        ? `${peso(ret.refundAmount)} refunded${ret.refundMode === "paymongo" ? " to your original payment method" : ""}.`
+        : ret.status === "Rejected"
+          ? ret.staffNote || ""
+          : hint;
+    return `
+      <div class="return-note return-${ret.status.toLowerCase()}">
+        <strong><i class="bi bi-arrow-return-left"></i> ${label}</strong>
+        ${detail ? `<span>${escapeAttr(detail)}</span>` : ""}
+        ${ret.status === "Requested" ? `<button type="button" class="remove-item withdraw-return-btn" data-return="${ret.id}">Withdraw request</button>` : ""}
+      </div>`;
+  }
+  if (!delivered || windowDays <= 0) return "";
+  const since = (order.statusUpdatedAt || order.createdAt)?.toMillis?.();
+  if (since && (Date.now() - since) / 86400000 > windowDays) return "";
+  return `<div class="mt-2"><button type="button" class="remove-item request-return-btn" data-id="${order.id}" style="color: var(--primary-text);"><i class="bi bi-arrow-return-left"></i> Request a Return</button></div>`;
+}
+
+const returnModalEl = document.getElementById("returnModal");
+const returnModal = returnModalEl ? new bootstrap.Modal(returnModalEl) : null;
+
+document.getElementById("orderHistoryList").addEventListener("click", async (e) => {
+  const openBtn = e.target.closest(".request-return-btn");
+  if (openBtn) {
+    const order = window.__ordersById?.[openBtn.dataset.id];
+    if (!order) return;
+    document.getElementById("rtOrderId").value = order.id;
+    document.getElementById("rtItems").innerHTML = order.items
+      .map(
+        (i, n) => `
+        <label class="d-flex gap-2 align-items-start mb-1" style="font-size:0.9rem">
+          <input type="checkbox" class="rt-item" value="${escapeAttr(i.id)}" checked />
+          <span>${escapeAttr(i.name)} &times; ${i.qty}</span>
+        </label>`,
+      )
+      .join("");
+    document.getElementById("rtReason").value = "";
+    document.getElementById("rtNote").value = "";
+    document.getElementById("rtError").classList.remove("show");
+    returnModal.show();
+    return;
+  }
+  const withdrawBtn = e.target.closest(".withdraw-return-btn");
+  if (withdrawBtn) {
+    if (!confirm("Withdraw your return request?")) return;
+    withdrawBtn.disabled = true;
+    try {
+      await manageReturn({ action: "cancel", returnId: withdrawBtn.dataset.return });
+      loadOrderHistory(auth.currentUser.uid);
+    } catch (err) {
+      alert(err.message);
+      withdrawBtn.disabled = false;
+    }
+  }
+});
+
+document.getElementById("returnForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById("rtError");
+  errorEl.classList.remove("show");
+  const itemIds = [...document.querySelectorAll(".rt-item:checked")].map((b) => b.value);
+  if (!itemIds.length) {
+    errorEl.textContent = "Choose at least one item to return.";
+    errorEl.classList.add("show");
+    return;
+  }
+  const btn = document.getElementById("rtSubmit");
+  btn.disabled = true;
+  btn.textContent = "Sending...";
+  try {
+    await manageReturn({
+      action: "request",
+      orderId: document.getElementById("rtOrderId").value,
+      itemIds,
+      reason: document.getElementById("rtReason").value,
+      note: document.getElementById("rtNote").value.trim(),
+    });
+    returnModal.hide();
+    loadOrderHistory(auth.currentUser.uid);
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.add("show");
+  }
+  btn.disabled = false;
+  btn.textContent = "Send Return Request";
 });
 
 const STATUS_STEPS = ["Pending", "Processing", "Shipped", "Delivered"];

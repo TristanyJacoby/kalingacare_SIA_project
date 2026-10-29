@@ -12,6 +12,8 @@ const DEFAULT_SETTINGS = {
   emailShipped: true,
   emailDelivered: true,
   emailCancelled: true,
+  returnWindowDays: 7, // days after delivery a customer can ask for a return; 0 = returns off
+  emailReturns: true,
 };
 
 function num(value, fallback, min, max) {
@@ -34,6 +36,8 @@ function sanitizeSettings(raw) {
     emailShipped: bool("emailShipped"),
     emailDelivered: bool("emailDelivered"),
     emailCancelled: bool("emailCancelled"),
+    returnWindowDays: Number.isInteger(Number(s.returnWindowDays)) ? num(s.returnWindowDays, d.returnWindowDays, 0, 60) : d.returnWindowDays,
+    emailReturns: bool("emailReturns"),
   };
   // Customers must always have a way to pay.
   if (!settings.codEnabled && !settings.onlineEnabled) settings.codEnabled = true;

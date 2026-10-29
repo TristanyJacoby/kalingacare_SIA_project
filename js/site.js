@@ -149,6 +149,7 @@ export const DEFAULT_STORE_SETTINGS = {
   freeShippingOver: 0,
   codEnabled: true,
   onlineEnabled: true,
+  returnWindowDays: 7,
 };
 
 let storeSettingsPromise = null;
@@ -162,6 +163,7 @@ export function loadStoreSettings() {
           freeShippingOver: Number(s.freeShippingOver) > 0 ? Number(s.freeShippingOver) : 0,
           codEnabled: s.codEnabled !== false,
           onlineEnabled: s.onlineEnabled !== false,
+          returnWindowDays: Number.isInteger(Number(s.returnWindowDays)) && Number(s.returnWindowDays) >= 0 ? Number(s.returnWindowDays) : 7,
         };
         if (!out.codEnabled && !out.onlineEnabled) out.codEnabled = true;
         return out;
